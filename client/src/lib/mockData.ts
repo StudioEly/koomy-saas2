@@ -12,6 +12,20 @@ export type User = {
   role: "member" | "admin" | "super_admin";
   avatar?: string;
   phone?: string;
+  // Contribution fields
+  contributionStatus: "up_to_date" | "expired" | "pending" | "late";
+  lastContributionDate?: string;
+  nextDueDate?: string;
+  history?: Contribution[];
+};
+
+export type Contribution = {
+  id: string;
+  date: string;
+  amount: number;
+  year: number;
+  method: "Card" | "Transfer" | "Check";
+  status: "paid" | "pending";
 };
 
 export type NewsItem = {
@@ -74,7 +88,15 @@ export const MOCK_USER: User = {
   section: "Section Île-de-France",
   role: "member",
   phone: "06 12 34 56 78",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  contributionStatus: "up_to_date",
+  lastContributionDate: "2025-01-15",
+  nextDueDate: "2026-01-15",
+  history: [
+    { id: "p1", date: "2025-01-15", amount: 120, year: 2025, method: "Card", status: "paid" },
+    { id: "p2", date: "2024-01-10", amount: 115, year: 2024, method: "Card", status: "paid" },
+    { id: "p3", date: "2023-01-12", amount: 110, year: 2023, method: "Check", status: "paid" }
+  ]
 };
 
 export const MOCK_MEMBERS: User[] = [
@@ -90,7 +112,10 @@ export const MOCK_MEMBERS: User[] = [
     section: "Section Auvergne-Rhône-Alpes",
     role: "member",
     phone: "06 98 76 54 32",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    contributionStatus: "up_to_date",
+    lastContributionDate: "2025-02-01",
+    nextDueDate: "2026-02-01"
   },
   {
     id: "3",
@@ -102,7 +127,10 @@ export const MOCK_MEMBERS: User[] = [
     status: "expired",
     section: "Section Île-de-France",
     role: "member",
-    phone: "07 00 00 00 00"
+    phone: "07 00 00 00 00",
+    contributionStatus: "expired",
+    lastContributionDate: "2024-05-20",
+    nextDueDate: "2025-05-20"
   },
   {
     id: "4",
@@ -114,7 +142,8 @@ export const MOCK_MEMBERS: User[] = [
     status: "active",
     section: "Section Île-de-France",
     role: "admin",
-    phone: "06 11 11 11 11"
+    phone: "06 11 11 11 11",
+    contributionStatus: "up_to_date"
   },
   {
     id: "5",
@@ -126,7 +155,23 @@ export const MOCK_MEMBERS: User[] = [
     status: "active",
     section: "National",
     role: "super_admin",
-    phone: "06 22 22 22 22"
+    phone: "06 22 22 22 22",
+    contributionStatus: "up_to_date"
+  },
+  {
+    id: "6",
+    firstName: "Pierre",
+    lastName: "Durand",
+    email: "pierre.d@example.com",
+    memberId: "UNSA-2021-5567",
+    joinDate: "2021-11-15",
+    status: "active",
+    section: "Section Occitanie",
+    role: "member",
+    phone: "06 55 44 33 22",
+    contributionStatus: "late",
+    lastContributionDate: "2024-11-15",
+    nextDueDate: "2025-11-15"
   }
 ];
 

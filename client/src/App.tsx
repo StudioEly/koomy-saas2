@@ -15,6 +15,7 @@ import MobileProfile from "@/pages/mobile/Profile";
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminMembers from "@/pages/admin/Members";
+import AdminMemberDetails from "@/pages/admin/MemberDetails";
 import AdminNews from "@/pages/admin/News";
 import AdminEvents from "@/pages/admin/Events";
 import AdminMessages from "@/pages/admin/Messages";
@@ -39,6 +40,7 @@ function Router() {
       {/* Admin Routes */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/members" component={AdminMembers} />
+      <Route path="/admin/members/:id" component={AdminMemberDetails} />
       <Route path="/admin/news" component={AdminNews} />
       <Route path="/admin/events" component={AdminEvents} />
       <Route path="/admin/events/:id" component={AdminEventDetails} />
