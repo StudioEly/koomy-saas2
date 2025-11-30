@@ -3,27 +3,40 @@ import { useLocation } from "wouter";
 import { Eye, EyeOff, ArrowRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLogin } from "@/hooks/useApi";
+import { toast } from "sonner";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
 import bgImage from "@assets/generated_images/abstract_professional_blue_and_white_geometric_background_for_app_header.png";
 
 export default function MobileLogin() {
   const [_, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { setUser } = useAuth();
+  const loginMutation = useLogin();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    
+    try {
+      const result = await loginMutation.mutateAsync({ email, password });
+      
+      setUser({
+        ...result.user,
+        memberships: result.memberships
+      });
+      
+      toast.success("Connexion réussie!");
       setLocation("/app/hub");
-    }, 1000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur de connexion");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden">
-      {/* Header Background */}
+    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden" data-testid="mobile-login-page">
       <div className="absolute top-0 left-0 w-full h-1/3 bg-primary overflow-hidden">
         <img src={bgImage} className="w-full h-full object-cover opacity-20 mix-blend-overlay" alt="Background" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/10"></div>
@@ -46,9 +59,12 @@ export default function MobileLogin() {
               <label className="text-sm font-semibold text-gray-700 ml-1">Email ou Identifiant</label>
               <Input 
                 type="email" 
-                placeholder="exemple@unsa.org" 
+                placeholder="admin@unsa.org" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="h-12 rounded-xl bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary/20 transition-all"
                 required
+                data-testid="input-email"
               />
             </div>
 
@@ -57,13 +73,17 @@ export default function MobileLogin() {
               <div className="relative">
                 <Input 
                   type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="h-12 rounded-xl bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary/20 transition-all pr-10"
                   required
+                  data-testid="input-password"
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  data-testid="button-toggle-password"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -76,14 +96,19 @@ export default function MobileLogin() {
             <Button 
               type="submit" 
               className="w-full h-14 rounded-xl bg-primary hover:bg-primary/90 text-lg font-bold shadow-lg shadow-primary/30 mt-4 group"
-              disabled={loading}
+              disabled={loginMutation.isPending}
+              data-testid="button-login"
             >
-              {loading ? "Connexion..." : (
+              {loginMutation.isPending ? "Connexion..." : (
                 <span className="flex items-center gap-2">
                   Se connecter <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
                 </span>
               )}
             </Button>
+
+            <div className="text-center text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+              <strong>Demo:</strong> admin@unsa.org / member@unsa.org (password: any)
+            </div>
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">

@@ -1,45 +1,81 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Plus, ChevronRight, LogOut, Shield } from "lucide-react";
-import { MOCK_USER, MOCK_COMMUNITIES } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCommunities } from "@/hooks/useApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import koomyLogo from "@assets/Koomy-communitieslogo_1764495780161.png";
 
 export default function CommunityHub() {
   const [location, setLocation] = useLocation();
   const [joinCode, setJoinCode] = useState("");
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const { user, setCurrentCommunity, logout } = useAuth();
+  const { data: allCommunities, isLoading } = useCommunities();
 
-  const userCommunities = MOCK_USER.communities.map(membership => {
-    const community = MOCK_COMMUNITIES.find(c => c.id === membership.communityId);
+  if (!user) {
+    setLocation("/app/login");
+    return null;
+  }
+
+  const userCommunities = user.memberships.map(membership => {
+    const community = allCommunities?.find(c => c.id === membership.communityId);
     return { ...membership, community };
   }).filter(item => item.community);
 
   const handleJoin = () => {
     if (joinCode.length < 4) {
-      toast({ title: "Code invalide", description: "Le code doit contenir au moins 4 caractères.", variant: "destructive" });
+      toast.error("Le code doit contenir au moins 4 caractères.");
       return;
     }
-    // Simulate API call
     setTimeout(() => {
       setIsJoinOpen(false);
       setJoinCode("");
-      toast({ title: "Succès", description: "Vous avez rejoint la communauté !" });
+      toast.success("Vous avez rejoint la communauté !");
     }, 1000);
   };
 
+  const handleSelectCommunity = (membership: typeof userCommunities[0]) => {
+    setCurrentCommunity(membership);
+    setLocation(`/app/${membership.communityId}/home`);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/app/login");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-500">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
+    <div className="min-h-screen bg-gray-50 flex justify-center" data-testid="community-hub-page">
       <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col">
         
-        {/* Koomy Header */}
         <div className="bg-white p-6 pt-12 pb-4 border-b border-gray-100 flex justify-between items-center sticky top-0 z-10">
           <img src={koomyLogo} alt="Koomy" className="h-10" />
-          <div className="h-10 w-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold">
-            {MOCK_USER.firstName[0]}
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-primary font-bold">
+              {user.firstName[0]}
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="text-gray-400 hover:text-red-500 transition-colors"
+              data-testid="button-logout"
+            >
+              <LogOut size={20} />
+            </button>
           </div>
         </div>
 
@@ -49,19 +85,16 @@ export default function CommunityHub() {
             <p className="text-gray-500 text-sm">Retrouvez toutes vos organisations au même endroit.</p>
           </div>
 
-          {/* Community List */}
           <div className="space-y-4">
             {userCommunities.map((item) => (
               <div 
                 key={item.communityId}
-                onClick={() => {
-                  // If admin, ask where to go? No, default to app, switch to admin inside app
-                  setLocation(`/app/${item.communityId}/home`);
-                }}
+                onClick={() => handleSelectCommunity(item)}
                 className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer group active:scale-98"
+                data-testid={`community-card-${item.communityId}`}
               >
                 <div className="h-16 w-16 rounded-xl bg-gray-50 p-1 border border-gray-100 flex-shrink-0">
-                  <img src={item.community?.logo} alt={item.community?.name} className="w-full h-full object-contain rounded-lg" />
+                  <img src={item.community?.logo || ""} alt={item.community?.name} className="w-full h-full object-contain rounded-lg" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 group-hover:text-primary transition-colors">{item.community?.name}</h3>
@@ -83,10 +116,12 @@ export default function CommunityHub() {
               </div>
             ))}
 
-            {/* Add New Button */}
             <Dialog open={isJoinOpen} onOpenChange={setIsJoinOpen}>
               <DialogTrigger asChild>
-                <button className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-gray-400 hover:text-primary hover:border-primary hover:bg-blue-50/50 transition-all group">
+                <button 
+                  className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 text-gray-400 hover:text-primary hover:border-primary hover:bg-blue-50/50 transition-all group"
+                  data-testid="button-join-community"
+                >
                   <div className="h-8 w-8 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center">
                     <Plus className="text-gray-500 group-hover:text-primary" size={18} />
                   </div>
@@ -105,28 +140,33 @@ export default function CommunityHub() {
                     Entrez le code d'invitation reçu par SMS ou email pour rejoindre votre organisation.
                   </p>
                   <Input 
-                    placeholder="Ex: UNSA-8821" 
-                    className="text-center text-lg tracking-widest uppercase font-mono h-14"
+                    type="text" 
+                    placeholder="CODE-1234" 
                     value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
+                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    className="text-center text-lg font-mono uppercase tracking-widest"
+                    data-testid="input-join-code"
                   />
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleJoin} className="w-full h-12 text-lg">Rejoindre</Button>
+                  <Button 
+                    onClick={handleJoin} 
+                    className="w-full"
+                    data-testid="button-confirm-join"
+                  >
+                    Rejoindre
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-100 text-center">
-          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 flex items-center justify-center gap-2">
-              <LogOut size={14} /> Se déconnecter
-          </Link>
-          <p className="text-[10px] text-gray-300 mt-4">Koomy Platform v2.0 • Powered by Replit</p>
+        <div className="p-6 border-t border-gray-100 bg-gray-50">
+          <p className="text-xs text-center text-gray-400">
+            Connecté en tant que <span className="font-medium text-gray-600">{user.firstName} {user.lastName}</span>
+          </p>
         </div>
-
       </div>
     </div>
   );
