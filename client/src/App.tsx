@@ -6,22 +6,31 @@ import NotFound from "@/pages/not-found";
 
 // Mobile Pages
 import MobileLogin from "@/pages/mobile/Login";
+import CommunityHub from "@/pages/mobile/CommunityHub";
 import MobileHome from "@/pages/mobile/Home";
 import MobileCard from "@/pages/mobile/Card";
 import MobileNews from "@/pages/mobile/News";
 import MobileMessages from "@/pages/mobile/Messages";
 import MobileProfile from "@/pages/mobile/Profile";
 
-// Admin Pages
+// Mobile Admin Pages
+import MobileAdminHome from "@/pages/mobile/admin/Home";
+import MobileAdminScanner from "@/pages/mobile/admin/Scanner";
+import MobileAdminMessages from "@/pages/mobile/admin/Messages";
+
+// Admin Pages (Web)
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminMembers from "@/pages/admin/Members";
 import AdminMemberDetails from "@/pages/admin/MemberDetails";
 import AdminNews from "@/pages/admin/News";
 import AdminEvents from "@/pages/admin/Events";
+import AdminEventDetails from "@/pages/admin/EventDetails";
 import AdminMessages from "@/pages/admin/Messages";
 import AdminAdmins from "@/pages/admin/Admins";
 import AdminSections from "@/pages/admin/Sections";
-import AdminEventDetails from "@/pages/admin/EventDetails";
+
+// Platform Pages
+import SuperDashboard from "@/pages/platform/SuperDashboard";
 
 function Router() {
   return (
@@ -31,13 +40,21 @@ function Router() {
       
       {/* Mobile Routes */}
       <Route path="/app/login" component={MobileLogin} />
-      <Route path="/app/home" component={MobileHome} />
-      <Route path="/app/card" component={MobileCard} />
-      <Route path="/app/news" component={MobileNews} />
-      <Route path="/app/messages" component={MobileMessages} />
-      <Route path="/app/profile" component={MobileProfile} />
+      <Route path="/app/hub" component={CommunityHub} />
+      
+      {/* Dynamic Community Routes */}
+      <Route path="/app/:communityId/home" component={MobileHome} />
+      <Route path="/app/:communityId/card" component={MobileCard} />
+      <Route path="/app/:communityId/news" component={MobileNews} />
+      <Route path="/app/:communityId/messages" component={MobileMessages} />
+      <Route path="/app/:communityId/profile" component={MobileProfile} />
 
-      {/* Admin Routes */}
+      {/* Mobile Admin Routes */}
+      <Route path="/app/:communityId/admin" component={MobileAdminHome} />
+      <Route path="/app/:communityId/admin/scanner" component={MobileAdminScanner} />
+      <Route path="/app/:communityId/admin/messages" component={MobileAdminMessages} />
+
+      {/* Admin Routes (Web) */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/members" component={AdminMembers} />
       <Route path="/admin/members/:id" component={AdminMemberDetails} />
@@ -47,6 +64,9 @@ function Router() {
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/admins" component={AdminAdmins} />
       <Route path="/admin/sections" component={AdminSections} />
+
+      {/* Platform Super Admin */}
+      <Route path="/platform/dashboard" component={SuperDashboard} />
 
       <Route component={NotFound} />
     </Switch>
