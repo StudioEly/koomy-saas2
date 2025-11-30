@@ -19,6 +19,8 @@ import AdminNews from "@/pages/admin/News";
 import AdminEvents from "@/pages/admin/Events";
 import AdminMessages from "@/pages/admin/Messages";
 import AdminAdmins from "@/pages/admin/Admins";
+import AdminSections from "@/pages/admin/Sections";
+import AdminEventDetails from "@/pages/admin/EventDetails";
 
 function Router() {
   return (
@@ -39,8 +41,10 @@ function Router() {
       <Route path="/admin/members" component={AdminMembers} />
       <Route path="/admin/news" component={AdminNews} />
       <Route path="/admin/events" component={AdminEvents} />
+      <Route path="/admin/events/:id" component={AdminEventDetails} />
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/admins" component={AdminAdmins} />
+      <Route path="/admin/sections" component={AdminSections} />
 
       <Route component={NotFound} />
     </Switch>

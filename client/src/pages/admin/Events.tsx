@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, MapPin, Calendar, Users, QrCode } from "lucide-react";
+import { Plus, MapPin, Calendar, Users, QrCode, BarChart2 } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<Event[]>(MOCK_EVENTS);
@@ -150,11 +151,13 @@ export default function AdminEvents() {
                 </div>
               </CardContent>
               <CardFooter className="pt-3 border-t bg-gray-50 flex gap-3">
+                 <Link href={`/admin/events/${event.id}`}>
+                   <Button variant="outline" className="flex-1 gap-2">
+                     <BarChart2 size={16} /> Stats & Présence
+                   </Button>
+                 </Link>
                  <Button className="flex-1 gap-2 bg-gray-800 hover:bg-gray-900">
-                   <QrCode size={16} /> Scanner les entrées
-                 </Button>
-                 <Button variant="outline" className="flex-1">
-                   Gérer
+                   <QrCode size={16} /> Scanner
                  </Button>
               </CardFooter>
             </Card>
