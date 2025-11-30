@@ -14,6 +14,11 @@ import MobileProfile from "@/pages/mobile/Profile";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/Dashboard";
+import AdminMembers from "@/pages/admin/Members";
+import AdminNews from "@/pages/admin/News";
+import AdminEvents from "@/pages/admin/Events";
+import AdminMessages from "@/pages/admin/Messages";
+import AdminAdmins from "@/pages/admin/Admins";
 
 function Router() {
   return (
@@ -31,11 +36,11 @@ function Router() {
 
       {/* Admin Routes */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
-      {/* Placeholder for other admin routes to redirect to dashboard for now */}
-      <Route path="/admin/members"><Redirect to="/admin/dashboard" /></Route>
-      <Route path="/admin/news"><Redirect to="/admin/dashboard" /></Route>
-      <Route path="/admin/events"><Redirect to="/admin/dashboard" /></Route>
-      <Route path="/admin/messages"><Redirect to="/admin/dashboard" /></Route>
+      <Route path="/admin/members" component={AdminMembers} />
+      <Route path="/admin/news" component={AdminNews} />
+      <Route path="/admin/events" component={AdminEvents} />
+      <Route path="/admin/messages" component={AdminMessages} />
+      <Route path="/admin/admins" component={AdminAdmins} />
 
       <Route component={NotFound} />
     </Switch>

@@ -1,7 +1,13 @@
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Newspaper, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Users, Newspaper, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SECTIONS } from "@/lib/mockData";
 
 const data = [
   { name: 'Jan', adherents: 400 },
@@ -20,8 +26,49 @@ export default function AdminDashboard() {
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Tableau de bord</h1>
           <div className="flex gap-2">
-             <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50">Exporter</button>
-             <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg shadow-primary/30 hover:bg-primary/90">Rapport Mensuel</button>
+             <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg shadow-primary/30 hover:bg-primary/90 gap-2">
+                    <Plus size={16} /> Nouvel Adhérent
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Ajout Rapide Adhérent</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid grid-cols-2 gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dash-lastname">Nom</Label>
+                      <Input id="dash-lastname" placeholder="Dubois" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dash-firstname">Prénom</Label>
+                      <Input id="dash-firstname" placeholder="Thomas" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dash-email">Email</Label>
+                      <Input id="dash-email" type="email" placeholder="exemple@email.com" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dash-section">Section Locale</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SECTIONS.map(section => (
+                            <SelectItem key={section} value={section}>{section}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button>Créer l'adhérent</Button>
+                  </DialogFooter>
+                </DialogContent>
+             </Dialog>
+             <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-gray-50">Rapport Mensuel</button>
           </div>
         </div>
 

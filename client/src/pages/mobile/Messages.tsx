@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function MobileMessages() {
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState(MOCK_MESSAGES.filter(m => m.conversationId === "c1"));
   const [newMessage, setNewMessage] = useState("");
 
   const handleSend = (e: React.FormEvent) => {
@@ -15,6 +15,7 @@ export default function MobileMessages() {
 
     const msg = {
       id: Date.now().toString(),
+      conversationId: "c1",
       sender: `${MOCK_USER.firstName} ${MOCK_USER.lastName}`,
       senderRole: "member" as const,
       content: newMessage,
