@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogin } from "@/hooks/useApi";
 import { toast } from "sonner";
+import ChatWidget from "@/components/ChatWidget";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
 
 export default function WebsiteLayout({ children }: { children: React.ReactNode }) {
@@ -62,21 +63,21 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
     <div className="min-h-screen flex flex-col font-sans bg-white">
       <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-md">
         <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <Link href="/website">
-            <a className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
-              <span className="text-xl font-bold text-slate-900 tracking-tight">Koomy</span>
-            </a>
+          <Link href="/website" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
+            <span className="text-xl font-bold text-slate-900 tracking-tight">Koomy</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
-              <Link key={item.path} href={item.path}>
-                <a className={`text-sm font-medium transition-colors hover:text-blue-600 ${
+              <Link 
+                key={item.path} 
+                href={item.path}
+                className={`text-sm font-medium transition-colors hover:text-blue-600 ${
                   location === item.path ? "text-blue-600" : "text-slate-600"
-                }`}>
-                  {item.label}
-                </a>
+                }`}
+              >
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -107,10 +108,13 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
           <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-100 p-4 shadow-lg animate-in slide-in-from-top-5">
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
-                <Link key={item.path} href={item.path}>
-                  <a className="text-base font-medium text-slate-700 py-2 block" onClick={() => setIsMenuOpen(false)}>
-                    {item.label}
-                  </a>
+                <Link 
+                  key={item.path} 
+                  href={item.path}
+                  className="text-base font-medium text-slate-700 py-2 block"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.label}
                 </Link>
               ))}
               <hr className="border-slate-100 my-2" />
@@ -210,13 +214,12 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
           <div className="border-t border-slate-100 pt-4 text-center">
             <p className="text-sm text-slate-500">
               Pas encore inscrit ?{" "}
-              <Link href="/website/signup">
-                <a 
-                  className="text-blue-600 font-medium hover:underline"
-                  onClick={() => setIsLoginOpen(false)}
-                >
-                  Créer un compte
-                </a>
+              <Link 
+                href="/website/signup"
+                className="text-blue-600 font-medium hover:underline"
+                onClick={() => setIsLoginOpen(false)}
+              >
+                Créer un compte
               </Link>
             </p>
           </div>
@@ -226,6 +229,8 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
       <main className="flex-1">
         {children}
       </main>
+
+      <ChatWidget />
 
       <footer className="bg-slate-900 text-slate-300 py-12 border-t border-slate-800">
         <div className="container mx-auto px-4 md:px-6">
@@ -242,16 +247,16 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
             <div>
               <h4 className="text-white font-bold mb-4">Produit</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/website"><a className="hover:text-white">Fonctionnalités</a></Link></li>
-                <li><Link href="/website/pricing"><a className="hover:text-white">Tarifs</a></Link></li>
-                <li><Link href="/website/download"><a className="hover:text-white">Application Mobile</a></Link></li>
+                <li><Link href="/website" className="hover:text-white">Fonctionnalités</Link></li>
+                <li><Link href="/website/pricing" className="hover:text-white">Tarifs</Link></li>
+                <li><Link href="/website/download" className="hover:text-white">Application Mobile</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-bold mb-4">Ressources</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/website/faq"><a className="hover:text-white">FAQ</a></Link></li>
-                <li><Link href="/website/support"><a className="hover:text-white">Centre d'aide</a></Link></li>
+                <li><Link href="/website/faq" className="hover:text-white">FAQ</Link></li>
+                <li><Link href="/website/support" className="hover:text-white">Centre d'aide</Link></li>
                 <li><a href="#" className="hover:text-white">Blog</a></li>
               </ul>
             </div>
