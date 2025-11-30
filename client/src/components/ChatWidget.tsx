@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, Headphones, ArrowLeft } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Headphones, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -9,50 +9,27 @@ interface Message {
   content: string;
   sender: "bot" | "user" | "agent";
   timestamp: Date;
-  isQuickReply?: boolean;
 }
 
-interface QuickReply {
-  id: string;
-  text: string;
-  response: string;
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
 }
-
-const QUICK_REPLIES: QuickReply[] = [
-  {
-    id: "pricing",
-    text: "Quels sont vos tarifs ?",
-    response: "Nous proposons 4 formules :\n\n• **Gratuit** : jusqu'à 100 membres\n• **Growth** (49€/mois) : jusqu'à 500 membres\n• **Scale** (99€/mois) : jusqu'à 2000 membres\n• **Enterprise** : sur mesure\n\nToutes les formules incluent la gestion des membres, l'app mobile et le support."
-  },
-  {
-    id: "features",
-    text: "Quelles fonctionnalités proposez-vous ?",
-    response: "Koomy offre une solution complète :\n\n• Gestion des membres et cotisations\n• Application mobile avec carte d'adhérent\n• Messagerie interne\n• Gestion des événements\n• Actualités et communications\n• Tableau de bord administrateur\n• Support multi-communautés"
-  },
-  {
-    id: "trial",
-    text: "Y a-t-il un essai gratuit ?",
-    response: "Oui ! La formule Gratuite vous permet de gérer jusqu'à 100 membres sans engagement. C'est idéal pour démarrer et tester toutes nos fonctionnalités. Vous pouvez upgrader à tout moment."
-  },
-  {
-    id: "demo",
-    text: "Comment puis-je voir une démo ?",
-    response: "Vous pouvez explorer notre plateforme de plusieurs façons :\n\n1. Créez un compte gratuit pour tester\n2. Connectez-vous avec les identifiants de démo (admin@unsa.org)\n3. Demandez une démo personnalisée avec notre équipe\n\nSouhaitez-vous parler à un conseiller ?"
-  },
-  {
-    id: "support",
-    text: "Comment contacter le support ?",
-    response: "Notre équipe support est disponible :\n\n• Par email : support@koomy.io\n• Par chat (ici même !)\n• Du lundi au vendredi, 9h-18h\n\nVoulez-vous parler à un agent maintenant ?"
-  }
-];
 
 const BOT_WELCOME = "Bonjour ! 👋 Je suis l'assistant Koomy. Comment puis-je vous aider aujourd'hui ?";
+
+const QUICK_SUGGESTIONS = [
+  "Quels sont vos tarifs ?",
+  "Quelles fonctionnalités proposez-vous ?",
+  "Y a-t-il un essai gratuit ?"
+];
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [waitingForAgent, setWaitingForAgent] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
   const [userName, setUserName] = useState("");
@@ -62,75 +39,82 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      addBotMessage(BOT_WELCOME);
+      setMessages([{
+        id: "welcome",
+        content: BOT_WELCOME,
+        sender: "bot",
+        timestamp: new Date()
+      }]);
     }
-  }, [isOpen]);
+  }, [isOpen, messages.length]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const addBotMessage = (content: string) => {
-    setIsTyping(true);
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        content,
-        sender: "bot",
-        timestamp: new Date()
-      }]);
-      setIsTyping(false);
-    }, 800);
-  };
-
-  const addUserMessage = (content: string) => {
+  const addMessage = (content: string, sender: "bot" | "user" | "agent") => {
     setMessages(prev => [...prev, {
       id: Date.now().toString(),
       content,
-      sender: "user",
+      sender,
       timestamp: new Date()
     }]);
   };
 
-  const handleQuickReply = (reply: QuickReply) => {
-    addUserMessage(reply.text);
-    setTimeout(() => addBotMessage(reply.response), 300);
+  const sendToAI = async (userMessage: string) => {
+    const newHistory: ChatMessage[] = [...chatHistory, { role: "user", content: userMessage }];
+    setChatHistory(newHistory);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newHistory })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response");
+      }
+
+      const data = await response.json();
+      const aiReply = data.reply;
+
+      setChatHistory(prev => [...prev, { role: "assistant", content: aiReply }]);
+      addMessage(aiReply, "bot");
+    } catch (error) {
+      console.error("Chat error:", error);
+      addMessage("Désolé, une erreur s'est produite. Veuillez réessayer ou contacter notre support.", "bot");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
 
-    addUserMessage(inputValue);
-    const userInput = inputValue.toLowerCase();
+    const userMessage = inputValue.trim();
+    addMessage(userMessage, "user");
     setInputValue("");
 
     if (agentConnected) {
-      setTimeout(() => {
-        addBotMessage("Notre agent a bien reçu votre message. Il vous répondra dans quelques instants...");
-      }, 500);
+      addMessage("Notre agent a bien reçu votre message. Il vous répondra dans quelques instants...", "bot");
       return;
     }
 
-    const matchedReply = QUICK_REPLIES.find(r => 
-      userInput.includes(r.id) || 
-      r.text.toLowerCase().includes(userInput) ||
-      userInput.includes("tarif") || userInput.includes("prix") ? r.id === "pricing" :
-      userInput.includes("fonction") || userInput.includes("feature") ? r.id === "features" :
-      userInput.includes("essai") || userInput.includes("gratuit") ? r.id === "trial" :
-      userInput.includes("demo") || userInput.includes("démo") ? r.id === "demo" :
-      userInput.includes("support") || userInput.includes("aide") || userInput.includes("contact") ? r.id === "support" :
-      false
-    );
-
-    if (matchedReply) {
-      setTimeout(() => addBotMessage(matchedReply.response), 300);
-    } else if (userInput.includes("agent") || userInput.includes("humain") || userInput.includes("conseiller") || userInput.includes("parler")) {
+    const lowerMessage = userMessage.toLowerCase();
+    if (lowerMessage.includes("agent") || lowerMessage.includes("humain") || lowerMessage.includes("conseiller") || lowerMessage.includes("parler à quelqu'un")) {
       setShowContactForm(true);
-    } else {
-      setTimeout(() => {
-        addBotMessage("Je n'ai pas bien compris votre demande. Voici quelques sujets sur lesquels je peux vous aider, ou vous pouvez demander à parler à un conseiller.");
-      }, 300);
+      addMessage("Je comprends que vous souhaitez parler à un conseiller. Merci de remplir le formulaire ci-dessous.", "bot");
+      return;
     }
+
+    await sendToAI(userMessage);
+  };
+
+  const handleQuickSuggestion = async (suggestion: string) => {
+    addMessage(suggestion, "user");
+    await sendToAI(suggestion);
   };
 
   const handleRequestAgent = () => {
@@ -138,7 +122,7 @@ export default function ChatWidget() {
     
     setShowContactForm(false);
     setWaitingForAgent(true);
-    addBotMessage(`Merci ${userName} ! Je transfère votre conversation à un conseiller. Veuillez patienter quelques instants...`);
+    addMessage(`Merci ${userName} ! Je transfère votre conversation à un conseiller. Veuillez patienter quelques instants...`, "bot");
     
     setTimeout(() => {
       setWaitingForAgent(false);
@@ -153,11 +137,16 @@ export default function ChatWidget() {
   };
 
   const resetChat = () => {
-    setMessages([]);
+    setMessages([{
+      id: "welcome",
+      content: BOT_WELCOME,
+      sender: "bot",
+      timestamp: new Date()
+    }]);
+    setChatHistory([]);
     setAgentConnected(false);
     setWaitingForAgent(false);
     setShowContactForm(false);
-    addBotMessage(BOT_WELCOME);
   };
 
   return (
@@ -196,7 +185,7 @@ export default function ChatWidget() {
                   </div>
                   <div>
                     <p className="font-semibold">Assistant Koomy</p>
-                    <p className="text-xs text-blue-100">Réponse instantanée</p>
+                    <p className="text-xs text-blue-100">Propulsé par IA</p>
                   </div>
                 </>
               )}
@@ -248,16 +237,15 @@ export default function ChatWidget() {
               </div>
             ))}
 
-            {isTyping && (
+            {isLoading && (
               <div className="flex gap-2">
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                   <Bot size={16} className="text-gray-600" />
                 </div>
                 <div className="bg-white rounded-2xl px-4 py-3 rounded-bl-md shadow-sm border border-gray-100">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <Loader2 size={16} className="animate-spin" />
+                    <span className="text-sm">En train de réfléchir...</span>
                   </div>
                 </div>
               </div>
@@ -302,18 +290,18 @@ export default function ChatWidget() {
               </div>
             )}
 
-            {!agentConnected && !waitingForAgent && !showContactForm && messages.length > 0 && messages.length < 4 && (
+            {!agentConnected && !waitingForAgent && !showContactForm && !isLoading && messages.length === 1 && (
               <div className="space-y-2">
-                <p className="text-xs text-gray-500 text-center">Questions fréquentes :</p>
+                <p className="text-xs text-gray-500 text-center">Suggestions :</p>
                 <div className="flex flex-wrap gap-2">
-                  {QUICK_REPLIES.slice(0, 3).map((reply) => (
+                  {QUICK_SUGGESTIONS.map((suggestion, index) => (
                     <button
-                      key={reply.id}
-                      onClick={() => handleQuickReply(reply)}
+                      key={index}
+                      onClick={() => handleQuickSuggestion(suggestion)}
                       className="text-xs bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-full hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-colors"
-                      data-testid={`quick-reply-${reply.id}`}
+                      data-testid={`quick-suggestion-${index}`}
                     >
-                      {reply.text}
+                      {suggestion}
                     </button>
                   ))}
                 </div>
@@ -329,7 +317,7 @@ export default function ChatWidget() {
                 onClick={resetChat}
                 className="w-full text-xs text-gray-500 hover:text-gray-700 mb-2 flex items-center justify-center gap-1"
               >
-                <ArrowLeft size={12} /> Retour à l'assistant
+                <ArrowLeft size={12} /> Retour à l'assistant IA
               </button>
             )}
             <div className="flex gap-2">
@@ -337,21 +325,22 @@ export default function ChatWidget() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder={agentConnected ? "Écrivez à l'agent..." : "Posez votre question..."}
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                disabled={isLoading}
                 className="flex-1"
                 data-testid="input-chat-message"
               />
               <Button 
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isLoading}
                 className="bg-blue-600 hover:bg-blue-700"
                 data-testid="button-send-message"
               >
-                <Send size={18} />
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
               </Button>
             </div>
             <p className="text-[10px] text-gray-400 text-center mt-2">
-              Propulsé par Koomy • Support 24/7
+              Propulsé par ChatGPT • Support 24/7
             </p>
           </div>
         </div>

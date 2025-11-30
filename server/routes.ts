@@ -8,6 +8,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import OpenAI from "openai";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -565,6 +566,81 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Process payment error:", error);
       return res.status(500).json({ error: "Failed to process payment" });
+    }
+  });
+
+  // ChatGPT-powered Chat for Public Website
+  const openai = new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
+  });
+
+  const KOOMY_SYSTEM_PROMPT = `Tu es l'assistant virtuel de Koomy, une plateforme SaaS de gestion de communautés (syndicats, clubs, associations, organisations à but non lucratif).
+
+Ton rôle est d'aider les visiteurs du site web à comprendre les fonctionnalités et les tarifs de Koomy.
+
+Informations clés sur Koomy:
+
+FONCTIONNALITÉS:
+- Gestion complète des membres et des adhésions
+- Application mobile pour les membres avec carte d'adhérent numérique (QR code)
+- Messagerie interne sécurisée
+- Gestion des événements et calendrier
+- Publication d'actualités et communications
+- Tableau de bord administrateur complet
+- Gestion des cotisations et paiements
+- Support multi-communautés (un utilisateur peut appartenir à plusieurs communautés)
+- Rôles d'administration multi-niveaux
+
+TARIFS:
+- Gratuit: jusqu'à 100 membres, fonctionnalités essentielles
+- Growth (49€/mois): jusqu'à 500 membres, toutes les fonctionnalités
+- Scale (99€/mois): jusqu'à 2000 membres, support prioritaire
+- Enterprise: sur mesure, pour les grandes organisations
+
+ESSAI:
+- La formule gratuite permet de tester sans engagement
+- Possibilité de passer à une formule supérieure à tout moment
+
+SUPPORT:
+- Email: support@koomy.io
+- Chat en ligne (présent sur le site)
+- Du lundi au vendredi, 9h-18h
+
+Règles de conversation:
+1. Réponds toujours en français
+2. Sois concis et professionnel
+3. Si tu ne connais pas la réponse, suggère de contacter le support
+4. Propose de parler à un conseiller humain si la question est complexe ou commerciale
+5. Ne parle jamais de sujets sans rapport avec Koomy`;
+
+  app.post("/api/chat", async (req, res) => {
+    try {
+      const { messages } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "Messages array is required" });
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: KOOMY_SYSTEM_PROMPT },
+          ...messages.map((m: { role: string; content: string }) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content
+          }))
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      });
+
+      const reply = completion.choices[0]?.message?.content || "Désolé, je n'ai pas pu générer de réponse.";
+      
+      return res.json({ reply });
+    } catch (error) {
+      console.error("Chat API error:", error);
+      return res.status(500).json({ error: "Failed to get chat response" });
     }
   });
 
