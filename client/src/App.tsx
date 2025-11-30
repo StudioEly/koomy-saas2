@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
 
 // Mobile Pages
 import MobileLogin from "@/pages/mobile/Login";
@@ -36,7 +37,7 @@ function Router() {
   return (
     <Switch>
       {/* Landing / Default */}
-      <Route path="/" component={MobileLogin} />
+      <Route path="/" component={Landing} />
       
       {/* Mobile Routes */}
       <Route path="/app/login" component={MobileLogin} />
