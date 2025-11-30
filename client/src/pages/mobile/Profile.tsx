@@ -2,7 +2,7 @@ import MobileLayout from "@/components/layouts/MobileLayout";
 import { MOCK_USER } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
 import { User, Settings, Bell, LogOut, ChevronRight, HelpCircle, Shield, ArrowLeft } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 export default function MobileProfile({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
@@ -55,13 +55,15 @@ export default function MobileProfile({ params }: { params: { communityId: strin
            </div>
 
            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-             <div className="p-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="bg-gray-50 p-2 rounded-lg text-gray-600"><HelpCircle size={18} /></div>
-                  <span className="text-sm font-medium text-gray-700">Aide & Support</span>
-                </div>
-                <ChevronRight size={16} className="text-gray-400" />
-             </div>
+             <Link href={`/app/${communityId}/support`}>
+               <div className="p-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gray-50 p-2 rounded-lg text-gray-600"><HelpCircle size={18} /></div>
+                    <span className="text-sm font-medium text-gray-700">Aide & Support</span>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-400" />
+               </div>
+             </Link>
            </div>
 
            <Button 

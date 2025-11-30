@@ -8,7 +8,8 @@ import {
   Settings, 
   LogOut,
   Shield,
-  MapPin
+  MapPin,
+  HelpCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
@@ -24,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: Newspaper, label: "Actualités", path: "/admin/news" },
     { icon: Calendar, label: "Événements", path: "/admin/events" },
     { icon: MessageSquare, label: "Messagerie", path: "/admin/messages" },
+    { icon: HelpCircle, label: "Support", path: "/admin/support" },
   ];
 
   return (

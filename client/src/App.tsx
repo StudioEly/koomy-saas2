@@ -18,6 +18,7 @@ import MobileProfile from "@/pages/mobile/Profile";
 import MobileAdminHome from "@/pages/mobile/admin/Home";
 import MobileAdminScanner from "@/pages/mobile/admin/Scanner";
 import MobileAdminMessages from "@/pages/mobile/admin/Messages";
+import MobileSupport from "@/pages/mobile/Support";
 
 // Admin Pages (Web)
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -29,6 +30,7 @@ import AdminEventDetails from "@/pages/admin/EventDetails";
 import AdminMessages from "@/pages/admin/Messages";
 import AdminAdmins from "@/pages/admin/Admins";
 import AdminSections from "@/pages/admin/Sections";
+import AdminSupport from "@/pages/admin/Support";
 
 // Platform Pages
 import SuperDashboard from "@/pages/platform/SuperDashboard";
@@ -49,6 +51,7 @@ function Router() {
       <Route path="/app/:communityId/news" component={MobileNews} />
       <Route path="/app/:communityId/messages" component={MobileMessages} />
       <Route path="/app/:communityId/profile" component={MobileProfile} />
+      <Route path="/app/:communityId/support" component={MobileSupport} />
 
       {/* Mobile Admin Routes */}
       <Route path="/app/:communityId/admin" component={MobileAdminHome} />
@@ -65,6 +68,7 @@ function Router() {
       <Route path="/admin/messages" component={AdminMessages} />
       <Route path="/admin/admins" component={AdminAdmins} />
       <Route path="/admin/sections" component={AdminSections} />
+      <Route path="/admin/support" component={AdminSupport} />
 
       {/* Platform Super Admin */}
       <Route path="/platform/dashboard" component={SuperDashboard} />
