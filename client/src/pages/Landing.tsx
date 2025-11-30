@@ -33,9 +33,11 @@ export default function Landing() {
                 <li className="flex items-center gap-2">• News & Events Feed</li>
               </ul>
               <Link href="/app/login">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 group-hover:shadow-lg group-hover:shadow-blue-200 transition-all">
-                  Launch Mobile App <ArrowRight size={16} className="ml-2" />
-                </Button>
+                <span className="w-full cursor-pointer">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 group-hover:shadow-lg group-hover:shadow-blue-200 transition-all pointer-events-none">
+                    Launch Mobile App <ArrowRight size={16} className="ml-2" />
+                  </Button>
+                </span>
               </Link>
             </CardContent>
           </Card>
@@ -56,9 +58,11 @@ export default function Landing() {
                 <li className="flex items-center gap-2">• Event Organization</li>
               </ul>
               <Link href="/admin/dashboard">
-                <Button className="w-full bg-purple-600 hover:bg-purple-700 group-hover:shadow-lg group-hover:shadow-purple-200 transition-all">
-                  Open Web Dashboard <ArrowRight size={16} className="ml-2" />
-                </Button>
+                <span className="w-full cursor-pointer">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 group-hover:shadow-lg group-hover:shadow-purple-200 transition-all pointer-events-none">
+                    Open Web Dashboard <ArrowRight size={16} className="ml-2" />
+                  </Button>
+                </span>
               </Link>
             </CardContent>
           </Card>
@@ -79,9 +83,11 @@ export default function Landing() {
                 <li className="flex items-center gap-2">• Rapid Messaging</li>
               </ul>
               <Link href="/app/c_unsa/admin">
-                <Button variant="outline" className="w-full hover:bg-slate-100 border-slate-300">
-                  Launch Admin Tools <QrCode size={16} className="ml-2" />
-                </Button>
+                <span className="w-full cursor-pointer">
+                  <Button variant="outline" className="w-full hover:bg-slate-100 border-slate-300 pointer-events-none">
+                    Launch Admin Tools <QrCode size={16} className="ml-2" />
+                  </Button>
+                </span>
               </Link>
             </CardContent>
           </Card>
@@ -103,9 +109,11 @@ export default function Landing() {
                 <li className="flex items-center gap-2">• Revenue & Analytics</li>
               </ul>
               <Link href="/platform/dashboard">
-                <Button className="w-full bg-orange-600 hover:bg-orange-700 group-hover:shadow-lg group-hover:shadow-orange-200 transition-all">
-                  Open Platform Portal <ArrowRight size={16} className="ml-2" />
-                </Button>
+                <span className="w-full cursor-pointer">
+                  <Button className="w-full bg-orange-600 hover:bg-orange-700 group-hover:shadow-lg group-hover:shadow-orange-200 transition-all pointer-events-none">
+                    Open Platform Portal <ArrowRight size={16} className="ml-2" />
+                  </Button>
+                </span>
               </Link>
             </CardContent>
           </Card>

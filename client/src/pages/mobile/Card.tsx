@@ -28,39 +28,61 @@ export default function MobileCard({ params }: { params: { communityId: string }
             transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
           >
             {/* FRONT SIDE */}
-            <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl shadow-2xl overflow-hidden bg-gradient-to-br from-primary to-blue-800 text-white p-6 flex flex-col justify-between">
+            <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl shadow-2xl overflow-hidden bg-gradient-to-br from-primary to-blue-800 text-white p-6 flex flex-col justify-between border border-white/10">
               {/* Background decoration */}
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/20 rounded-full -ml-10 -mb-10 blur-xl"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
 
               <div className="flex justify-between items-start relative z-10">
                 <div className="flex items-center gap-3">
-                  <div className="bg-white/10 p-1.5 rounded-lg backdrop-blur-md">
-                    <img src={logo} alt="Logo" className="w-8 h-8 brightness-200 grayscale" />
+                  <div className="bg-white p-1.5 rounded-lg shadow-sm">
+                    <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
                   </div>
-                  <span className="font-bold text-lg tracking-wide">UNSA</span>
+                  <div>
+                    <span className="font-bold text-lg tracking-wide block leading-none">UNSA</span>
+                    <span className="text-[10px] opacity-80 uppercase tracking-wider">Carte de Membre</span>
+                  </div>
                 </div>
-                <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium border border-white/10">
-                  2025
-                </span>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 ${
+                  membership.status === "active" 
+                    ? "bg-green-500/20 border-green-400/30 text-green-100" 
+                    : "bg-red-500/20 border-red-400/30 text-red-100"
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${membership.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"}`}></div>
+                  {membership.status === "active" ? "ACTIF" : "EXPIRÉ"}
+                </div>
               </div>
 
-              <div className="relative z-10 text-center my-4">
-                 <div className="w-24 h-24 bg-white rounded-full mx-auto p-1 shadow-inner mb-3">
-                   <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt="User" />
+              <div className="relative z-10 mt-2">
+                 <div className="flex items-center gap-4">
+                   <div className="w-20 h-20 bg-white/10 rounded-full p-1 shadow-inner backdrop-blur-sm border border-white/20">
+                     <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt="User" />
+                   </div>
+                   <div>
+                     <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight">{user.firstName}</h2>
+                     <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight uppercase">{user.lastName}</h2>
+                     <p className="text-blue-200 text-xs mt-1 font-medium">{membership.section || "Membre"}</p>
+                   </div>
                  </div>
-                 <h2 className="text-xl font-bold shadow-black drop-shadow-md">{user.firstName} {user.lastName}</h2>
-                 <p className="text-blue-200 text-sm">{membership.section || "Membre"}</p>
               </div>
 
-              <div className="relative z-10 flex justify-between items-end">
+              <div className="relative z-10 grid grid-cols-2 gap-y-2 gap-x-4 text-xs border-t border-white/10 pt-3 mt-1">
                 <div>
-                  <p className="text-[10px] text-blue-200 uppercase tracking-wider">N° Adhérent</p>
-                  <p className="font-mono text-lg tracking-widest">{membership.memberId}</p>
+                  <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">N° Adhérent</p>
+                  <p className="font-mono font-medium tracking-wider">{membership.memberId}</p>
                 </div>
                 <div className="text-right">
-                   <p className="text-[10px] text-blue-200 uppercase tracking-wider">Depuis</p>
-                   <p className="text-sm font-medium">{new Date(membership.joinDate).getFullYear()}</p>
+                  <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Année</p>
+                  <p className="font-medium">2025</p>
+                </div>
+                <div>
+                   <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Adhésion</p>
+                   <p className="font-medium">{new Date(membership.joinDate).toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div className="text-right">
+                   <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Expiration</p>
+                   <p className="font-medium text-white">{membership.nextDueDate ? new Date(membership.nextDueDate).toLocaleDateString('fr-FR') : "31/12/2025"}</p>
                 </div>
               </div>
             </div>
