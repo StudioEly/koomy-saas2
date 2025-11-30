@@ -1,7 +1,7 @@
 import MobileLayout from "@/components/layouts/MobileLayout";
 import { MOCK_USER } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
-import { User, Settings, Bell, LogOut, ChevronRight, HelpCircle, Shield, ArrowLeft } from "lucide-react";
+import { User, Settings, Bell, LogOut, ChevronRight, HelpCircle, Shield, ArrowLeft, CreditCard } from "lucide-react";
 import { useLocation, Link } from "wouter";
 
 export default function MobileProfile({ params }: { params: { communityId: string } }) {
@@ -52,6 +52,21 @@ export default function MobileProfile({ params }: { params: { communityId: strin
                 </div>
                 <ChevronRight size={16} className="text-gray-400" />
              </div>
+           </div>
+
+           <div className="bg-white rounded-xl shadow-sm border border-orange-200 overflow-hidden">
+             <Link href={`/app/${communityId}/payment`}>
+               <div className="p-4 flex justify-between items-center hover:bg-orange-50 cursor-pointer transition-colors" data-testid="link-payments">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-orange-50 p-2 rounded-lg text-orange-600"><CreditCard size={18} /></div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Mes Cotisations</span>
+                      <p className="text-xs text-orange-600">1 paiement en attente</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-orange-400" />
+               </div>
+             </Link>
            </div>
 
            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

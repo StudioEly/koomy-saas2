@@ -12,6 +12,8 @@ export const ticketStatusEnum = pgEnum("ticket_status", ["open", "in_progress", 
 export const ticketPriorityEnum = pgEnum("ticket_priority", ["low", "medium", "high"]);
 export const newsStatusEnum = pgEnum("news_status", ["draft", "published"]);
 export const scopeEnum = pgEnum("scope", ["national", "local"]);
+export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
+export const paymentRequestStatusEnum = pgEnum("payment_request_status", ["pending", "paid", "expired", "cancelled"]);
 
 // Plans Table
 export const plans = pgTable("plans", {
@@ -136,6 +138,49 @@ export const messages = pgTable("messages", {
   timestamp: timestamp("timestamp").defaultNow().notNull()
 });
 
+// Membership Fees (defines contribution amounts per community)
+export const membershipFees = pgTable("membership_fees", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
+  name: text("name").notNull(), // e.g., "Annual Membership", "Monthly Contribution"
+  amount: integer("amount").notNull(), // in cents
+  currency: text("currency").default("EUR"),
+  period: text("period").notNull(), // "monthly", "yearly", "one_time"
+  description: text("description"),
+  isActive: boolean("is_active").default(true)
+});
+
+// Payment Requests (sent by admin to members)
+export const paymentRequests = pgTable("payment_requests", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
+  membershipId: varchar("membership_id", { length: 50 }).references(() => userCommunityMemberships.id).notNull(),
+  feeId: varchar("fee_id", { length: 50 }).references(() => membershipFees.id).notNull(),
+  amount: integer("amount").notNull(), // in cents
+  currency: text("currency").default("EUR"),
+  status: paymentRequestStatusEnum("status").default("pending"),
+  dueDate: timestamp("due_date").notNull(),
+  message: text("message"), // optional message from admin
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  paidAt: timestamp("paid_at")
+});
+
+// Payments (completed transactions)
+export const payments = pgTable("payments", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
+  membershipId: varchar("membership_id", { length: 50 }).references(() => userCommunityMemberships.id).notNull(),
+  paymentRequestId: varchar("payment_request_id", { length: 50 }).references(() => paymentRequests.id),
+  amount: integer("amount").notNull(), // in cents
+  currency: text("currency").default("EUR"),
+  status: paymentStatusEnum("status").default("pending"),
+  paymentMethod: text("payment_method"), // "card", "bank_transfer", etc.
+  stripePaymentId: text("stripe_payment_id"), // for Stripe integration
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at")
+});
+
 // Relations
 export const communitiesRelations = relations(communities, ({ one, many }) => ({
   plan: one(plans, { fields: [communities.planId], references: [plans.id] }),
@@ -144,7 +189,10 @@ export const communitiesRelations = relations(communities, ({ one, many }) => ({
   news: many(newsArticles),
   events: many(events),
   tickets: many(supportTickets),
-  messages: many(messages)
+  messages: many(messages),
+  fees: many(membershipFees),
+  paymentRequests: many(paymentRequests),
+  payments: many(payments)
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -169,6 +217,9 @@ export const insertEventSchema = createInsertSchema(events).omit({ id: true });
 export const insertTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, lastUpdate: true });
 export const insertFaqSchema = createInsertSchema(faqs).omit({ id: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
+export const insertMembershipFeeSchema = createInsertSchema(membershipFees).omit({ id: true });
+export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({ id: true, createdAt: true, paidAt: true });
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, completedAt: true });
 
 // Select Types
 export type Plan = typeof plans.$inferSelect;
@@ -181,6 +232,9 @@ export type Event = typeof events.$inferSelect;
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type FAQ = typeof faqs.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type MembershipFee = typeof membershipFees.$inferSelect;
+export type PaymentRequest = typeof paymentRequests.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
 
 // Insert Types
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
@@ -193,3 +247,6 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type InsertFAQ = z.infer<typeof insertFaqSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertMembershipFee = z.infer<typeof insertMembershipFeeSchema>;
+export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;

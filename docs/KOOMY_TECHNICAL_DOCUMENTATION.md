@@ -97,6 +97,7 @@
 | News Feed | `/app/:communityId/news` | Community articles |
 | Messages | `/app/:communityId/messages` | Member-admin messaging |
 | Profile | `/app/:communityId/profile` | User profile management |
+| Payment | `/app/:communityId/payment` | Contribution payments |
 | Support | `/app/:communityId/support` | Help & FAQs |
 
 **Key Features:**
@@ -105,6 +106,7 @@
 - Direct messaging with administrators
 - Multi-community support (users can belong to multiple organizations)
 - Contribution status display
+- Online payment for membership fees
 
 ### 3. Mobile Admin/Delegate App (`/app/:communityId/admin`)
 
@@ -137,6 +139,7 @@
 | Messages | `/admin/messages` | Communication center |
 | Admins | `/admin/admins` | Admin role management |
 | Sections | `/admin/sections` | Regional/local divisions |
+| Payments | `/admin/payments` | Payment & contribution management |
 | Support | `/admin/support` | Ticket management |
 
 **Key Features:**
@@ -146,6 +149,8 @@
 - Event creation with registration
 - Multi-admin role management
 - Section/regional management
+- Payment request management
+- Bulk contribution calls
 - Support ticket handling
 
 ### 5. SaaS Owner Portal (`/platform`)
@@ -292,6 +297,51 @@
 | read | BOOLEAN | Read status |
 | timestamp | TIMESTAMP | Send time |
 
+### Payment Tables
+
+#### `membership_fees`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(50) PK | UUID |
+| community_id | VARCHAR(50) FK | Parent community |
+| name | TEXT | Fee name (e.g., "Annual Contribution") |
+| amount | INTEGER | Amount in cents |
+| currency | TEXT | Currency code (EUR) |
+| period | TEXT | annual, semi-annual, quarterly |
+| description | TEXT | Fee description |
+| is_active | BOOLEAN | Whether fee is currently active |
+| created_at | TIMESTAMP | Creation date |
+
+#### `payment_requests`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(50) PK | UUID |
+| membership_id | VARCHAR(50) FK | Target membership |
+| community_id | VARCHAR(50) FK | Parent community |
+| fee_id | VARCHAR(50) FK | Reference to membership_fees |
+| amount | INTEGER | Amount in cents |
+| currency | TEXT | Currency code |
+| status | ENUM | pending, paid, expired, cancelled |
+| message | TEXT | Custom message |
+| due_date | TIMESTAMP | Payment deadline |
+| created_at | TIMESTAMP | Request creation |
+| paid_at | TIMESTAMP | Payment completion |
+
+#### `payments`
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(50) PK | UUID |
+| membership_id | VARCHAR(50) FK | Paying membership |
+| community_id | VARCHAR(50) FK | Parent community |
+| payment_request_id | VARCHAR(50) FK | Optional linked request |
+| amount | INTEGER | Amount in cents |
+| currency | TEXT | Currency code |
+| status | ENUM | pending, completed, failed, refunded |
+| payment_method | TEXT | card, bank_transfer |
+| payment_reference | TEXT | External payment ID |
+| created_at | TIMESTAMP | Payment initiation |
+| completed_at | TIMESTAMP | Payment completion |
+
 ---
 
 ## API Endpoints
@@ -364,6 +414,29 @@
 | GET | `/api/communities/:communityId/messages/:conversationId` | Get conversation |
 | POST | `/api/messages` | Send message |
 | PATCH | `/api/messages/:id/read` | Mark as read |
+
+### Membership Fees
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/communities/:communityId/fees` | List community fees |
+| POST | `/api/fees` | Create new fee type |
+| PATCH | `/api/fees/:id` | Update fee |
+
+### Payment Requests
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/memberships/:membershipId/payment-requests` | Get member's payment requests |
+| GET | `/api/communities/:communityId/payment-requests` | List community payment requests |
+| POST | `/api/payment-requests` | Create payment request |
+| PATCH | `/api/payment-requests/:id` | Update payment request |
+
+### Payments
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/memberships/:membershipId/payments` | Get member's payment history |
+| GET | `/api/communities/:communityId/payments` | List community payments |
+| POST | `/api/payments` | Create payment |
+| POST | `/api/payments/:id/process` | Process payment (mock Stripe) |
 
 ---
 

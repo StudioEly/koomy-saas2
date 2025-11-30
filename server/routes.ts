@@ -3,7 +3,8 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import {
   insertUserSchema, insertCommunitySchema, insertMembershipSchema,
-  insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema
+  insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
+  insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -403,6 +404,167 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Mark message read error:", error);
       return res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+
+  // Membership Fees Routes
+  app.get("/api/communities/:communityId/fees", async (req, res) => {
+    try {
+      const fees = await storage.getCommunityFees(req.params.communityId);
+      return res.json(fees);
+    } catch (error) {
+      console.error("Get fees error:", error);
+      return res.status(500).json({ error: "Failed to fetch fees" });
+    }
+  });
+
+  app.post("/api/fees", async (req, res) => {
+    try {
+      const validated = insertMembershipFeeSchema.parse(req.body);
+      const fee = await storage.createFee(validated);
+      return res.status(201).json(fee);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Create fee error:", error);
+      return res.status(500).json({ error: "Failed to create fee" });
+    }
+  });
+
+  app.patch("/api/fees/:id", async (req, res) => {
+    try {
+      const fee = await storage.updateFee(req.params.id, req.body);
+      return res.json(fee);
+    } catch (error) {
+      console.error("Update fee error:", error);
+      return res.status(500).json({ error: "Failed to update fee" });
+    }
+  });
+
+  // Payment Requests Routes
+  app.get("/api/memberships/:membershipId/payment-requests", async (req, res) => {
+    try {
+      const requests = await storage.getMemberPaymentRequests(req.params.membershipId);
+      return res.json(requests);
+    } catch (error) {
+      console.error("Get member payment requests error:", error);
+      return res.status(500).json({ error: "Failed to fetch payment requests" });
+    }
+  });
+
+  app.get("/api/communities/:communityId/payment-requests", async (req, res) => {
+    try {
+      const requests = await storage.getCommunityPaymentRequests(req.params.communityId);
+      return res.json(requests);
+    } catch (error) {
+      console.error("Get community payment requests error:", error);
+      return res.status(500).json({ error: "Failed to fetch payment requests" });
+    }
+  });
+
+  app.post("/api/payment-requests", async (req, res) => {
+    try {
+      const validated = insertPaymentRequestSchema.parse(req.body);
+      const request = await storage.createPaymentRequest(validated);
+      return res.status(201).json(request);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Create payment request error:", error);
+      return res.status(500).json({ error: "Failed to create payment request" });
+    }
+  });
+
+  app.patch("/api/payment-requests/:id", async (req, res) => {
+    try {
+      const request = await storage.updatePaymentRequest(req.params.id, req.body);
+      return res.json(request);
+    } catch (error) {
+      console.error("Update payment request error:", error);
+      return res.status(500).json({ error: "Failed to update payment request" });
+    }
+  });
+
+  // Payments Routes
+  app.get("/api/memberships/:membershipId/payments", async (req, res) => {
+    try {
+      const payments = await storage.getMemberPayments(req.params.membershipId);
+      return res.json(payments);
+    } catch (error) {
+      console.error("Get member payments error:", error);
+      return res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  app.get("/api/communities/:communityId/payments", async (req, res) => {
+    try {
+      const payments = await storage.getCommunityPayments(req.params.communityId);
+      return res.json(payments);
+    } catch (error) {
+      console.error("Get community payments error:", error);
+      return res.status(500).json({ error: "Failed to fetch payments" });
+    }
+  });
+
+  app.post("/api/payments", async (req, res) => {
+    try {
+      const validated = insertPaymentSchema.parse(req.body);
+      const payment = await storage.createPayment(validated);
+      return res.status(201).json(payment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Create payment error:", error);
+      return res.status(500).json({ error: "Failed to create payment" });
+    }
+  });
+
+  // Process payment (mock Stripe integration - will update membership status)
+  app.post("/api/payments/:id/process", async (req, res) => {
+    try {
+      const payment = await storage.getPayment(req.params.id);
+      if (!payment) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+
+      // Mock payment processing - in production, integrate with Stripe
+      const updatedPayment = await storage.updatePayment(req.params.id, {
+        status: "completed",
+        completedAt: new Date(),
+        paymentMethod: req.body.paymentMethod || "card"
+      });
+
+      // Update payment request if linked
+      if (payment.paymentRequestId) {
+        await storage.updatePaymentRequest(payment.paymentRequestId, {
+          status: "paid",
+          paidAt: new Date()
+        });
+      }
+
+      // Update membership contribution status
+      const membership = await storage.getMembershipById(payment.membershipId);
+      if (membership) {
+        const nextDueDate = new Date();
+        nextDueDate.setFullYear(nextDueDate.getFullYear() + 1); // 1 year from now
+        
+        await storage.updateMembership(membership.id, {
+          contributionStatus: "up_to_date",
+          nextDueDate: nextDueDate
+        });
+      }
+
+      return res.json({ 
+        success: true, 
+        payment: updatedPayment,
+        message: "Payment processed successfully" 
+      });
+    } catch (error) {
+      console.error("Process payment error:", error);
+      return res.status(500).json({ error: "Failed to process payment" });
     }
   });
 

@@ -14,6 +14,7 @@ import MobileCard from "@/pages/mobile/Card";
 import MobileNews from "@/pages/mobile/News";
 import MobileMessages from "@/pages/mobile/Messages";
 import MobileProfile from "@/pages/mobile/Profile";
+import MobilePayment from "@/pages/mobile/Payment";
 
 // Mobile Admin Pages
 import MobileAdminHome from "@/pages/mobile/admin/Home";
@@ -32,6 +33,7 @@ import AdminMessages from "@/pages/admin/Messages";
 import AdminAdmins from "@/pages/admin/Admins";
 import AdminSections from "@/pages/admin/Sections";
 import AdminSupport from "@/pages/admin/Support";
+import AdminPayments from "@/pages/admin/Payments";
 
 // Platform Pages
 import SuperDashboard from "@/pages/platform/SuperDashboard";
@@ -76,6 +78,7 @@ function Router() {
       <Route path="/app/:communityId/news" component={MobileNews} />
       <Route path="/app/:communityId/messages" component={MobileMessages} />
       <Route path="/app/:communityId/profile" component={MobileProfile} />
+      <Route path="/app/:communityId/payment" component={MobilePayment} />
       <Route path="/app/:communityId/support" component={MobileSupport} />
 
       {/* Mobile Admin Routes */}
@@ -94,6 +97,7 @@ function Router() {
       <Route path="/admin/admins" component={AdminAdmins} />
       <Route path="/admin/sections" component={AdminSections} />
       <Route path="/admin/support" component={AdminSupport} />
+      <Route path="/admin/payments" component={AdminPayments} />
 
       {/* Platform Super Admin */}
       <Route path="/platform/dashboard" component={SuperDashboard} />
