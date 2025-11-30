@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Home, CreditCard, Mail, Newspaper, User, ArrowLeft, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOCK_COMMUNITIES, MOCK_USER } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import koomyLogo from "@assets/Koomy-communitieslogo_1764495780161.png";
 
 export default function MobileLayout({ 
@@ -12,11 +12,9 @@ export default function MobileLayout({
   communityId?: string 
 }) {
   const [location] = useLocation();
+  const { currentCommunity, currentMembership } = useAuth();
   
-  // Find current community context
-  const community = communityId ? MOCK_COMMUNITIES.find(c => c.id === communityId) : null;
-  const membership = communityId ? MOCK_USER.communities.find(c => c.communityId === communityId) : null;
-  const isAdmin = membership?.role === "admin";
+  const isAdmin = currentMembership?.role === "admin" || currentMembership?.adminRole !== null;
 
   const navItems = [
     { icon: Home, label: "Accueil", path: `/app/${communityId}/home` },
@@ -31,16 +29,20 @@ export default function MobileLayout({
       <div className="w-full max-w-md bg-background min-h-screen shadow-2xl relative flex flex-col">
         
         {/* Dynamic Header for Community App */}
-        {community && (
+        {currentCommunity && (
           <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
             <div className="flex items-center gap-3">
               <Link href="/app/hub" className="p-2 -ml-2 text-gray-400 hover:text-gray-600">
                   <ArrowLeft size={20} />
               </Link>
               <div className="flex items-center gap-2">
-                <img src={community.logo} alt={community.name} className="h-8 w-8 object-contain rounded" />
+                <img 
+                  src={currentCommunity.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${currentCommunity.name}`} 
+                  alt={currentCommunity.name} 
+                  className="h-8 w-8 object-contain rounded" 
+                />
                 <div>
-                   <h1 className="font-bold text-sm leading-none text-gray-900">{community.name}</h1>
+                   <h1 className="font-bold text-sm leading-none text-gray-900">{currentCommunity.name}</h1>
                    <span className="text-[10px] text-gray-500 font-medium">Koomy App</span>
                 </div>
               </div>

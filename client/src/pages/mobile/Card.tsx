@@ -1,20 +1,31 @@
 import { useState } from "react";
 import MobileLayout from "@/components/layouts/MobileLayout";
-import { MOCK_USER } from "@/lib/mockData";
-import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { motion } from "framer-motion";
 import QRCode from "react-qr-code";
 import { X, ZoomIn } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
 
 export default function MobileCard({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
   const [isFlipped, setIsFlipped] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const user = MOCK_USER;
-  const membership = user.communities.find(c => c.communityId === communityId);
+  const { user, currentMembership, currentCommunity, selectCommunity } = useAuth();
 
-  if (!membership) return null;
+  if (currentMembership?.communityId !== communityId) {
+    selectCommunity(communityId);
+  }
+
+  if (!user || !currentMembership) {
+    return (
+      <MobileLayout communityId={communityId}>
+        <div className="min-h-full flex items-center justify-center p-6">
+          <p className="text-gray-500">Chargement...</p>
+        </div>
+      </MobileLayout>
+    );
+  }
 
   return (
     <MobileLayout communityId={communityId}>
@@ -37,32 +48,42 @@ export default function MobileCard({ params }: { params: { communityId: string }
               <div className="flex justify-between items-start relative z-10">
                 <div className="flex items-center gap-3">
                   <div className="bg-white p-1.5 rounded-lg shadow-sm">
-                    <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />
+                    <img 
+                      src={currentCommunity?.logo || logo} 
+                      alt="Logo" 
+                      className="w-8 h-8 object-contain" 
+                    />
                   </div>
                   <div>
-                    <span className="font-bold text-lg tracking-wide block leading-none">UNSA</span>
+                    <span className="font-bold text-lg tracking-wide block leading-none">
+                      {currentCommunity?.name?.split(' ')[0] || "UNSA"}
+                    </span>
                     <span className="text-[10px] opacity-80 uppercase tracking-wider">Carte de Membre</span>
                   </div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 ${
-                  membership.status === "active" 
+                  currentMembership.status === "active" 
                     ? "bg-green-500/20 border-green-400/30 text-green-100" 
                     : "bg-red-500/20 border-red-400/30 text-red-100"
                 }`}>
-                  <div className={`w-2 h-2 rounded-full ${membership.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"}`}></div>
-                  {membership.status === "active" ? "ACTIF" : "EXPIRÉ"}
+                  <div className={`w-2 h-2 rounded-full ${currentMembership.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"}`}></div>
+                  {currentMembership.status === "active" ? "ACTIF" : "EXPIRÉ"}
                 </div>
               </div>
 
               <div className="relative z-10 mt-2">
                  <div className="flex items-center gap-4">
                    <div className="w-20 h-20 bg-white/10 rounded-full p-1 shadow-inner backdrop-blur-sm border border-white/20">
-                     <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt="User" />
+                     <img 
+                       src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`} 
+                       className="w-full h-full rounded-full object-cover" 
+                       alt="User" 
+                     />
                    </div>
                    <div>
                      <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight">{user.firstName}</h2>
                      <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight uppercase">{user.lastName}</h2>
-                     <p className="text-blue-200 text-xs mt-1 font-medium">{membership.section || "Membre"}</p>
+                     <p className="text-blue-200 text-xs mt-1 font-medium">{currentMembership.section || "Membre"}</p>
                    </div>
                  </div>
               </div>
@@ -70,19 +91,23 @@ export default function MobileCard({ params }: { params: { communityId: string }
               <div className="relative z-10 grid grid-cols-2 gap-y-2 gap-x-4 text-xs border-t border-white/10 pt-3 mt-1">
                 <div>
                   <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">N° Adhérent</p>
-                  <p className="font-mono font-medium tracking-wider">{membership.memberId}</p>
+                  <p className="font-mono font-medium tracking-wider">{currentMembership.memberId}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Année</p>
-                  <p className="font-medium">2025</p>
+                  <p className="font-medium">{new Date().getFullYear()}</p>
                 </div>
                 <div>
                    <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Adhésion</p>
-                   <p className="font-medium">{new Date(membership.joinDate).toLocaleDateString('fr-FR')}</p>
+                   <p className="font-medium">{new Date(currentMembership.joinDate).toLocaleDateString('fr-FR')}</p>
                 </div>
                 <div className="text-right">
                    <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Expiration</p>
-                   <p className="font-medium text-white">{membership.nextDueDate ? new Date(membership.nextDueDate).toLocaleDateString('fr-FR') : "31/12/2025"}</p>
+                   <p className="font-medium text-white">
+                     {currentMembership.nextDueDate 
+                       ? new Date(currentMembership.nextDueDate).toLocaleDateString('fr-FR') 
+                       : "31/12/" + new Date().getFullYear()}
+                   </p>
                 </div>
               </div>
             </div>
@@ -96,7 +121,7 @@ export default function MobileCard({ params }: { params: { communityId: string }
                    e.stopPropagation();
                    setShowQRModal(true);
                  }}>
-                   <QRCode value={membership.memberId} size={120} />
+                   <QRCode value={currentMembership.memberId || "MEMBER"} size={120} />
                  </div>
                  
                  <p className="text-xs text-gray-500 mb-6">Scannez ce code pour valider votre présence aux événements.</p>
@@ -123,9 +148,9 @@ export default function MobileCard({ params }: { params: { communityId: string }
         <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
           <DialogContent className="bg-white sm:max-w-md border-0 shadow-2xl p-8 flex flex-col items-center">
             <h3 className="text-xl font-bold text-center mb-2">{user.firstName} {user.lastName}</h3>
-            <p className="text-gray-500 text-sm mb-6">{membership.memberId}</p>
+            <p className="text-gray-500 text-sm mb-6">{currentMembership.memberId}</p>
             <div className="p-4 bg-white rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100">
-              <QRCode value={membership.memberId} size={250} />
+              <QRCode value={currentMembership.memberId || "MEMBER"} size={250} />
             </div>
             <p className="text-center text-gray-400 text-xs mt-6 max-w-[200px]">
               Présentez ce code à l'accueil de l'événement.

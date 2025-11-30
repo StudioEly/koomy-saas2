@@ -1,17 +1,33 @@
 import MobileLayout from "@/components/layouts/MobileLayout";
-import { MOCK_USER } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
-import { User, Settings, Bell, LogOut, ChevronRight, HelpCircle, Shield, ArrowLeft, CreditCard } from "lucide-react";
+import { User, Settings, Bell, ChevronRight, HelpCircle, Shield, ArrowLeft, CreditCard } from "lucide-react";
 import { useLocation, Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MobileProfile({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
-  const user = MOCK_USER;
+  const { user, currentMembership, selectCommunity } = useAuth();
   const [_, setLocation] = useLocation();
 
+  if (currentMembership?.communityId !== communityId) {
+    selectCommunity(communityId);
+  }
+
   const handleLogout = () => {
-    setLocation("/app/hub"); // Go back to Hub instead of Login
+    setLocation("/app/hub");
   };
+
+  if (!user) {
+    return (
+      <MobileLayout communityId={communityId}>
+        <div className="p-6 pt-10 text-center text-gray-500">
+          Chargement...
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  const pendingPayments = currentMembership?.contributionStatus !== "up_to_date";
 
   return (
     <MobileLayout communityId={communityId}>
@@ -20,7 +36,11 @@ export default function MobileProfile({ params }: { params: { communityId: strin
 
         <div className="flex flex-col items-center mb-8">
           <div className="w-24 h-24 rounded-full p-1 bg-white shadow-lg mb-4 relative">
-             <img src={user.avatar} alt="Profile" className="w-full h-full rounded-full object-cover" />
+             <img 
+               src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`} 
+               alt="Profile" 
+               className="w-full h-full rounded-full object-cover" 
+             />
              <button className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-colors">
                <Settings size={14} />
              </button>
@@ -54,17 +74,21 @@ export default function MobileProfile({ params }: { params: { communityId: strin
              </div>
            </div>
 
-           <div className="bg-white rounded-xl shadow-sm border border-orange-200 overflow-hidden">
+           <div className={`bg-white rounded-xl shadow-sm border ${pendingPayments ? "border-orange-200" : "border-gray-100"} overflow-hidden`}>
              <Link href={`/app/${communityId}/payment`}>
-               <div className="p-4 flex justify-between items-center hover:bg-orange-50 cursor-pointer transition-colors" data-testid="link-payments">
+               <div className={`p-4 flex justify-between items-center ${pendingPayments ? "hover:bg-orange-50" : "hover:bg-gray-50"} cursor-pointer transition-colors`} data-testid="link-payments">
                   <div className="flex items-center gap-3">
-                    <div className="bg-orange-50 p-2 rounded-lg text-orange-600"><CreditCard size={18} /></div>
+                    <div className={`${pendingPayments ? "bg-orange-50 text-orange-600" : "bg-blue-50 text-primary"} p-2 rounded-lg`}>
+                      <CreditCard size={18} />
+                    </div>
                     <div>
                       <span className="text-sm font-medium text-gray-700">Mes Cotisations</span>
-                      <p className="text-xs text-orange-600">1 paiement en attente</p>
+                      {pendingPayments && (
+                        <p className="text-xs text-orange-600">Paiement en attente</p>
+                      )}
                     </div>
                   </div>
-                  <ChevronRight size={16} className="text-orange-400" />
+                  <ChevronRight size={16} className={pendingPayments ? "text-orange-400" : "text-gray-400"} />
                </div>
              </Link>
            </div>

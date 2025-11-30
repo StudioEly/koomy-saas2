@@ -13,7 +13,7 @@ export default function CommunityHub() {
   const [location, setLocation] = useLocation();
   const [joinCode, setJoinCode] = useState("");
   const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const { user, setCurrentCommunity, logout } = useAuth();
+  const { user, selectCommunity, logout } = useAuth();
   const { data: allCommunities, isLoading } = useCommunities();
 
   if (!user) {
@@ -39,7 +39,7 @@ export default function CommunityHub() {
   };
 
   const handleSelectCommunity = (membership: typeof userCommunities[0]) => {
-    setCurrentCommunity(membership);
+    selectCommunity(membership.communityId);
     setLocation(`/app/${membership.communityId}/home`);
   };
 
