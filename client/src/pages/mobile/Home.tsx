@@ -73,8 +73,8 @@ export default function MobileHome({ params }: { params: { communityId: string }
         {/* News Section */}
         <div className="mb-4 flex justify-between items-center">
           <h2 className="text-lg font-bold text-gray-800">Actualités</h2>
-          <Link href={`/app/${communityId}/news`}>
-            <a className="text-sm text-primary font-medium hover:underline">Tout voir</a>
+          <Link href={`/app/${communityId}/news`} className="text-sm text-primary font-medium hover:underline">
+            Tout voir
           </Link>
         </div>
 

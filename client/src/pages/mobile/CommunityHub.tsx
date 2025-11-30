@@ -121,10 +121,8 @@ export default function CommunityHub() {
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-100 text-center">
-          <Link href="/">
-            <a className="text-sm text-gray-400 hover:text-gray-600 flex items-center justify-center gap-2">
+          <Link href="/" className="text-sm text-gray-400 hover:text-gray-600 flex items-center justify-center gap-2">
               <LogOut size={14} /> Se déconnecter
-            </a>
           </Link>
           <p className="text-[10px] text-gray-300 mt-4">Koomy Platform v2.0 • Powered by Replit</p>
         </div>

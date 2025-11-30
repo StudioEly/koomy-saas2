@@ -34,10 +34,8 @@ export default function MobileLayout({
         {community && (
           <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
             <div className="flex items-center gap-3">
-              <Link href="/app/hub">
-                <a className="p-2 -ml-2 text-gray-400 hover:text-gray-600">
+              <Link href="/app/hub" className="p-2 -ml-2 text-gray-400 hover:text-gray-600">
                   <ArrowLeft size={20} />
-                </a>
               </Link>
               <div className="flex items-center gap-2">
                 <img src={community.logo} alt={community.name} className="h-8 w-8 object-contain rounded" />
@@ -49,10 +47,8 @@ export default function MobileLayout({
             </div>
             
             {isAdmin && (
-              <Link href={`/app/${communityId}/admin`}>
-                <a className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-purple-100 transition-colors">
+              <Link href={`/app/${communityId}/admin`} className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-purple-100 transition-colors">
                   <Shield size={12} fill="currentColor" /> Admin
-                </a>
               </Link>
             )}
           </header>
@@ -70,8 +66,7 @@ export default function MobileLayout({
               {navItems.map((item) => {
                 const isActive = location === item.path;
                 return (
-                  <Link key={item.path} href={item.path}>
-                    <a className={cn(
+                  <Link key={item.path} href={item.path} className={cn(
                       "flex flex-col items-center justify-center w-16 h-full transition-all duration-200",
                       isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
                     )}>
@@ -82,7 +77,6 @@ export default function MobileLayout({
                         )} 
                       />
                       <span className="text-[10px] font-medium">{item.label}</span>
-                    </a>
                   </Link>
                 );
               })}

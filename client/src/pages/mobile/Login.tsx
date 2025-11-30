@@ -17,7 +17,7 @@ export default function MobileLogin() {
     // Simulate API call
     setTimeout(() => {
       setLoading(false);
-      setLocation("/app/home");
+      setLocation("/app/hub");
     }, 1000);
   };
 
