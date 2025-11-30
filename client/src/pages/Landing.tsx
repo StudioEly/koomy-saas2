@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Smartphone, LayoutDashboard, Shield, QrCode, ArrowRight } from "lucide-react";
+import { Smartphone, LayoutDashboard, Shield, QrCode, ArrowRight, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import koomyLogo from "@assets/Koomy-communitieslogo_1764495780161.png";
@@ -16,7 +16,7 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-8">
           {/* Member App */}
           <Card className="hover:shadow-xl transition-all duration-300 border-slate-200 group">
             <CardHeader>
@@ -81,6 +81,30 @@ export default function Landing() {
               <Link href="/app/c_unsa/admin">
                 <Button variant="outline" className="w-full hover:bg-slate-100 border-slate-300">
                   Launch Admin Tools <QrCode size={16} className="ml-2" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Platform Admin */}
+          <Card className="hover:shadow-xl transition-all duration-300 border-slate-200 group relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-10">OWNER</div>
+            <CardHeader>
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-600 transition-colors">
+                <BarChart className="text-orange-600 group-hover:text-white transition-colors" size={24} />
+              </div>
+              <CardTitle>SaaS Owner Portal</CardTitle>
+              <CardDescription>Platform management for Super Owners</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2 text-sm text-slate-600 mb-6">
+                <li className="flex items-center gap-2">• Manage All Clients</li>
+                <li className="flex items-center gap-2">• Global Activity View</li>
+                <li className="flex items-center gap-2">• Revenue & Analytics</li>
+              </ul>
+              <Link href="/platform/dashboard">
+                <Button className="w-full bg-orange-600 hover:bg-orange-700 group-hover:shadow-lg group-hover:shadow-orange-200 transition-all">
+                  Open Platform Portal <ArrowRight size={16} className="ml-2" />
                 </Button>
               </Link>
             </CardContent>
