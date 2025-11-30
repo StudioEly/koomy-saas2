@@ -1,38 +1,276 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { 
+  users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, faqs, messages,
+  type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
+  type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
+  type NewsArticle, type InsertNews, type Event, type InsertEvent,
+  type SupportTicket, type InsertTicket, type FAQ, type InsertFAQ,
+  type Message, type InsertMessage
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
+  // Users
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Communities
+  getCommunity(id: string): Promise<Community | undefined>;
+  getAllCommunities(): Promise<Community[]>;
+  createCommunity(community: InsertCommunity): Promise<Community>;
+  updateCommunityMemberCount(id: string, count: number): Promise<void>;
+  
+  // Plans
+  getAllPlans(): Promise<Plan[]>;
+  getPlan(id: string): Promise<Plan | undefined>;
+  createPlan(plan: InsertPlan): Promise<Plan>;
+  
+  // Memberships
+  getUserMemberships(userId: string): Promise<UserCommunityMembership[]>;
+  getCommunityMemberships(communityId: string): Promise<UserCommunityMembership[]>;
+  getMembership(userId: string, communityId: string): Promise<UserCommunityMembership | undefined>;
+  createMembership(membership: InsertMembership): Promise<UserCommunityMembership>;
+  updateMembership(id: string, updates: Partial<InsertMembership>): Promise<UserCommunityMembership>;
+  
+  // Sections
+  getCommunitySections(communityId: string): Promise<Section[]>;
+  createSection(section: InsertSection): Promise<Section>;
+  
+  // News
+  getCommunityNews(communityId: string): Promise<NewsArticle[]>;
+  getNewsArticle(id: string): Promise<NewsArticle | undefined>;
+  createNews(news: InsertNews): Promise<NewsArticle>;
+  updateNews(id: string, updates: Partial<InsertNews>): Promise<NewsArticle>;
+  
+  // Events
+  getCommunityEvents(communityId: string): Promise<Event[]>;
+  getEvent(id: string): Promise<Event | undefined>;
+  createEvent(event: InsertEvent): Promise<Event>;
+  updateEvent(id: string, updates: Partial<InsertEvent>): Promise<Event>;
+  
+  // Support Tickets
+  getAllTickets(): Promise<SupportTicket[]>;
+  getUserTickets(userId: string): Promise<SupportTicket[]>;
+  getCommunityTickets(communityId: string): Promise<SupportTicket[]>;
+  createTicket(ticket: InsertTicket): Promise<SupportTicket>;
+  updateTicket(id: string, updates: Partial<InsertTicket>): Promise<SupportTicket>;
+  
+  // FAQs
+  getAllFAQs(): Promise<FAQ[]>;
+  getFAQsByRole(role: string): Promise<FAQ[]>;
+  createFAQ(faq: InsertFAQ): Promise<FAQ>;
+  
+  // Messages
+  getCommunityMessages(communityId: string, conversationId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  markMessageRead(id: string): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
+  // Users
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  // Communities
+  async getCommunity(id: string): Promise<Community | undefined> {
+    const [community] = await db.select().from(communities).where(eq(communities.id, id));
+    return community || undefined;
+  }
+
+  async getAllCommunities(): Promise<Community[]> {
+    return await db.select().from(communities);
+  }
+
+  async createCommunity(insertCommunity: InsertCommunity): Promise<Community> {
+    const [community] = await db.insert(communities).values(insertCommunity).returning();
+    return community;
+  }
+
+  async updateCommunityMemberCount(id: string, count: number): Promise<void> {
+    await db.update(communities).set({ memberCount: count }).where(eq(communities.id, id));
+  }
+
+  // Plans
+  async getAllPlans(): Promise<Plan[]> {
+    return await db.select().from(plans);
+  }
+
+  async getPlan(id: string): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.id, id));
+    return plan || undefined;
+  }
+
+  async createPlan(insertPlan: InsertPlan): Promise<Plan> {
+    const [plan] = await db.insert(plans).values(insertPlan).returning();
+    return plan;
+  }
+
+  // Memberships
+  async getUserMemberships(userId: string): Promise<UserCommunityMembership[]> {
+    return await db.select().from(userCommunityMemberships).where(eq(userCommunityMemberships.userId, userId));
+  }
+
+  async getCommunityMemberships(communityId: string): Promise<UserCommunityMembership[]> {
+    return await db.select().from(userCommunityMemberships).where(eq(userCommunityMemberships.communityId, communityId));
+  }
+
+  async getMembership(userId: string, communityId: string): Promise<UserCommunityMembership | undefined> {
+    const [membership] = await db.select().from(userCommunityMemberships)
+      .where(and(
+        eq(userCommunityMemberships.userId, userId),
+        eq(userCommunityMemberships.communityId, communityId)
+      ));
+    return membership || undefined;
+  }
+
+  async createMembership(insertMembership: InsertMembership): Promise<UserCommunityMembership> {
+    const [membership] = await db.insert(userCommunityMemberships).values(insertMembership).returning();
+    return membership;
+  }
+
+  async updateMembership(id: string, updates: Partial<InsertMembership>): Promise<UserCommunityMembership> {
+    const [membership] = await db.update(userCommunityMemberships)
+      .set(updates)
+      .where(eq(userCommunityMemberships.id, id))
+      .returning();
+    return membership;
+  }
+
+  // Sections
+  async getCommunitySections(communityId: string): Promise<Section[]> {
+    return await db.select().from(sections).where(eq(sections.communityId, communityId));
+  }
+
+  async createSection(insertSection: InsertSection): Promise<Section> {
+    const [section] = await db.insert(sections).values(insertSection).returning();
+    return section;
+  }
+
+  // News
+  async getCommunityNews(communityId: string): Promise<NewsArticle[]> {
+    return await db.select().from(newsArticles)
+      .where(eq(newsArticles.communityId, communityId))
+      .orderBy(desc(newsArticles.publishedAt));
+  }
+
+  async getNewsArticle(id: string): Promise<NewsArticle | undefined> {
+    const [article] = await db.select().from(newsArticles).where(eq(newsArticles.id, id));
+    return article || undefined;
+  }
+
+  async createNews(insertNews: InsertNews): Promise<NewsArticle> {
+    const [article] = await db.insert(newsArticles).values(insertNews).returning();
+    return article;
+  }
+
+  async updateNews(id: string, updates: Partial<InsertNews>): Promise<NewsArticle> {
+    const [article] = await db.update(newsArticles)
+      .set(updates)
+      .where(eq(newsArticles.id, id))
+      .returning();
+    return article;
+  }
+
+  // Events
+  async getCommunityEvents(communityId: string): Promise<Event[]> {
+    return await db.select().from(events)
+      .where(eq(events.communityId, communityId))
+      .orderBy(desc(events.date));
+  }
+
+  async getEvent(id: string): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event || undefined;
+  }
+
+  async createEvent(insertEvent: InsertEvent): Promise<Event> {
+    const [event] = await db.insert(events).values(insertEvent).returning();
+    return event;
+  }
+
+  async updateEvent(id: string, updates: Partial<InsertEvent>): Promise<Event> {
+    const [event] = await db.update(events)
+      .set(updates)
+      .where(eq(events.id, id))
+      .returning();
+    return event;
+  }
+
+  // Support Tickets
+  async getAllTickets(): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets).orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getUserTickets(userId: string): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets)
+      .where(eq(supportTickets.userId, userId))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async getCommunityTickets(communityId: string): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets)
+      .where(eq(supportTickets.communityId, communityId))
+      .orderBy(desc(supportTickets.createdAt));
+  }
+
+  async createTicket(insertTicket: InsertTicket): Promise<SupportTicket> {
+    const [ticket] = await db.insert(supportTickets).values(insertTicket).returning();
+    return ticket;
+  }
+
+  async updateTicket(id: string, updates: Partial<InsertTicket>): Promise<SupportTicket> {
+    const [ticket] = await db.update(supportTickets)
+      .set({ ...updates, lastUpdate: new Date() })
+      .where(eq(supportTickets.id, id))
+      .returning();
+    return ticket;
+  }
+
+  // FAQs
+  async getAllFAQs(): Promise<FAQ[]> {
+    return await db.select().from(faqs);
+  }
+
+  async getFAQsByRole(role: string): Promise<FAQ[]> {
+    return await db.select().from(faqs).where(eq(faqs.targetRole, role));
+  }
+
+  async createFAQ(insertFAQ: InsertFAQ): Promise<FAQ> {
+    const [faq] = await db.insert(faqs).values(insertFAQ).returning();
+    return faq;
+  }
+
+  // Messages
+  async getCommunityMessages(communityId: string, conversationId: string): Promise<Message[]> {
+    return await db.select().from(messages)
+      .where(and(
+        eq(messages.communityId, communityId),
+        eq(messages.conversationId, conversationId)
+      ))
+      .orderBy(messages.timestamp);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values(insertMessage).returning();
+    return message;
+  }
+
+  async markMessageRead(id: string): Promise<void> {
+    await db.update(messages).set({ read: true }).where(eq(messages.id, id));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
