@@ -35,11 +35,33 @@ import AdminSupport from "@/pages/admin/Support";
 // Platform Pages
 import SuperDashboard from "@/pages/platform/SuperDashboard";
 
+// Website Pages
+import WebsiteHome from "@/pages/website/Home";
+import WebsiteFAQ from "@/pages/website/FAQ";
+
 function Router() {
   return (
     <Switch>
       {/* Landing / Default */}
       <Route path="/" component={Landing} />
+      
+      {/* Commercial Website */}
+      <Route path="/website" component={WebsiteHome} />
+      <Route path="/website/faq" component={WebsiteFAQ} />
+      <Route path="/website/signup">
+        {/* Mock Signup redirecting to Admin Dashboard with toast */}
+        {() => {
+          window.location.href = "/admin/dashboard"; 
+          return null; 
+        }}
+      </Route>
+      <Route path="/website/download">
+         {/* Mock Download redirecting to Mobile Login */}
+        {() => {
+          window.location.href = "/app/login"; 
+          return null; 
+        }}
+      </Route>
       
       {/* Mobile Routes */}
       <Route path="/app/login" component={MobileLogin} />
