@@ -38,6 +38,7 @@ import SuperDashboard from "@/pages/platform/SuperDashboard";
 // Website Pages
 import WebsiteHome from "@/pages/website/Home";
 import WebsiteFAQ from "@/pages/website/FAQ";
+import WebsitePricing from "@/pages/website/Pricing";
 
 function Router() {
   return (
@@ -47,6 +48,7 @@ function Router() {
       
       {/* Commercial Website */}
       <Route path="/website" component={WebsiteHome} />
+      <Route path="/website/pricing" component={WebsitePricing} />
       <Route path="/website/faq" component={WebsiteFAQ} />
       <Route path="/website/signup">
         {/* Mock Signup redirecting to Admin Dashboard with toast */}
