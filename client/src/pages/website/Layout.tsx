@@ -1,12 +1,23 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Smartphone, LayoutDashboard, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Menu, X, Eye, EyeOff, ArrowRight, LogIn } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLogin } from "@/hooks/useApi";
+import { toast } from "sonner";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
 
 export default function WebsiteLayout({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [location] = useLocation();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [location, setLocation] = useLocation();
+  const { setUser } = useAuth();
+  const loginMutation = useLogin();
 
   const navItems = [
     { label: "Fonctionnalités", path: "/website" },
@@ -14,11 +25,43 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
     { label: "FAQ", path: "/website/faq" },
   ];
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const result = await loginMutation.mutateAsync({ email, password });
+      
+      setUser({
+        ...result.user,
+        memberships: result.memberships
+      });
+      
+      setIsLoginOpen(false);
+      setEmail("");
+      setPassword("");
+      toast.success("Connexion réussie!");
+      
+      // Check if user is admin of any community
+      const adminMembership = result.memberships.find(m => m.role === "admin");
+      if (adminMembership) {
+        setLocation("/admin/dashboard");
+      } else {
+        setLocation("/app/hub");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur de connexion");
+    }
+  };
+
+  const openLoginModal = () => {
+    setIsLoginOpen(true);
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col font-sans bg-white">
       <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-md">
         <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
           <Link href="/website">
             <a className="flex items-center gap-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
@@ -26,7 +69,6 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
             </a>
           </Link>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             {navItems.map((item) => (
               <Link key={item.path} href={item.path}>
@@ -39,13 +81,16 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
             ))}
           </nav>
 
-          {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/admin/dashboard">
-              <Button variant="ghost" className="text-slate-700 hover:text-blue-600 hover:bg-blue-50">
-                Connexion
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="text-slate-700 hover:text-blue-600 hover:bg-blue-50"
+              onClick={openLoginModal}
+              data-testid="button-open-login"
+            >
+              <LogIn size={18} className="mr-2" />
+              Connexion
+            </Button>
             <Link href="/website/signup">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200">
                 Créer mon club
@@ -53,13 +98,11 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
             </Link>
           </div>
 
-          {/* Mobile Menu Toggle */}
           <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-100 p-4 shadow-lg animate-in slide-in-from-top-5">
             <nav className="flex flex-col gap-4">
@@ -71,11 +114,14 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
                 </Link>
               ))}
               <hr className="border-slate-100 my-2" />
-              <Link href="/admin/dashboard">
-                <Button variant="outline" className="w-full justify-start" onClick={() => setIsMenuOpen(false)}>
-                  Se connecter
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start" 
+                onClick={openLoginModal}
+              >
+                <LogIn size={18} className="mr-2" />
+                Se connecter
+              </Button>
               <Link href="/website/signup">
                 <Button className="w-full bg-blue-600 text-white" onClick={() => setIsMenuOpen(false)}>
                   Créer mon club
@@ -85,6 +131,97 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
           </div>
         )}
       </header>
+
+      {/* Login Modal */}
+      <Dialog open={isLoginOpen} onOpenChange={setIsLoginOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-blue-200">
+                K
+              </div>
+            </div>
+            <DialogTitle className="text-center text-2xl">Connexion à Koomy</DialogTitle>
+            <p className="text-center text-slate-500 text-sm mt-2">
+              Accédez à votre espace administrateur ou membre
+            </p>
+          </DialogHeader>
+          
+          <form onSubmit={handleLogin} className="space-y-5 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Email</label>
+              <Input 
+                type="email" 
+                placeholder="votre@email.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11"
+                required
+                data-testid="modal-input-email"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Mot de passe</label>
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 pr-10"
+                  required
+                  data-testid="modal-input-password"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div className="flex justify-end">
+                <a href="#" className="text-xs font-medium text-blue-600 hover:underline">
+                  Mot de passe oublié ?
+                </a>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-base font-semibold"
+              disabled={loginMutation.isPending}
+              data-testid="modal-button-login"
+            >
+              {loginMutation.isPending ? "Connexion..." : (
+                <span className="flex items-center gap-2">
+                  Se connecter <ArrowRight size={18} />
+                </span>
+              )}
+            </Button>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
+              <p className="text-xs text-blue-700">
+                <strong>Demo:</strong> admin@unsa.org (Admin) / member@unsa.org (Membre)
+              </p>
+            </div>
+          </form>
+
+          <div className="border-t border-slate-100 pt-4 text-center">
+            <p className="text-sm text-slate-500">
+              Pas encore inscrit ?{" "}
+              <Link href="/website/signup">
+                <a 
+                  className="text-blue-600 font-medium hover:underline"
+                  onClick={() => setIsLoginOpen(false)}
+                >
+                  Créer un compte
+                </a>
+              </Link>
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <main className="flex-1">
         {children}
