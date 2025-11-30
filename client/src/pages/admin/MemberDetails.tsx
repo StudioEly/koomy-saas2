@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { MOCK_MEMBERS, SECTIONS, User } from "@/lib/mockData";
+import { MOCK_MEMBERS, SECTIONS, AdminUser } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,7 @@ import { toast } from "@/hooks/use-toast";
 
 export default function AdminMemberDetails({ params }: { params: { id: string } }) {
   const [location, setLocation] = useLocation();
-  const member = MOCK_MEMBERS.find(m => m.id === params.id) || MOCK_MEMBERS[0];
+  const member = (MOCK_MEMBERS.find(m => m.id === params.id) || MOCK_MEMBERS[0]) as AdminUser;
   const [isEditing, setIsEditing] = useState(false);
 
   const handleRenew = () => {

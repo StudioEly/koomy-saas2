@@ -5,16 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter } from "lucide-react";
 
-export default function MobileNews() {
+export default function MobileNews({ params }: { params: { communityId: string } }) {
   const [filter, setFilter] = useState("All");
   const categories = ["All", "National", "Local", "Legal", "Events"];
+  const { communityId } = params;
+
+  const newsList = communityId === "c_unsa" ? MOCK_NEWS : [];
 
   const filteredNews = filter === "All" 
-    ? MOCK_NEWS 
-    : MOCK_NEWS.filter(n => n.category === filter);
+    ? newsList 
+    : newsList.filter(n => n.category === filter);
 
   return (
-    <MobileLayout>
+    <MobileLayout communityId={communityId}>
       <div className="p-6 pb-20">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Actualités</h1>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { MOCK_MEMBERS, SECTIONS, User } from "@/lib/mockData";
+import { MOCK_MEMBERS, SECTIONS, AdminUser } from "@/lib/mockData";
 import { Link } from "wouter";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 
 export default function AdminMembers() {
-  const [members, setMembers] = useState<User[]>(MOCK_MEMBERS.filter(u => u.role === "member"));
+  const [members, setMembers] = useState<AdminUser[]>(MOCK_MEMBERS as unknown as AdminUser[]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);

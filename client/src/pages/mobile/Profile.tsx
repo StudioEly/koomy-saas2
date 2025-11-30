@@ -1,19 +1,20 @@
 import MobileLayout from "@/components/layouts/MobileLayout";
 import { MOCK_USER } from "@/lib/mockData";
 import { Button } from "@/components/ui/button";
-import { User, Settings, Bell, LogOut, ChevronRight, HelpCircle, Shield } from "lucide-react";
+import { User, Settings, Bell, LogOut, ChevronRight, HelpCircle, Shield, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 
-export default function MobileProfile() {
+export default function MobileProfile({ params }: { params: { communityId: string } }) {
+  const { communityId } = params;
   const user = MOCK_USER;
   const [_, setLocation] = useLocation();
 
   const handleLogout = () => {
-    setLocation("/");
+    setLocation("/app/hub"); // Go back to Hub instead of Login
   };
 
   return (
-    <MobileLayout>
+    <MobileLayout communityId={communityId}>
       <div className="p-6 pt-10">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">Mon Compte</h1>
 
@@ -64,15 +65,15 @@ export default function MobileProfile() {
            </div>
 
            <Button 
-             variant="destructive" 
-             className="w-full h-12 rounded-xl mt-4 shadow-lg shadow-red-500/20"
+             variant="outline" 
+             className="w-full h-12 rounded-xl mt-4 text-gray-500 border-gray-200"
              onClick={handleLogout}
            >
-             <LogOut className="mr-2 h-4 w-4" /> Déconnexion
+             <ArrowLeft className="mr-2 h-4 w-4" /> Changer de communauté
            </Button>
            
            <p className="text-center text-xs text-gray-400 mt-6">
-             Version 1.0.0 • UNSA KOMY
+             Version 2.0.0 • Koomy SaaS
            </p>
         </div>
       </div>

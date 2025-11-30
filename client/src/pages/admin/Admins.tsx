@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { MOCK_MEMBERS, SECTIONS, User } from "@/lib/mockData";
+import { MOCK_MEMBERS, SECTIONS, AdminUser } from "@/lib/mockData";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Shield, Plus, Trash2, Lock } from "lucide-react";
 
 export default function AdminAdmins() {
-  const [admins, setAdmins] = useState<User[]>(MOCK_MEMBERS.filter(u => u.role === "admin" || u.role === "super_admin"));
+  const [admins, setAdmins] = useState<AdminUser[]>(MOCK_MEMBERS.filter(u => u.role === "admin" || u.role === "super_admin") as AdminUser[]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newAdminRole, setNewAdminRole] = useState<"admin" | "super_admin">("admin");
 

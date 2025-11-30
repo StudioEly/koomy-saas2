@@ -5,7 +5,8 @@ import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export default function MobileMessages() {
+export default function MobileMessages({ params }: { params: { communityId: string } }) {
+  const { communityId } = params;
   const [messages, setMessages] = useState(MOCK_MESSAGES.filter(m => m.conversationId === "c1"));
   const [newMessage, setNewMessage] = useState("");
 
@@ -15,6 +16,7 @@ export default function MobileMessages() {
 
     const msg = {
       id: Date.now().toString(),
+      communityId,
       conversationId: "c1",
       sender: `${MOCK_USER.firstName} ${MOCK_USER.lastName}`,
       senderRole: "member" as const,
@@ -28,7 +30,7 @@ export default function MobileMessages() {
   };
 
   return (
-    <MobileLayout>
+    <MobileLayout communityId={communityId}>
       <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50">
         <div className="bg-white p-4 border-b sticky top-0 z-10 shadow-sm flex items-center gap-3">
           <Avatar>

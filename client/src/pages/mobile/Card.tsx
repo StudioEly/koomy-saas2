@@ -7,13 +7,17 @@ import { X, ZoomIn } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
 
-export default function MobileCard() {
+export default function MobileCard({ params }: { params: { communityId: string } }) {
+  const { communityId } = params;
   const [isFlipped, setIsFlipped] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const user = MOCK_USER;
+  const membership = user.communities.find(c => c.communityId === communityId);
+
+  if (!membership) return null;
 
   return (
-    <MobileLayout>
+    <MobileLayout communityId={communityId}>
       <div className="min-h-full flex flex-col items-center p-6 pt-10">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">Ma Carte Adhérent</h1>
 
@@ -46,17 +50,17 @@ export default function MobileCard() {
                    <img src={user.avatar} className="w-full h-full rounded-full object-cover" alt="User" />
                  </div>
                  <h2 className="text-xl font-bold shadow-black drop-shadow-md">{user.firstName} {user.lastName}</h2>
-                 <p className="text-blue-200 text-sm">{user.section}</p>
+                 <p className="text-blue-200 text-sm">{membership.section || "Membre"}</p>
               </div>
 
               <div className="relative z-10 flex justify-between items-end">
                 <div>
                   <p className="text-[10px] text-blue-200 uppercase tracking-wider">N° Adhérent</p>
-                  <p className="font-mono text-lg tracking-widest">{user.memberId}</p>
+                  <p className="font-mono text-lg tracking-widest">{membership.memberId}</p>
                 </div>
                 <div className="text-right">
                    <p className="text-[10px] text-blue-200 uppercase tracking-wider">Depuis</p>
-                   <p className="text-sm font-medium">{new Date(user.joinDate).getFullYear()}</p>
+                   <p className="text-sm font-medium">{new Date(membership.joinDate).getFullYear()}</p>
                 </div>
               </div>
             </div>
@@ -70,7 +74,7 @@ export default function MobileCard() {
                    e.stopPropagation();
                    setShowQRModal(true);
                  }}>
-                   <QRCode value={user.memberId} size={120} />
+                   <QRCode value={membership.memberId} size={120} />
                  </div>
                  
                  <p className="text-xs text-gray-500 mb-6">Scannez ce code pour valider votre présence aux événements.</p>
@@ -97,9 +101,9 @@ export default function MobileCard() {
         <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
           <DialogContent className="bg-white sm:max-w-md border-0 shadow-2xl p-8 flex flex-col items-center">
             <h3 className="text-xl font-bold text-center mb-2">{user.firstName} {user.lastName}</h3>
-            <p className="text-gray-500 text-sm mb-6">{user.memberId}</p>
+            <p className="text-gray-500 text-sm mb-6">{membership.memberId}</p>
             <div className="p-4 bg-white rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100">
-              <QRCode value={user.memberId} size={250} />
+              <QRCode value={membership.memberId} size={250} />
             </div>
             <p className="text-center text-gray-400 text-xs mt-6 max-w-[200px]">
               Présentez ce code à l'accueil de l'événement.
