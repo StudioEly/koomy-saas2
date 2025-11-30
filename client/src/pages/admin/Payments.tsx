@@ -1,100 +1,93 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  Search, Filter, Plus, Euro, CheckCircle, Clock, AlertCircle, Send, 
+  Search, Filter, Plus, CheckCircle, Clock, AlertCircle, Send, 
   Users, Calendar, Download, TrendingUp
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import type { PaymentRequest, Payment, MembershipFee, UserCommunityMembership } from "@shared/schema";
 
-interface PaymentRequest {
+interface MemberWithUser {
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   id: string;
-  memberId: string;
-  memberName: string;
-  memberEmail: string;
-  amount: number;
-  currency: string;
-  status: "pending" | "paid" | "expired" | "cancelled";
-  dueDate: string;
-  createdAt: string;
-  message?: string;
-  feeName: string;
-}
-
-interface MembershipFee {
-  id: string;
-  name: string;
-  amount: number;
-  currency: string;
-  period: string;
+  communityId: string;
 }
 
 export default function AdminPayments() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [selectedFee, setSelectedFee] = useState<string>("");
+  const [selectedMember, setSelectedMember] = useState<string>("");
   const [customMessage, setCustomMessage] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [dueDate, setDueDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
-  const membershipFees: MembershipFee[] = [
-    { id: "fee_1", name: "Cotisation Annuelle", amount: 12000, currency: "EUR", period: "annual" },
-    { id: "fee_2", name: "Cotisation Semestrielle", amount: 7000, currency: "EUR", period: "semi-annual" },
-  ];
+  const communityId = "community_unsa";
 
-  const paymentRequests: PaymentRequest[] = [
-    {
-      id: "req_1",
-      memberId: "user_1",
-      memberName: "Jean Dupont",
-      memberEmail: "jean.dupont@email.com",
-      amount: 12000,
-      currency: "EUR",
-      status: "pending",
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date().toISOString(),
-      message: "Cotisation annuelle 2025",
-      feeName: "Cotisation Annuelle"
+  const { data: paymentRequests = [], isError: errorRequests } = useQuery<PaymentRequest[]>({
+    queryKey: [`/api/communities/${communityId}/payment-requests`]
+  });
+
+  const { data: payments = [], isError: errorPayments } = useQuery<Payment[]>({
+    queryKey: [`/api/communities/${communityId}/payments`]
+  });
+
+  const { data: fees = [], isError: errorFees } = useQuery<MembershipFee[]>({
+    queryKey: [`/api/communities/${communityId}/fees`]
+  });
+
+  const { data: members = [], isError: errorMembers } = useQuery<MemberWithUser[]>({
+    queryKey: [`/api/communities/${communityId}/members`]
+  });
+
+  if (errorRequests || errorPayments || errorFees || errorMembers) {
+    toast.error("Erreur lors du chargement des données");
+  }
+
+  const createRequestMutation = useMutation({
+    mutationFn: async (data: { membershipId: string; communityId: string; feeId: string; amount: number; currency: string; dueDate: string; message?: string }) => {
+      const res = await fetch("/api/payment-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error("Failed to create request");
+      return res.json();
     },
-    {
-      id: "req_2",
-      memberId: "user_2",
-      memberName: "Marie Martin",
-      memberEmail: "marie.martin@email.com",
-      amount: 12000,
-      currency: "EUR",
-      status: "paid",
-      dueDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-      feeName: "Cotisation Annuelle"
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/communities/${communityId}/payment-requests`] });
+      toast.success("Demande de paiement créée avec succès");
+      setIsCreateOpen(false);
+      setSelectedFee("");
+      setSelectedMember("");
+      setCustomMessage("");
     },
-    {
-      id: "req_3",
-      memberId: "user_3",
-      memberName: "Pierre Durand",
-      memberEmail: "pierre.durand@email.com",
-      amount: 7000,
-      currency: "EUR",
-      status: "expired",
-      dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
-      feeName: "Cotisation Semestrielle"
+    onError: () => {
+      toast.error("Erreur lors de la création de la demande");
     }
-  ];
+  });
 
-  const formatAmount = (cents: number, currency: string) => {
+  const formatAmount = (cents: number, currency: string = "EUR") => {
     return new Intl.NumberFormat('fr-FR', { 
       style: 'currency', 
       currency 
     }).format(cents / 100);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: 'numeric',
       month: 'short',
@@ -118,10 +111,8 @@ export default function AdminPayments() {
   };
 
   const filteredRequests = paymentRequests.filter(req => {
-    const matchesSearch = req.memberName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          req.memberEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || req.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 
   const stats = {
@@ -129,19 +120,31 @@ export default function AdminPayments() {
     pending: paymentRequests.filter(r => r.status === "pending").length,
     paid: paymentRequests.filter(r => r.status === "paid").length,
     expired: paymentRequests.filter(r => r.status === "expired").length,
-    totalAmount: paymentRequests.filter(r => r.status === "paid").reduce((sum, r) => sum + r.amount, 0),
+    totalAmount: payments.filter(r => r.status === "completed").reduce((sum, r) => sum + r.amount, 0),
     pendingAmount: paymentRequests.filter(r => r.status === "pending").reduce((sum, r) => sum + r.amount, 0)
   };
 
   const handleCreateRequest = () => {
-    if (!selectedFee) {
-      toast.error("Veuillez sélectionner un type de cotisation");
+    if (!selectedFee || !selectedMember) {
+      toast.error("Veuillez sélectionner un membre et un type de cotisation");
       return;
     }
-    toast.success("Demande de paiement envoyée avec succès");
-    setIsCreateOpen(false);
-    setSelectedFee("");
-    setCustomMessage("");
+
+    const fee = fees.find(f => f.id === selectedFee);
+    if (!fee) {
+      toast.error("Type de cotisation non trouvé");
+      return;
+    }
+
+    createRequestMutation.mutate({
+      membershipId: selectedMember,
+      communityId,
+      feeId: selectedFee,
+      amount: fee.amount,
+      currency: fee.currency || "EUR",
+      dueDate: new Date(dueDate).toISOString(),
+      message: customMessage || undefined
+    });
   };
 
   const handleBulkRequest = () => {
@@ -149,7 +152,7 @@ export default function AdminPayments() {
       toast.error("Veuillez sélectionner un type de cotisation");
       return;
     }
-    toast.success(`Demandes de paiement envoyées à ${selectedMembers.length || "tous les"} membres`);
+    toast.success("Demandes de paiement envoyées à tous les membres");
     setIsBulkOpen(false);
     setSelectedFee("");
     setCustomMessage("");
@@ -162,7 +165,6 @@ export default function AdminPayments() {
   return (
     <AdminLayout>
       <div className="p-8">
-        {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestion des Paiements</h1>
@@ -188,7 +190,6 @@ export default function AdminPayments() {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="flex items-center gap-3">
@@ -197,7 +198,7 @@ export default function AdminPayments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total collecté</p>
-                <p className="text-xl font-bold text-gray-900">{formatAmount(stats.totalAmount, "EUR")}</p>
+                <p className="text-xl font-bold text-gray-900">{formatAmount(stats.totalAmount)}</p>
               </div>
             </div>
           </div>
@@ -208,7 +209,7 @@ export default function AdminPayments() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">En attente</p>
-                <p className="text-xl font-bold text-gray-900">{formatAmount(stats.pendingAmount, "EUR")}</p>
+                <p className="text-xl font-bold text-gray-900">{formatAmount(stats.pendingAmount)}</p>
               </div>
             </div>
           </div>
@@ -236,7 +237,6 @@ export default function AdminPayments() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
@@ -268,13 +268,11 @@ export default function AdminPayments() {
           </div>
         </div>
 
-        {/* Payment Requests Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Membre</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Type</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">ID Membre</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Montant</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Échéance</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Statut</th>
@@ -285,14 +283,10 @@ export default function AdminPayments() {
               {filteredRequests.map((request) => (
                 <tr key={request.id} className="border-b border-gray-100 hover:bg-gray-50" data-testid={`row-payment-${request.id}`}>
                   <td className="py-4 px-4">
-                    <div>
-                      <p className="font-medium text-gray-900">{request.memberName}</p>
-                      <p className="text-sm text-gray-500">{request.memberEmail}</p>
-                    </div>
+                    <p className="font-medium text-gray-900">{request.membershipId}</p>
                   </td>
-                  <td className="py-4 px-4 text-gray-700">{request.feeName}</td>
                   <td className="py-4 px-4">
-                    <span className="font-semibold text-gray-900">{formatAmount(request.amount, request.currency)}</span>
+                    <span className="font-semibold text-gray-900">{formatAmount(request.amount, request.currency || "EUR")}</span>
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-2 text-gray-600">
@@ -300,7 +294,7 @@ export default function AdminPayments() {
                       {formatDate(request.dueDate)}
                     </div>
                   </td>
-                  <td className="py-4 px-4">{getStatusBadge(request.status)}</td>
+                  <td className="py-4 px-4">{getStatusBadge(request.status || "pending")}</td>
                   <td className="py-4 px-4 text-right">
                     {request.status === "pending" && (
                       <Button 
@@ -336,7 +330,6 @@ export default function AdminPayments() {
           )}
         </div>
 
-        {/* Create Single Request Modal */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -345,14 +338,16 @@ export default function AdminPayments() {
             <div className="py-4 space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Membre</label>
-                <Select>
+                <Select value={selectedMember} onValueChange={setSelectedMember}>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un membre" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user_1">Jean Dupont</SelectItem>
-                    <SelectItem value="user_2">Marie Martin</SelectItem>
-                    <SelectItem value="user_3">Pierre Durand</SelectItem>
+                    {members.map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.user.firstName} {member.user.lastName}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -363,13 +358,26 @@ export default function AdminPayments() {
                     <SelectValue placeholder="Sélectionner un type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {membershipFees.map(fee => (
+                    {fees.map(fee => (
                       <SelectItem key={fee.id} value={fee.id}>
-                        {fee.name} - {formatAmount(fee.amount, fee.currency)}
+                        {fee.name} - {formatAmount(fee.amount, fee.currency || "EUR")}
                       </SelectItem>
                     ))}
+                    {fees.length === 0 && (
+                      <SelectItem value="default" disabled>
+                        Aucune cotisation définie
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Échéance</label>
+                <Input 
+                  type="date" 
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Message personnalisé (optionnel)</label>
@@ -382,12 +390,13 @@ export default function AdminPayments() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Annuler</Button>
-              <Button onClick={handleCreateRequest}>Envoyer la demande</Button>
+              <Button onClick={handleCreateRequest} disabled={createRequestMutation.isPending}>
+                {createRequestMutation.isPending ? "Envoi..." : "Envoyer la demande"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Bulk Request Modal */}
         <Dialog open={isBulkOpen} onOpenChange={setIsBulkOpen}>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -405,9 +414,9 @@ export default function AdminPayments() {
                     <SelectValue placeholder="Sélectionner un type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {membershipFees.map(fee => (
+                    {fees.map(fee => (
                       <SelectItem key={fee.id} value={fee.id}>
-                        {fee.name} - {formatAmount(fee.amount, fee.currency)}
+                        {fee.name} - {formatAmount(fee.amount, fee.currency || "EUR")}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -420,15 +429,19 @@ export default function AdminPayments() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tous les membres (247)</SelectItem>
-                    <SelectItem value="pending">Membres avec cotisation en retard (23)</SelectItem>
-                    <SelectItem value="expired">Membres avec cotisation expirée (8)</SelectItem>
+                    <SelectItem value="all">Tous les membres ({members.length})</SelectItem>
+                    <SelectItem value="pending">Membres avec cotisation en retard</SelectItem>
+                    <SelectItem value="expired">Membres avec cotisation expirée</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Échéance</label>
-                <Input type="date" defaultValue={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} />
+                <Input 
+                  type="date" 
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-2 block">Message personnalisé (optionnel)</label>
