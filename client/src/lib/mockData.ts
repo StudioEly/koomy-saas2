@@ -9,7 +9,21 @@ export type Community = {
   secondaryColor: string;
   description: string;
   memberCount: number;
+  planId: string;
+  subscriptionStatus: "active" | "past_due" | "canceled";
 };
+
+export type Plan = {
+  id: string;
+  name: string;
+  maxMembers: number;
+  priceMonthly: number;
+  priceYearly: number;
+  features: string[];
+  isPopular?: boolean;
+};
+
+export type AdminRole = "super_admin" | "support_admin" | "finance_admin" | "content_admin";
 
 export type User = {
   id: string;
@@ -25,7 +39,8 @@ export type User = {
 export type UserCommunityMembership = {
   communityId: string;
   memberId: string; // ID specific to this community (e.g., UNSA-2024-X)
-  role: "member" | "admin" | "super_admin"; // Admin within the community
+  role: "member" | "admin"; 
+  adminRole?: AdminRole; // Detailed role if user is admin
   status: "active" | "expired" | "suspended";
   joinDate: string;
   section?: string;
@@ -94,6 +109,43 @@ export type Event = {
   participants: number;
 };
 
+// MOCK PLANS
+export const MOCK_PLANS: Plan[] = [
+  {
+    id: "free",
+    name: "Free Starter",
+    maxMembers: 100,
+    priceMonthly: 0,
+    priceYearly: 0,
+    features: ["Jusqu'à 100 membres", "Carte de membre digitale", "Actualités basiques", "Support communautaire"]
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    maxMembers: 500,
+    priceMonthly: 49,
+    priceYearly: 490,
+    features: ["Jusqu'à 500 membres", "Tout du plan Free", "Gestion d'événements", "Support email prioritaire", "Export données"]
+  },
+  {
+    id: "scale",
+    name: "Scale",
+    maxMembers: 2000,
+    priceMonthly: 149,
+    priceYearly: 1490,
+    features: ["Jusqu'à 2000 membres", "Tout du plan Growth", "Multi-sections", "Rôles admin avancés", "Analytiques détaillées"],
+    isPopular: true
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    maxMembers: 10000,
+    priceMonthly: 399,
+    priceYearly: 3990,
+    features: ["Membres illimités", "Tout du plan Scale", "API Access", "SLA 99.9%", "Account Manager dédié", "Marque blanche"]
+  }
+];
+
 // MOCK COMMUNITIES (Tenants)
 export const MOCK_COMMUNITIES: Community[] = [
   {
@@ -103,7 +155,9 @@ export const MOCK_COMMUNITIES: Community[] = [
     primaryColor: "215 85% 35%",
     secondaryColor: "350 80% 55%",
     description: "Union Syndicale - Section Lidl France",
-    memberCount: 1250
+    memberCount: 1250,
+    planId: "scale",
+    subscriptionStatus: "active"
   },
   {
     id: "c_chess",
@@ -112,7 +166,9 @@ export const MOCK_COMMUNITIES: Community[] = [
     primaryColor: "270 50% 40%", // Purple
     secondaryColor: "45 90% 60%", // Gold
     description: "Le club historique de la capitale",
-    memberCount: 340
+    memberCount: 340,
+    planId: "growth",
+    subscriptionStatus: "active"
   }
 ];
 
@@ -143,6 +199,7 @@ export const MOCK_USERS: User[] = [
         communityId: "c_chess",
         memberId: "CHESS-099",
         role: "admin",
+        adminRole: "support_admin", // Example of restricted admin
         status: "active",
         joinDate: "2020-09-01",
         contributionStatus: "up_to_date"
@@ -196,6 +253,7 @@ export const MOCK_USERS: User[] = [
         communityId: "c_unsa",
         memberId: "ADM-001",
         role: "admin",
+        adminRole: "support_admin",
         status: "active",
         section: "Section Île-de-France",
         joinDate: "2020-01-01",
@@ -212,7 +270,8 @@ export const MOCK_USERS: User[] = [
       {
         communityId: "c_unsa",
         memberId: "SADM-001",
-        role: "super_admin",
+        role: "admin",
+        adminRole: "super_admin",
         status: "active",
         section: "National",
         joinDate: "2019-01-01",
