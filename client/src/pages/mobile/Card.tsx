@@ -107,7 +107,13 @@ export default function MobileCard({ params }: { params: { communityId: string }
                 </div>
                 <div>
                    <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Adhésion</p>
-                   <p className="font-medium">{new Date(activeMembership.joinDate).toLocaleDateString('fr-FR')}</p>
+                   <p className="font-medium">
+                     {activeMembership.joinDate 
+                       ? new Date(activeMembership.joinDate).toLocaleDateString('fr-FR')
+                       : activeMembership.claimedAt
+                         ? new Date(activeMembership.claimedAt).toLocaleDateString('fr-FR')
+                         : "01/01/" + new Date().getFullYear()}
+                   </p>
                 </div>
                 <div className="text-right">
                    <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Expiration</p>
