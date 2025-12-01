@@ -1,19 +1,27 @@
 import { 
   users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, faqs, messages,
-  membershipFees, paymentRequests, payments,
+  membershipFees, paymentRequests, payments, accounts,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
   type SupportTicket, type InsertTicket, type FAQ, type InsertFAQ,
   type Message, type InsertMessage,
   type MembershipFee, type InsertMembershipFee, type PaymentRequest, type InsertPaymentRequest,
-  type Payment, type InsertPayment
+  type Payment, type InsertPayment,
+  type Account, type InsertAccount
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, isNull } from "drizzle-orm";
 
 export interface IStorage {
-  // Users
+  // Accounts (Public App Users)
+  getAccount(id: string): Promise<Account | undefined>;
+  getAccountByEmail(email: string): Promise<Account | undefined>;
+  createAccount(account: InsertAccount): Promise<Account>;
+  updateAccount(id: string, updates: Partial<InsertAccount>): Promise<Account>;
+  getAccountMemberships(accountId: string): Promise<UserCommunityMembership[]>;
+  
+  // Users (Admin/Back-Office Users)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -34,8 +42,10 @@ export interface IStorage {
   getCommunityMemberships(communityId: string): Promise<UserCommunityMembership[]>;
   getMembership(userId: string, communityId: string): Promise<UserCommunityMembership | undefined>;
   getMembershipById(id: string): Promise<UserCommunityMembership | undefined>;
+  getMembershipByClaimCode(claimCode: string): Promise<UserCommunityMembership | undefined>;
   createMembership(membership: InsertMembership): Promise<UserCommunityMembership>;
   updateMembership(id: string, updates: Partial<InsertMembership>): Promise<UserCommunityMembership>;
+  claimMembership(claimCode: string, accountId: string): Promise<UserCommunityMembership | undefined>;
   
   // Sections
   getCommunitySections(communityId: string): Promise<Section[]>;
@@ -92,7 +102,36 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // Users
+  // Accounts (Public App Users)
+  async getAccount(id: string): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, id));
+    return account || undefined;
+  }
+
+  async getAccountByEmail(email: string): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.email, email));
+    return account || undefined;
+  }
+
+  async createAccount(insertAccount: InsertAccount): Promise<Account> {
+    const [account] = await db.insert(accounts).values(insertAccount).returning();
+    return account;
+  }
+
+  async updateAccount(id: string, updates: Partial<InsertAccount>): Promise<Account> {
+    const [account] = await db.update(accounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(accounts.id, id))
+      .returning();
+    return account;
+  }
+
+  async getAccountMemberships(accountId: string): Promise<UserCommunityMembership[]> {
+    return await db.select().from(userCommunityMemberships)
+      .where(eq(userCommunityMemberships.accountId, accountId));
+  }
+
+  // Users (Admin/Back-Office)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -166,6 +205,12 @@ export class DatabaseStorage implements IStorage {
     return membership || undefined;
   }
 
+  async getMembershipByClaimCode(claimCode: string): Promise<UserCommunityMembership | undefined> {
+    const [membership] = await db.select().from(userCommunityMemberships)
+      .where(eq(userCommunityMemberships.claimCode, claimCode));
+    return membership || undefined;
+  }
+
   async createMembership(insertMembership: InsertMembership): Promise<UserCommunityMembership> {
     const [membership] = await db.insert(userCommunityMemberships).values(insertMembership).returning();
     return membership;
@@ -177,6 +222,25 @@ export class DatabaseStorage implements IStorage {
       .where(eq(userCommunityMemberships.id, id))
       .returning();
     return membership;
+  }
+
+  async claimMembership(claimCode: string, accountId: string): Promise<UserCommunityMembership | undefined> {
+    const membership = await this.getMembershipByClaimCode(claimCode);
+    if (!membership) return undefined;
+    if (membership.accountId) return undefined;
+    
+    const [updated] = await db.update(userCommunityMemberships)
+      .set({ 
+        accountId, 
+        claimedAt: new Date(),
+        claimCode: null
+      })
+      .where(and(
+        eq(userCommunityMemberships.claimCode, claimCode),
+        isNull(userCommunityMemberships.accountId)
+      ))
+      .returning();
+    return updated || undefined;
   }
 
   // Sections
