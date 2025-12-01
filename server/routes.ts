@@ -172,7 +172,7 @@ export async function registerRoutes(
   
   app.get("/api/memberships/verify/:claimCode", async (req, res) => {
     try {
-      const normalizedCode = req.params.claimCode.toUpperCase().replace(/\s/g, '');
+      const normalizedCode = req.params.claimCode.toUpperCase().replace(/[\s-]/g, '');
       const membership = await storage.getMembershipByClaimCode(normalizedCode);
       
       if (!membership) {
