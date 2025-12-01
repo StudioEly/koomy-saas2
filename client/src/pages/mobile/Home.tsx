@@ -10,7 +10,7 @@ import type { NewsArticle, Event } from "@shared/schema";
 
 export default function MobileHome({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
-  const { user, account, currentMembership, selectCommunity, selectMembership } = useAuth();
+  const { user, account, currentMembership, currentCommunity, selectCommunity, selectMembership } = useAuth();
 
   const currentUser = account || user;
 
@@ -18,12 +18,13 @@ export default function MobileHome({ params }: { params: { communityId: string }
   const activeMembership = currentMembership || accountMembership;
 
   useEffect(() => {
-    if (accountMembership && currentMembership?.communityId !== communityId) {
-      selectMembership(accountMembership.id);
-    } else if (!accountMembership && currentMembership?.communityId !== communityId) {
+    if (currentCommunity?.id !== communityId) {
       selectCommunity(communityId);
     }
-  }, [communityId, accountMembership, currentMembership, selectMembership, selectCommunity]);
+    if (accountMembership && currentMembership?.id !== accountMembership.id) {
+      selectMembership(accountMembership.id);
+    }
+  }, [communityId, accountMembership, currentMembership, currentCommunity, selectMembership, selectCommunity]);
 
   const { data: newsList = [] } = useQuery<NewsArticle[]>({
     queryKey: [`/api/communities/${communityId}/news`],
