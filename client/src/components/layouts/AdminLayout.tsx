@@ -11,11 +11,13 @@ import {
   Shield,
   MapPin,
   HelpCircle,
-  CreditCard
+  CreditCard,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
+import { COMMUNITY_TYPES } from "@shared/schema";
+import koomyLogo from "@assets/koomy-logo.png";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -40,15 +42,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: Settings, label: "Paramètres", path: "/admin/settings" },
   ];
 
+  const getCommunityTypeLabel = () => {
+    if (!currentCommunity) return "";
+    if (currentCommunity.communityType === "other") {
+      return currentCommunity.communityTypeOther || "Communauté";
+    }
+    const type = COMMUNITY_TYPES.find(t => t.value === currentCommunity.communityType);
+    return type?.label || "Communauté";
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl z-10 hidden md:flex">
-        <div className="p-6 flex items-center gap-3 border-b border-sidebar-border/20">
-          <img src={logo} alt="Logo" className="h-8 w-8 rounded bg-white p-1" />
-          <div>
-            <h1 className="font-bold text-lg leading-none">KOMY Admin</h1>
-            <span className="text-xs opacity-70">Back-office UNSA</span>
+        <div className="p-5 flex items-center gap-3 border-b border-sidebar-border/20">
+          {currentCommunity?.logo ? (
+            <img src={currentCommunity.logo} alt="Logo" className="h-9 w-9 rounded-lg bg-white p-1 object-contain" />
+          ) : (
+            <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-primary" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h1 className="font-bold text-sm leading-tight truncate" data-testid="text-sidebar-community-name">
+              {currentCommunity?.name || "Koomy Admin"}
+            </h1>
+            <span className="text-xs opacity-70 truncate block" data-testid="text-sidebar-community-type">
+              {getCommunityTypeLabel()}
+            </span>
           </div>
         </div>
 

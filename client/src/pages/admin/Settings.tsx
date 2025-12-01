@@ -11,7 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Building2, MapPin, Mail, Phone, Globe, CreditCard, MessageSquare, 
-  Save, Loader2, CheckCircle, Palette
+  Save, Loader2, CheckCircle, Palette, Landmark, Share2, FileText,
+  Facebook, Twitter, Instagram, Linkedin, Link2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -64,6 +65,14 @@ export default function AdminSettings() {
     country: "",
     contactEmail: "",
     contactPhone: "",
+    siret: "",
+    iban: "",
+    bic: "",
+    website: "",
+    facebook: "",
+    twitter: "",
+    instagram: "",
+    linkedin: "",
     welcomeMessage: "",
     primaryColor: "",
     membershipFeeEnabled: false,
@@ -86,6 +95,14 @@ export default function AdminSettings() {
         country: community.country || "France",
         contactEmail: community.contactEmail || "",
         contactPhone: community.contactPhone || "",
+        siret: community.siret || "",
+        iban: community.iban || "",
+        bic: community.bic || "",
+        website: community.website || "",
+        facebook: community.facebook || "",
+        twitter: community.twitter || "",
+        instagram: community.instagram || "",
+        linkedin: community.linkedin || "",
         welcomeMessage: community.welcomeMessage || "",
         primaryColor: community.primaryColor || "207 100% 63%",
         membershipFeeEnabled: community.membershipFeeEnabled || false,
@@ -146,6 +163,22 @@ export default function AdminSettings() {
           contactPhone: formData.contactPhone || null
         };
         break;
+      case "legal":
+        updates = {
+          siret: formData.siret || null,
+          iban: formData.iban || null,
+          bic: formData.bic || null
+        };
+        break;
+      case "social":
+        updates = {
+          website: formData.website || null,
+          facebook: formData.facebook || null,
+          twitter: formData.twitter || null,
+          instagram: formData.instagram || null,
+          linkedin: formData.linkedin || null
+        };
+        break;
       case "appearance":
         updates = {
           welcomeMessage: formData.welcomeMessage || null,
@@ -194,7 +227,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="identity" className="space-y-6">
-          <TabsList className="bg-white border shadow-sm">
+          <TabsList className="bg-white border shadow-sm flex-wrap h-auto p-1">
             <TabsTrigger value="identity" className="gap-2" data-testid="tab-identity">
               <Building2 className="h-4 w-4" />
               Identité
@@ -202,6 +235,14 @@ export default function AdminSettings() {
             <TabsTrigger value="contact" className="gap-2" data-testid="tab-contact">
               <MapPin className="h-4 w-4" />
               Coordonnées
+            </TabsTrigger>
+            <TabsTrigger value="legal" className="gap-2" data-testid="tab-legal">
+              <FileText className="h-4 w-4" />
+              Légal / Bancaire
+            </TabsTrigger>
+            <TabsTrigger value="social" className="gap-2" data-testid="tab-social">
+              <Share2 className="h-4 w-4" />
+              Réseaux sociaux
             </TabsTrigger>
             <TabsTrigger value="appearance" className="gap-2" data-testid="tab-appearance">
               <Palette className="h-4 w-4" />
@@ -414,6 +455,198 @@ export default function AdminSettings() {
                     disabled={updateMutation.isPending}
                     className="gap-2"
                     data-testid="button-save-contact"
+                  >
+                    {updateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Enregistrer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="legal">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Informations légales et bancaires
+                </CardTitle>
+                <CardDescription>
+                  Identifiants légaux et coordonnées bancaires de votre organisation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="siret">Numéro SIRET</Label>
+                  <Input
+                    id="siret"
+                    value={formData.siret}
+                    onChange={(e) => updateField("siret", e.target.value)}
+                    placeholder="123 456 789 00012"
+                    maxLength={17}
+                    data-testid="input-settings-siret"
+                  />
+                  <p className="text-xs text-gray-500">14 chiffres (SIREN + NIC)</p>
+                </div>
+
+                <div className="p-4 bg-amber-50 rounded-lg border border-amber-100">
+                  <div className="flex items-start gap-3">
+                    <Landmark className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800">
+                        Informations bancaires
+                      </p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Ces informations sont nécessaires pour recevoir les paiements de vos adhérents via virement.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="iban">IBAN</Label>
+                  <Input
+                    id="iban"
+                    value={formData.iban}
+                    onChange={(e) => updateField("iban", e.target.value.toUpperCase())}
+                    placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+                    data-testid="input-settings-iban"
+                  />
+                  <p className="text-xs text-gray-500">International Bank Account Number</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bic">BIC / SWIFT</Label>
+                  <Input
+                    id="bic"
+                    value={formData.bic}
+                    onChange={(e) => updateField("bic", e.target.value.toUpperCase())}
+                    placeholder="BNPAFRPP"
+                    maxLength={11}
+                    data-testid="input-settings-bic"
+                  />
+                  <p className="text-xs text-gray-500">Bank Identifier Code (8 ou 11 caractères)</p>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => handleSave("legal")}
+                    disabled={updateMutation.isPending}
+                    className="gap-2"
+                    data-testid="button-save-legal"
+                  >
+                    {updateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Enregistrer
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="social">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5 text-primary" />
+                  Réseaux sociaux et site web
+                </CardTitle>
+                <CardDescription>
+                  Liens vers vos présences en ligne
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="website">Site web</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="website"
+                      type="url"
+                      value={formData.website}
+                      onChange={(e) => updateField("website", e.target.value)}
+                      placeholder="https://www.votrecommunaute.fr"
+                      className="pl-10"
+                      data-testid="input-settings-website"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="facebook">Facebook</Label>
+                    <div className="relative">
+                      <Facebook className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="facebook"
+                        value={formData.facebook}
+                        onChange={(e) => updateField("facebook", e.target.value)}
+                        placeholder="https://facebook.com/votrepage"
+                        className="pl-10"
+                        data-testid="input-settings-facebook"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter">Twitter / X</Label>
+                    <div className="relative">
+                      <Twitter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="twitter"
+                        value={formData.twitter}
+                        onChange={(e) => updateField("twitter", e.target.value)}
+                        placeholder="https://x.com/votrecompte"
+                        className="pl-10"
+                        data-testid="input-settings-twitter"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram">Instagram</Label>
+                    <div className="relative">
+                      <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="instagram"
+                        value={formData.instagram}
+                        onChange={(e) => updateField("instagram", e.target.value)}
+                        placeholder="https://instagram.com/votrecompte"
+                        className="pl-10"
+                        data-testid="input-settings-instagram"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="linkedin">LinkedIn</Label>
+                    <div className="relative">
+                      <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="linkedin"
+                        value={formData.linkedin}
+                        onChange={(e) => updateField("linkedin", e.target.value)}
+                        placeholder="https://linkedin.com/company/votrepage"
+                        className="pl-10"
+                        data-testid="input-settings-linkedin"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => handleSave("social")}
+                    disabled={updateMutation.isPending}
+                    className="gap-2"
+                    data-testid="button-save-social"
                   >
                     {updateMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
