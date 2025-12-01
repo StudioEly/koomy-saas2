@@ -1,14 +1,23 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Eye, EyeOff, ArrowRight, Lock, UserPlus, LogIn, Ticket } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Lock, UserPlus, LogIn, Ticket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { API_BASE_URL as API_URL } from "@/api/config";
-import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
-import bgImage from "@assets/generated_images/abstract_professional_blue_and_white_geometric_background_for_app_header.png";
+import koomyLogo from "@assets/ChatGPT Image 30 nov. 2025, 05_54_45_1764590118748.png";
+
+function KoomyIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#44A8FF]/70">
+      <circle cx="7" cy="12" r="4" stroke="currentColor" strokeWidth="2" fill="none" />
+      <circle cx="17" cy="12" r="4" stroke="currentColor" strokeWidth="2" fill="none" />
+      <path d="M11 12 L13 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function MobileLogin() {
   const [_, setLocation] = useLocation();
@@ -111,62 +120,91 @@ export default function MobileLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col relative overflow-hidden" data-testid="mobile-login-page">
-      <div className="absolute top-0 left-0 w-full h-1/3 bg-primary overflow-hidden">
-        <img src={bgImage} className="w-full h-full object-cover opacity-20 mix-blend-overlay" alt="Background" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/10"></div>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" data-testid="mobile-login-page" style={{
+      background: "linear-gradient(180deg, #E8F4FF 0%, #F5FAFF 40%, #FFFFFF 100%)"
+    }}>
+      <div className="absolute top-0 left-0 w-full h-80 overflow-hidden">
+        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full opacity-30" style={{
+          background: "radial-gradient(circle, rgba(68, 168, 255, 0.3) 0%, transparent 70%)"
+        }} />
+        <div className="absolute -top-10 right-0 w-60 h-60 rounded-full opacity-20" style={{
+          background: "radial-gradient(circle, rgba(68, 168, 255, 0.4) 0%, transparent 70%)"
+        }} />
+        <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-10" style={{
+          background: "radial-gradient(circle, rgba(68, 168, 255, 0.5) 0%, transparent 60%)"
+        }} />
       </div>
 
-      <div className="relative z-10 flex-1 flex flex-col px-6 pt-16">
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-white p-3 rounded-2xl shadow-xl mb-4">
-            <img src={logo} alt="Koomy Logo" className="w-14 h-14" />
+      <div className="relative z-10 flex-1 flex flex-col px-6 pt-14 pb-6">
+        <div className="flex flex-col items-center mb-6">
+          <div className="relative mb-4">
+            <div className="absolute inset-0 blur-xl opacity-40" style={{
+              background: "radial-gradient(circle, rgba(68, 168, 255, 0.6) 0%, transparent 70%)"
+            }} />
+            <img 
+              src={koomyLogo} 
+              alt="Koomy" 
+              className="relative w-48 h-auto drop-shadow-sm"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-white drop-shadow-md text-center">Koomy</h1>
-          <p className="text-blue-100 text-center mt-1 text-sm font-medium">Vos communautés, dans votre poche.</p>
+          
+          <div className="flex items-center gap-2 mt-1">
+            <KoomyIcon />
+            <p className="text-gray-500 text-sm font-medium tracking-wide">
+              Vos communautés, une app.
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl p-6 -mt-2 flex-1 flex flex-col max-h-[calc(100vh-180px)] overflow-hidden">
+        <div className="koomy-card p-6 flex-1 flex flex-col max-h-[calc(100vh-220px)] overflow-hidden">
           <Tabs defaultValue="login" className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="login" className="flex items-center gap-2" data-testid="tab-login">
+            <TabsList className="grid w-full grid-cols-2 mb-5 p-1 bg-gray-100/80 rounded-xl">
+              <TabsTrigger 
+                value="login" 
+                className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#44A8FF] font-semibold transition-all"
+                data-testid="tab-login"
+              >
                 <LogIn size={16} /> Connexion
               </TabsTrigger>
-              <TabsTrigger value="register" className="flex items-center gap-2" data-testid="tab-register">
+              <TabsTrigger 
+                value="register" 
+                className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#44A8FF] font-semibold transition-all"
+                data-testid="tab-register"
+              >
                 <UserPlus size={16} /> Inscription
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="login" className="flex-1 overflow-y-auto">
               <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700">Email</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-600">Email</label>
                   <Input 
                     type="email" 
                     placeholder="votre.email@exemple.com" 
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="h-11 rounded-xl bg-gray-50 border-gray-200"
+                    className="h-12 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
                     required
                     data-testid="input-login-email"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700">Mot de passe</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-600">Mot de passe</label>
                   <div className="relative">
                     <Input 
                       type={showPassword ? "text" : "password"} 
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="h-11 rounded-xl bg-gray-50 border-gray-200 pr-10"
+                      className="h-12 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 pr-11 text-gray-700"
                       required
                       data-testid="input-login-password"
                     />
                     <button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#44A8FF] transition-colors"
                       data-testid="button-toggle-password"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -176,7 +214,11 @@ export default function MobileLogin() {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-base font-bold shadow-lg shadow-primary/30 mt-2 group"
+                  className="w-full h-12 rounded-xl text-base font-bold mt-3 group transition-all"
+                  style={{
+                    background: "linear-gradient(135deg, #5AB8FF 0%, #44A8FF 100%)",
+                    boxShadow: "0 4px 14px -2px rgba(68, 168, 255, 0.4)"
+                  }}
                   disabled={isLoading}
                   data-testid="button-login"
                 >
@@ -188,7 +230,7 @@ export default function MobileLogin() {
                 </Button>
 
                 <div className="text-center pt-2">
-                  <a href="#" className="text-sm font-medium text-primary hover:underline">
+                  <a href="#" className="text-sm font-medium text-[#44A8FF] hover:text-[#2B9AFF] transition-colors">
                     Mot de passe oublié ?
                   </a>
                 </div>
@@ -199,50 +241,50 @@ export default function MobileLogin() {
               <form onSubmit={handleRegister} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Prénom</label>
+                    <label className="text-sm font-semibold text-gray-600">Prénom</label>
                     <Input 
                       type="text" 
                       placeholder="Jean" 
                       value={registerFirstName}
                       onChange={(e) => setRegisterFirstName(e.target.value)}
-                      className="h-11 rounded-xl bg-gray-50 border-gray-200"
+                      className="h-11 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
                       data-testid="input-register-firstname"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Nom</label>
+                    <label className="text-sm font-semibold text-gray-600">Nom</label>
                     <Input 
                       type="text" 
                       placeholder="Dupont" 
                       value={registerLastName}
                       onChange={(e) => setRegisterLastName(e.target.value)}
-                      className="h-11 rounded-xl bg-gray-50 border-gray-200"
+                      className="h-11 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
                       data-testid="input-register-lastname"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700">Email *</label>
+                  <label className="text-sm font-semibold text-gray-600">Email *</label>
                   <Input 
                     type="email" 
                     placeholder="votre.email@exemple.com" 
                     value={registerEmail}
                     onChange={(e) => setRegisterEmail(e.target.value)}
-                    className="h-11 rounded-xl bg-gray-50 border-gray-200"
+                    className="h-11 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
                     required
                     data-testid="input-register-email"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700">Mot de passe *</label>
+                  <label className="text-sm font-semibold text-gray-600">Mot de passe *</label>
                   <Input 
                     type="password" 
                     placeholder="Minimum 6 caractères"
                     value={registerPassword}
                     onChange={(e) => setRegisterPassword(e.target.value)}
-                    className="h-11 rounded-xl bg-gray-50 border-gray-200"
+                    className="h-11 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
                     required
                     minLength={6}
                     data-testid="input-register-password"
@@ -250,13 +292,13 @@ export default function MobileLogin() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-gray-700">Confirmer *</label>
+                  <label className="text-sm font-semibold text-gray-600">Confirmer *</label>
                   <Input 
                     type="password" 
                     placeholder="Confirmez le mot de passe"
                     value={registerConfirmPassword}
                     onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                    className="h-11 rounded-xl bg-gray-50 border-gray-200"
+                    className="h-11 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
                     required
                     data-testid="input-register-confirm"
                   />
@@ -264,7 +306,11 @@ export default function MobileLogin() {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 rounded-xl bg-green-600 hover:bg-green-700 text-base font-bold shadow-lg shadow-green-600/30 mt-2 group"
+                  className="w-full h-12 rounded-xl text-base font-bold mt-2 group transition-all"
+                  style={{
+                    background: "linear-gradient(135deg, #5AB8FF 0%, #44A8FF 100%)",
+                    boxShadow: "0 4px 14px -2px rgba(68, 168, 255, 0.4)"
+                  }}
                   disabled={isLoading}
                   data-testid="button-register"
                 >
@@ -275,21 +321,21 @@ export default function MobileLogin() {
                   )}
                 </Button>
 
-                <p className="text-xs text-gray-500 text-center pt-2">
+                <p className="text-xs text-gray-400 text-center pt-2">
                   En créant un compte, vous acceptez nos conditions d'utilisation.
                 </p>
               </form>
             </TabsContent>
           </Tabs>
 
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-center gap-2 text-gray-500 mb-3">
+          <div className="mt-4 pt-4 border-t border-gray-100/80">
+            <div className="flex items-center justify-center gap-2 text-gray-400 mb-3">
               <Ticket size={16} />
               <span className="text-sm">Vous avez un code d'adhésion ?</span>
             </div>
             <Button 
               variant="outline" 
-              className="w-full h-10 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:bg-primary/5"
+              className="w-full h-11 rounded-xl border-2 border-dashed border-[#44A8FF]/30 text-[#44A8FF] hover:bg-[#44A8FF]/5 hover:border-[#44A8FF]/50 font-semibold transition-all"
               onClick={() => setLocation("/app/add-card")}
               data-testid="button-add-card-guest"
             >
@@ -297,8 +343,8 @@ export default function MobileLogin() {
             </Button>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-            <a href="/admin/dashboard" className="text-xs text-gray-400 hover:text-primary transition-colors flex items-center justify-center gap-1">
+          <div className="mt-4 pt-4 border-t border-gray-100/80 text-center">
+            <a href="/admin/dashboard" className="text-xs text-gray-400 hover:text-[#44A8FF] transition-colors flex items-center justify-center gap-1">
               <Lock size={10} /> Accès Administration
             </a>
           </div>
