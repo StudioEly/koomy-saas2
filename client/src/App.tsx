@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 // Mobile Pages
 import MobileLogin from "@/pages/mobile/Login";
 import CommunityHub from "@/pages/mobile/CommunityHub";
+import AddCard from "@/pages/mobile/AddCard";
 import MobileHome from "@/pages/mobile/Home";
 import MobileCard from "@/pages/mobile/Card";
 import MobileNews from "@/pages/mobile/News";
@@ -71,6 +72,7 @@ function Router() {
       {/* Mobile Routes */}
       <Route path="/app/login" component={MobileLogin} />
       <Route path="/app/hub" component={CommunityHub} />
+      <Route path="/app/add-card" component={AddCard} />
       
       {/* Dynamic Community Routes */}
       <Route path="/app/:communityId/home" component={MobileHome} />
