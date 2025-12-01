@@ -1,0 +1,213 @@
+Mettre en place un système complet de création et d’édition de communauté, lié au compte administrateur.
+
+Lorsqu’un nouvel administrateur crée son compte, il doit obligatoirement compléter un formulaire “Informations sur votre communauté”.
+Ces informations doivent :
+
+être enregistrées en base de données,
+
+être éditables depuis l’espace administrateur / propriétaire,
+
+être réutilisées partout où l’interface affiche des détails sur la communauté.
+
+Le terme unique à utiliser partout est “communauté”.
+
+🏷️ Type de communauté (champ essentiel)
+
+Ajouter un champ obligatoire communityType, avec une liste prédéfinie.
+Le type choisi sera ensuite réutilisé partout dans l’interface (ex. “votre association”, “votre syndicat”, “votre club sportif”…).
+
+Liste complète des types de communautés disponibles :
+
+Club sportif
+
+Association
+
+Syndicat / Union
+
+Communauté culturelle
+
+Groupe d’étudiants
+
+Association de parents
+
+Communauté d’entreprise
+
+Communauté de quartier
+
+Groupe de jeunes
+
+Organisation caritative / ONG
+
+Réseau professionnel
+
+Communauté religieuse
+
+Groupe de loisirs / hobby
+
+Organisation communautaire
+
+Autre (avec champ texte “Précisez”)
+
+Implémentation attendue :
+
+Enum côté frontend,
+
+Stockage sous forme de string dans la base (communityType).
+
+🗂️ Modèle de données
+
+Créer ou étendre le modèle Community avec les champs suivants :
+
+id
+
+ownerId (FK vers l’utilisateur admin)
+
+name (obligatoire)
+
+communityType (obligatoire, issu de la liste ci-dessus)
+
+category
+
+description
+
+logoUrl
+
+primaryColor
+
+address, city, postalCode, country
+
+contactEmail, contactPhone
+
+membershipStartDate, membershipEndDate
+
+welcomeMessage
+
+Champs relatifs au paiement (Stripe – carte bancaire) :
+
+membershipFeeEnabled (booléen)
+
+membershipFeeAmount
+
+currency
+
+billingPeriod (one_time / monthly / yearly)
+
+stripePriceId
+
+Mettre à jour le schéma ORM et générer la migration nécessaire.
+
+🧭 Workflow de création de compte : étape obligatoire “Créer votre communauté”
+
+Dans le processus d’inscription admin :
+
+Après la création du compte administrateur, afficher l’étape “Créer votre communauté”.
+
+Le formulaire doit inclure, au minimum :
+
+name
+
+communityType (liste déroulante obligatoire)
+
+category
+
+description
+
+logo (upload)
+
+couleur principale
+
+adresse + ville + code postal + pays
+
+email de contact
+
+téléphone
+
+période d’adhésion
+
+message d’accueil
+
+paramètres de paiement (Stripe) :
+
+activer / désactiver
+
+montant
+
+devise
+
+période de facturation
+
+Lors de la soumission :
+
+créer une entrée Community liée à l’admin,
+
+ne terminer l’onboarding que si la communauté a bien été créée.
+
+Ajouter également les validations nécessaires :
+
+nom obligatoire,
+
+type de communauté obligatoire,
+
+messages d’erreurs clairs.
+
+📝 Édition de la communauté (Dashboard propriétaire)
+
+Ajouter une section dans le tableau de bord : “Paramètres de la communauté” ou “Détails de la communauté”.
+
+Cette page doit permettre à l’administrateur de :
+
+voir toutes les informations actuelles,
+
+modifier chaque champ,
+
+mettre à jour les réglages de paiement Stripe.
+
+Côté backend :
+
+ajouter une route API GET pour récupérer la communauté du propriétaire,
+
+ajouter une route API PUT/PATCH pour mettre à jour ses informations.
+
+Ajouter feedback utilisateur (toast succès/erreur).
+
+🔄 Réutilisation des données partout dans l’interface
+
+Parcourir le code et remplacer tout texte générique par les données réelles :
+
+nom de la communauté,
+
+type de communauté,
+
+logo,
+
+couleurs,
+
+ville / pays,
+
+catégorie.
+
+Gérer les états : chargement, données manquantes, valeurs par défaut.
+
+🧩 Qualité du code
+
+Respecter la structure du projet actuelle (Next.js, API routes, conventions internes).
+
+Utiliser les composants UI existants.
+
+Utiliser TypeScript si le projet le supporte.
+
+Fournir validation, sécurité et gestion propre des erreurs.
+
+Donner la liste des fichiers créés ou modifiés.
+
+Expliquer brièvement comment les nouvelles parties fonctionnent ensemble.
+
+Préciser les commandes de migration à exécuter si nécessaire.
+
+🎯 Résultat attendu
+
+Quand un administrateur crée un compte, il doit obligatoirement créer sa communauté en spécifiant son type (club sportif, association, syndicat, etc.).
+Il doit ensuite pouvoir modifier toutes ces informations depuis le dashboard.
+L’ensemble des pages du SaaS doit utiliser ces données pour afficher les détails de la communauté.
+
+La plateforme doit ainsi être capable d’adapter automatiquement son vocabulaire et ses affichages selon le type de communauté choisi par l’administrateur.

@@ -15,6 +15,28 @@ export const scopeEnum = pgEnum("scope", ["national", "local"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const paymentRequestStatusEnum = pgEnum("payment_request_status", ["pending", "paid", "expired", "cancelled"]);
 export const userGlobalRoleEnum = pgEnum("user_global_role", ["platform_super_admin", "platform_support"]);
+export const billingPeriodEnum = pgEnum("billing_period", ["one_time", "monthly", "yearly"]);
+
+// Community Types
+export const COMMUNITY_TYPES = [
+  { value: "sports_club", label: "Club sportif" },
+  { value: "association", label: "Association" },
+  { value: "union", label: "Syndicat / Union" },
+  { value: "cultural", label: "Communauté culturelle" },
+  { value: "students", label: "Groupe d'étudiants" },
+  { value: "parents", label: "Association de parents" },
+  { value: "corporate", label: "Communauté d'entreprise" },
+  { value: "neighborhood", label: "Communauté de quartier" },
+  { value: "youth", label: "Groupe de jeunes" },
+  { value: "charity", label: "Organisation caritative / ONG" },
+  { value: "professional", label: "Réseau professionnel" },
+  { value: "religious", label: "Communauté religieuse" },
+  { value: "hobby", label: "Groupe de loisirs / hobby" },
+  { value: "community_org", label: "Organisation communautaire" },
+  { value: "other", label: "Autre" }
+] as const;
+
+export type CommunityType = typeof COMMUNITY_TYPES[number]["value"];
 
 // Accounts Table (Global Koomy accounts for public app users)
 export const accounts = pgTable("accounts", {
@@ -44,11 +66,30 @@ export const plans = pgTable("plans", {
 // Communities Table (Tenants)
 export const communities = pgTable("communities", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  ownerId: varchar("owner_id", { length: 50 }).references(() => users.id),
   name: text("name").notNull(),
+  communityType: text("community_type").notNull().default("association"),
+  communityTypeOther: text("community_type_other"),
+  category: text("category"),
   logo: text("logo"),
-  primaryColor: text("primary_color").default("215 85% 35%"),
+  primaryColor: text("primary_color").default("207 100% 63%"),
   secondaryColor: text("secondary_color").default("350 80% 55%"),
   description: text("description"),
+  address: text("address"),
+  city: text("city"),
+  postalCode: text("postal_code"),
+  country: text("country").default("France"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  membershipStartDate: timestamp("membership_start_date"),
+  membershipEndDate: timestamp("membership_end_date"),
+  welcomeMessage: text("welcome_message"),
+  membershipFeeEnabled: boolean("membership_fee_enabled").default(false),
+  membershipFeeAmount: integer("membership_fee_amount"),
+  currency: text("currency").default("EUR"),
+  billingPeriod: billingPeriodEnum("billing_period").default("yearly"),
+  stripePriceId: text("stripe_price_id"),
+  stripeProductId: text("stripe_product_id"),
   memberCount: integer("member_count").default(0),
   planId: varchar("plan_id", { length: 50 }).references(() => plans.id).notNull(),
   subscriptionStatus: subscriptionStatusEnum("subscription_status").default("active"),
