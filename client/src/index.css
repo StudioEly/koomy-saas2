@@ -37,8 +37,8 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
   
-  --font-sans: 'Inter', sans-serif;
-  --font-heading: 'Montserrat', sans-serif;
+  --font-sans: 'Nunito', 'Inter', sans-serif;
+  --font-heading: 'Nunito', 'Montserrat', sans-serif;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -46,88 +46,96 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Professional Union Theme - Blue/Red/Clean */
+/* Koomy Theme - Sky Blue / Soft / Modern */
 :root {
-  /* UNSA Blue-ish Primary */
-  --primary: 215 85% 35%;
+  /* Koomy Sky Blue Primary (#44A8FF) */
+  --primary: 207 100% 63%;
   --primary-foreground: 0 0% 100%;
+  
+  /* Koomy Color Palette */
+  --koomy-primary: 207 100% 63%;
+  --koomy-primary-light: 207 100% 75%;
+  --koomy-primary-dark: 207 90% 45%;
+  --koomy-bg-soft: 210 40% 98%;
+  --koomy-border-soft: 210 30% 90%;
+  --koomy-glow: 207 100% 63%;
 
-  /* Action Red Secondary */
-  --secondary: 350 80% 55%;
+  /* Secondary - Soft teal accent */
+  --secondary: 180 50% 50%;
   --secondary-foreground: 0 0% 100%;
 
   /* Neutral Backgrounds */
-  --background: 210 20% 98%; /* Very light cool gray */
-  --foreground: 215 25% 20%; /* Deep blue-gray text */
+  --background: 210 40% 98%;
+  --foreground: 220 20% 25%;
 
   --card: 0 0% 100%;
-  --card-foreground: 215 25% 20%;
+  --card-foreground: 220 20% 25%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 215 25% 20%;
+  --popover-foreground: 220 20% 25%;
 
-  --muted: 210 20% 96%;
-  --muted-foreground: 215 20% 50%;
+  --muted: 210 30% 96%;
+  --muted-foreground: 220 15% 50%;
 
-  --accent: 210 20% 94%;
-  --accent-foreground: 215 85% 35%;
+  --accent: 207 50% 95%;
+  --accent-foreground: 207 100% 50%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 220 13% 91%;
-  --input: 220 13% 91%;
-  --ring: 215 85% 35%;
+  --border: 210 30% 90%;
+  --input: 210 30% 92%;
+  --ring: 207 100% 63%;
 
-  --radius: 0.75rem;
+  --radius: 1rem;
 
-  --sidebar: 215 85% 30%; /* Dark blue sidebar for admin */
+  --sidebar: 207 80% 35%;
   --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 350 80% 55%;
+  --sidebar-primary: 207 100% 63%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 215 75% 35%;
+  --sidebar-accent: 207 70% 40%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-border: 215 75% 35%;
-  --sidebar-ring: 215 85% 35%;
+  --sidebar-border: 207 60% 45%;
+  --sidebar-ring: 207 100% 63%;
 }
 
 .dark {
-  --background: 215 25% 10%;
-  --foreground: 210 20% 98%;
+  --background: 220 25% 10%;
+  --foreground: 210 30% 98%;
   
-  --card: 215 25% 12%;
-  --card-foreground: 210 20% 98%;
+  --card: 220 25% 12%;
+  --card-foreground: 210 30% 98%;
   
-  --popover: 215 25% 12%;
-  --popover-foreground: 210 20% 98%;
+  --popover: 220 25% 12%;
+  --popover-foreground: 210 30% 98%;
   
-  --primary: 215 85% 45%;
+  --primary: 207 100% 63%;
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 350 80% 55%;
+  --secondary: 180 50% 45%;
   --secondary-foreground: 0 0% 100%;
   
-  --muted: 215 25% 15%;
-  --muted-foreground: 215 20% 65%;
+  --muted: 220 25% 15%;
+  --muted-foreground: 220 20% 65%;
   
-  --accent: 215 25% 15%;
-  --accent-foreground: 210 20% 98%;
+  --accent: 207 40% 20%;
+  --accent-foreground: 207 100% 75%;
   
   --destructive: 0 62% 30%;
   --destructive-foreground: 0 0% 98%;
   
-  --border: 215 25% 20%;
-  --input: 215 25% 20%;
-  --ring: 215 85% 45%;
+  --border: 220 25% 20%;
+  --input: 220 25% 20%;
+  --ring: 207 100% 63%;
   
-  --sidebar: 215 25% 10%;
-  --sidebar-foreground: 210 20% 98%;
-  --sidebar-primary: 215 85% 45%;
+  --sidebar: 220 25% 8%;
+  --sidebar-foreground: 210 30% 98%;
+  --sidebar-primary: 207 100% 63%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 215 25% 15%;
-  --sidebar-accent-foreground: 210 20% 98%;
-  --sidebar-border: 215 25% 20%;
-  --sidebar-ring: 215 85% 45%;
+  --sidebar-accent: 207 40% 20%;
+  --sidebar-accent-foreground: 210 30% 98%;
+  --sidebar-border: 220 25% 18%;
+  --sidebar-ring: 207 100% 63%;
 }
 
 @layer base {
@@ -154,4 +162,57 @@
 }
 .rotate-y-180 {
   transform: rotateY(180deg);
+}
+
+/* Koomy Design System Utilities */
+.koomy-gradient {
+  background: linear-gradient(135deg, hsl(207 100% 68%) 0%, hsl(207 100% 58%) 100%);
+}
+
+.koomy-gradient-soft {
+  background: linear-gradient(180deg, hsl(207 100% 97%) 0%, hsl(210 40% 98%) 100%);
+}
+
+.koomy-glow {
+  box-shadow: 0 0 40px 10px hsla(207, 100%, 63%, 0.25);
+}
+
+.koomy-glow-text {
+  text-shadow: 0 0 30px hsla(207, 100%, 63%, 0.5), 0 0 60px hsla(207, 100%, 63%, 0.3);
+}
+
+.koomy-card {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px -4px rgba(68, 168, 255, 0.12), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+}
+
+.koomy-card-hover {
+  transition: all 0.3s ease;
+}
+.koomy-card-hover:hover {
+  box-shadow: 0 8px 32px -4px rgba(68, 168, 255, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.koomy-btn {
+  background: hsl(207 100% 63%);
+  border-radius: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.koomy-btn:hover {
+  background: hsl(207 100% 55%);
+  box-shadow: 0 4px 16px -2px rgba(68, 168, 255, 0.4);
+}
+
+.koomy-input {
+  background: hsl(210 40% 97%);
+  border: 1.5px solid hsl(210 30% 90%);
+  border-radius: 0.875rem;
+  transition: all 0.2s ease;
+}
+.koomy-input:focus {
+  border-color: hsl(207 100% 63%);
+  box-shadow: 0 0 0 3px hsla(207, 100%, 63%, 0.15);
 }

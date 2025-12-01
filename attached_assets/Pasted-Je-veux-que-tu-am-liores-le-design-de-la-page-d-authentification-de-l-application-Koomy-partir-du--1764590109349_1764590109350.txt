@@ -1,0 +1,114 @@
+Je veux que tu améliores le design de la page d’authentification de l’application Koomy à partir du logo fourni (ci-joint). Ce logo est notre nouvelle identité visuelle principale. Merci de mettre à jour le style de l’écran pour qu’il soit plus harmonieux, professionnel et cohérent.
+
+🎨 Identité Koomy (à respecter)
+
+Le logo Koomy est une typographie bleu ciel (#44A8FF ou similaire).
+
+Style général : arrondi, doux, accessible, moderne.
+
+Pas de couleurs agressives, pas de contrastes violents.
+
+🧩 Travail demandé
+1. Modifier les couleurs de l’écran d’accueil
+
+Utilise une palette cohérente avec le logo :
+
+nuances de bleu clair / bleu ciel,
+
+dégradés doux haut → bas,
+
+touches de blanc bien espacées.
+
+Améliore le header bleu pour qu’il fasse plus moderne (dégradé léger, texture géométrique subtile, etc.).
+
+Mets en valeur le logo au centre avec un léger halo / glow très soft (optionnel).
+
+2. Ajouter le slogan officiel
+
+Sous le mot “Koomy”, ajoute :
+
+Vos communautés, une app.
+
+Style :
+
+petit, gris #666, espacé élégamment,
+
+centré,
+
+police légère.
+
+3. Ajouter éventuellement une icône simple à côté du logo (optionnel)
+
+Si pertinent, propose ou intègre une icône ultra-minimaliste :
+
+un petit symbole de connexion entre 2 cercles (représentant les communautés),
+
+style 2D flat, lignes arrondies,
+
+couleur bleue légèrement plus foncée que le logo,
+
+parfaitement cohérent avec l’identité globale.
+
+Ne pas faire de mascotte ni de forme complexe.
+L’icône doit être discrète et peut être utilisée comme “pictogramme Koomy”.
+
+4. Moderniser le composant d’authentification
+
+Adapte la forme du container blanc (bord arrondis 18–24px).
+
+Améliore la shadow (shadow-lg mais soft).
+
+Revois les boutons (connexion, inscription) :
+
+coins arrondis,
+
+bleu principal cohérent avec le logo,
+
+hover propres.
+
+Améliore la typographie globale :
+
+police plus ronde type Inter, Nunito, ou similaire.
+
+5. Adapter le thème global en variables UI
+
+Crée ou mets à jour les variables de style (CSS/Tailwind) pour que :
+
+--koomy-primary = bleu du logo,
+
+--koomy-primary-light,
+
+--koomy-bg-soft,
+
+--koomy-border-soft,
+
+etc.
+
+6. Mettre à jour l’écran en conséquence (code React/HTML/Tailwind)
+
+Fais toutes les modifications nécessaires dans les fichiers concernés :
+
+Composant Auth/Login,
+
+Composant Header,
+
+Styles globaux (CSS/Tailwind config),
+
+Ajout du slogan,
+
+Ajustement des couleurs.
+
+Garde un style propre, lisible, moderne.
+Ne modifie pas la logique d’authentification.
+
+7. À la fin
+
+Explique dans un commentaire :
+
+les améliorations que tu as faites,
+
+les couleurs que tu as choisies,
+
+les fichiers modifiés,
+
+comment le résultat respecte le logo fourni.
