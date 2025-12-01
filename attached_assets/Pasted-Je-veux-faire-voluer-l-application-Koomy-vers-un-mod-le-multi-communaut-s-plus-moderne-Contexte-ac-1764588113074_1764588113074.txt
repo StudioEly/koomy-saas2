@@ -1,0 +1,141 @@
+Je veux faire évoluer l’application Koomy vers un modèle multi-communautés plus moderne.
+Contexte actuel (ancien comportement) :
+* Koomy est une app de gestion de membres (syndicats, clubs, associations).
+* En V0, un utilisateur (membre) se connecte avec des identifiants envoyés par SMS / email par l’admin de son club.
+* La logique est plutôt : “un membre = un compte de connexion lié à une communauté”.
+* On est maintenant passé en multitenant, avec plusieurs communautés possibles, mais la logique d’auth n’a pas été refactorisée.
+Objectif de la V1 : On veut passer à une logique :
+* Un compte Koomy global (Account) = 1 login (email + mot de passe, plus tard Google Auth).
+* Ce compte peut gérer plusieurs cartes de membres (membership cards) appartenant à différents clubs / syndicats.
+* La carte est d’abord créée par l’admin du club dans le back-office.
+* Le membre, dans l’app grand public, crée son compte Koomy, puis ajoute ses cartes en saisissant un code reçu lors de la création de la carte.
+* Double reconnaissance souhaitée en V1 :
+    * le code de la carte
+    * et, si disponible, la correspondance d’email entre ce qui a été saisi par l’admin et l’email du compte Koomy.
+Merci d’analyser le code existant (backend + frontend) et de faire le refactor complet suivant.
+
+1️⃣ Modèle de données à mettre en place
+1. Introduire la notion de “compte Koomy” (Account) si elle n’existe pas déjà :
+    * Table / modèle accounts (ou équivalent) avec :
+        * id (UUID ou string comme dans le reste du projet)
+        * email (unique, non nul)
+        * passwordHash (string, non nul)
+        * createdAt, updatedAt
+        * éventuellement authProvider et providerId pour Google Auth plus tard (mais ce n’est pas prioritaire à implémenter maintenant).
+    * Ce modèle représente la personne qui se connecte à l’app Koomy grand public.
+2. Adapter le modèle de “membership” (carte de membre) :
+    * Identifier la table/modèle qui représente actuellement :
+        * un membre d’un club / syndicat
+        * avec lien vers community, etc.
+    * Ajouter les champs suivants :
+        * accountId (nullable, FK vers accounts.id) → au départ NULL, puis renseigné quand un compte Koomy “réclame” la carte.
+        * claimCode (string, unique, non nul) → code utilisé par le membre pour lier sa carte à son compte.
+        * displayName ou équivalent (si ce n’est pas déjà le cas) → nom affiché sur la carte (ex : “Rites”, “Jade”, “Luz”).
+    * Ne pas casser la logique multi-tenant existante (communityId, etc.).
+3. Contrainte business V1 :
+    * Si la carte contient un email côté membership (saisi par l’admin lors de la création du membre), alors au moment du “claim”, on doit vérifier :
+        * soit membership.email est NULL
+        * soit membership.email == account.email
+    * Si ce n’est pas le cas → retour d’une erreur HTTP 400 avec un message du type :
+        * "L'adresse email de la carte ne correspond pas à celle de votre compte Koomy."
+
+2️⃣ Backend — Authentification côté app publique
+1. Créer / adapter des endpoints d’auth global “Account” :
+    * POST /api/auth/register
+        * payload : { email, password }
+        * crée un enregistrement dans accounts
+        * hash du mot de passe (utiliser la même lib que pour le reste du projet).
+    * POST /api/auth/login
+        * payload : { email, password }
+        * vérifie accounts.email + mot de passe
+        * renvoie un token (JWT ou autre mécanisme déjà utilisé) contenant au minimum accountId.
+    * Garder intacte la logique d’auth côté admins / SaaS owner. Ne pas casser les logins d’admin de communauté ou du SaaS Owner.
+2. Middleware d’auth global :
+    * Créer / réutiliser un middleware du type requireAccountAuth qui :
+        * lit le token dans l’en-tête (ou cookie selon le projet)
+        * vérifie sa validité
+        * attache req.account (ou équivalent) avec accountId, email.
+
+3️⃣ Backend — Claim d’une carte + listing des cartes
+1. Endpoint pour lier une carte à un compte Koomy :
+    * POST /api/memberships/claim
+    * Protégé par le middleware requireAccountAuth.
+    * Payload attendu : { code } où code est le claimCode.
+    * Logique :
+        1. Chercher une membership par claimCode.
+        2. Si non trouvée → 404.
+        3. Si membership.accountId est déjà renseigné → 400 (“Cette carte est déjà liée à un compte Koomy.”).
+        4. Si membership.email non nul et différent de req.account.email → 400 (email mismatch).
+        5. Sinon :
+            * mettre à jour membership.accountId = req.account.id
+            * retourner la membership + les infos de la communauté (nom du club, logo, etc.) pour l’affichage côté front.
+2. Endpoint pour lister les cartes d’un compte :
+    * GET /api/me/memberships
+    * Protégé par requireAccountAuth.
+    * Retourne la liste de toutes les memberships où accountId = req.account.id, incluant les informations utiles côté UI :
+        * nom de la communauté
+        * rôle (si existant)
+        * displayName
+        * statut de la carte
+        * QR code / identifiant si existant.
+3. Génération du claimCode côté admin :
+    * Lors de la création d’un membre dans l’admin (back-office), si claimCode n’existe pas :
+        * générer un code unique de type XXXX-XXXX (8 caractères alphanumériques, avec éventuellement un tiret pour la lisibilité).
+    * Stocker ce code dans la membership.
+    * Exposer ce code dans l’API admin et dans l’interface admin pour qu’il puisse être communiqué au membre (par SMS, email, impression, etc.).
+    * Ajouter un indicateur “Carte réclamée / non réclamée” si possible (basé sur accountId null ou non).
+
+4️⃣ Frontend — Flow utilisateur Koomy grand public
+Merci de travailler sur l’app front “grand public”, pas sur le SaaS owner ni l’admin (sauf pour l’affichage du code côté admin si c’est déjà géré).
+1. Écran d’accueil / Auth globale :
+    * Si l’utilisateur n’est pas authentifié au niveau “Account” :
+        * afficher un écran de connexion / création de compte avec :
+            * email + mot de passe
+            * un bouton “Créer un compte Koomy” / “Se connecter”
+            * préparer au besoin un bouton “Continuer avec Google” (sans forcément implémenter Google maintenant).
+    * Une fois le login OK, stocker le token comme c’est déjà fait dans le projet (localStorage, cookie, etc.).
+2. Nouvel écran “Mes communautés” après login :
+    * Après la connexion, rediriger vers un écran du type :
+        * “Mes cartes Koomy”
+    * Afficher la liste renvoyée par GET /api/me/memberships :
+        * nom de la communauté
+        * displayName (nom sur la carte)
+        * éventuellement statut / rôle
+    * Ajouter un bouton bien visible : “➕ Ajouter une communauté”.
+3. Flow “Ajouter une carte” :
+    * Lorsqu’on clique sur “Ajouter une carte” :
+        * afficher un écran / modal demandant le code de la carte :
+            * champ texte code
+            * éventuellement un bouton “Scanner un QR code” si tu peux réutiliser un composant existant (sinon, laisser le champ code uniquement en V1).
+    * À la validation :
+        * appeler POST /api/memberships/claim avec { code }.
+        * en cas de succès :
+            * actualiser la liste de cartes
+            * afficher un message : “Votre carte a bien été ajoutée.”
+        * en cas d’erreur :
+            * si 400 email mismatch : afficher un message clair → “Cette carte est associée à une autre adresse email. Merci de vérifier l’email utilisé auprès de votre club.”
+            * si 404 / carte inconnue : → “Code invalide ou introuvable.”
+            * si 400 déjà réclamée : → “Cette carte est déjà liée à un autre compte Koomy.”
+4. Supprimer l’ancien flow de login par identifiants SMS/email :
+    * Ne plus proposer aux membres de se connecter avec les anciens identifiants liés à un seul club.
+    * Toute entrée dans l’app publique doit passer par :
+        * compte Koomy global
+        * puis ajout de cartes via code.
+
+5️⃣ Qualité & non-régressions
+* Ne pas casser :
+    * la partie SaaS owner (gestion des communautés, plans, billing)
+    * la partie admin locale (création de communauté, création de membre)
+* Ajouter autant que possible des types / schémas (Drizzle / Zod / TypeScript) en cohérence avec le reste du projet.
+* Ajouter des messages de log utiles côté backend en cas d’erreurs sur claimCode.
+* S’assurer que la Vite app build et tourne toujours en local (npm run dev) et en prod.
+
+6️⃣ À la fin
+1. Résumer tous les fichiers que tu as modifiés (backend + frontend).
+2. Expliquer rapidement le nouveau flow :
+    * “création compte Koomy → mes cartes → ajouter une carte avec code.”
+3. Proposer si possible quelques tests rapides (manuels ou unitaires) pour vérifier que :
+    * un nouveau compte peut être créé,
+    * une carte créée par un admin avec email + code peut être réclamée,
+    * une carte déjà réclamée ne peut pas l’être une seconde fois,
+    * une carte avec email ≠ account.email renvoie bien un message d’erreur.

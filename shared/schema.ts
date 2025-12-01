@@ -15,6 +15,20 @@ export const scopeEnum = pgEnum("scope", ["national", "local"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const paymentRequestStatusEnum = pgEnum("payment_request_status", ["pending", "paid", "expired", "cancelled"]);
 
+// Accounts Table (Global Koomy accounts for public app users)
+export const accounts = pgTable("accounts", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  avatar: text("avatar"),
+  authProvider: text("auth_provider").default("email"), // "email" | "google"
+  providerId: text("provider_id"), // for OAuth providers
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 // Plans Table
 export const plans = pgTable("plans", {
   id: varchar("id", { length: 50 }).primaryKey(),
@@ -55,16 +69,21 @@ export const users = pgTable("users", {
 // User Community Memberships (Junction Table with role info)
 export const userCommunityMemberships = pgTable("user_community_memberships", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 50 }).references(() => users.id).notNull(),
+  userId: varchar("user_id", { length: 50 }).references(() => users.id), // nullable - for admin-created cards
+  accountId: varchar("account_id", { length: 50 }).references(() => accounts.id), // linked Koomy account
   communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
   memberId: text("member_id").notNull(), // e.g., UNSA-2024-8892
+  claimCode: text("claim_code").unique(), // code to link card to account (e.g., XXXX-XXXX)
+  displayName: text("display_name"), // name shown on membership card
+  email: text("email"), // email set by admin when creating member
   role: text("role").notNull(), // "member" | "admin"
   adminRole: adminRoleEnum("admin_role"), // if role is "admin"
   status: memberStatusEnum("status").default("active"),
   section: text("section"),
   joinDate: timestamp("join_date").defaultNow().notNull(),
   contributionStatus: contributionStatusEnum("contribution_status").default("pending"),
-  nextDueDate: timestamp("next_due_date")
+  nextDueDate: timestamp("next_due_date"),
+  claimedAt: timestamp("claimed_at") // when the card was linked to an account
 });
 
 // Sections Table (for organizations with regional/local divisions)
@@ -182,6 +201,10 @@ export const payments = pgTable("payments", {
 });
 
 // Relations
+export const accountsRelations = relations(accounts, ({ many }) => ({
+  memberships: many(userCommunityMemberships)
+}));
+
 export const communitiesRelations = relations(communities, ({ one, many }) => ({
   plan: one(plans, { fields: [communities.planId], references: [plans.id] }),
   memberships: many(userCommunityMemberships),
@@ -203,6 +226,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const userCommunityMembershipsRelations = relations(userCommunityMemberships, ({ one }) => ({
   user: one(users, { fields: [userCommunityMemberships.userId], references: [users.id] }),
+  account: one(accounts, { fields: [userCommunityMemberships.accountId], references: [accounts.id] }),
   community: one(communities, { fields: [userCommunityMemberships.communityId], references: [communities.id] })
 }));
 
@@ -210,7 +234,8 @@ export const userCommunityMembershipsRelations = relations(userCommunityMembersh
 export const insertPlanSchema = createInsertSchema(plans);
 export const insertCommunitySchema = createInsertSchema(communities).omit({ id: true, createdAt: true, memberCount: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
-export const insertMembershipSchema = createInsertSchema(userCommunityMemberships).omit({ id: true, joinDate: true });
+export const insertAccountSchema = createInsertSchema(accounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertMembershipSchema = createInsertSchema(userCommunityMemberships).omit({ id: true, joinDate: true, claimedAt: true });
 export const insertSectionSchema = createInsertSchema(sections).omit({ id: true });
 export const insertNewsSchema = createInsertSchema(newsArticles).omit({ id: true, publishedAt: true });
 export const insertEventSchema = createInsertSchema(events).omit({ id: true });
@@ -225,6 +250,7 @@ export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true,
 export type Plan = typeof plans.$inferSelect;
 export type Community = typeof communities.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type Account = typeof accounts.$inferSelect;
 export type UserCommunityMembership = typeof userCommunityMemberships.$inferSelect;
 export type Section = typeof sections.$inferSelect;
 export type NewsArticle = typeof newsArticles.$inferSelect;
@@ -240,6 +266,7 @@ export type Payment = typeof payments.$inferSelect;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
 export type InsertMembership = z.infer<typeof insertMembershipSchema>;
 export type InsertSection = z.infer<typeof insertSectionSchema>;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
