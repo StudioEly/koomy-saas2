@@ -105,11 +105,22 @@ Preferred communication style: Simple, everyday language.
 - **Community features:** `sections`, `newsArticles`, `events`, `messages`, `supportTickets`, `faqs`
 - **Financial:** `membershipFees`, `paymentRequests`, `payments`
 
-**Authentication Model:**
-- `accounts` table: Public Koomy app users (email/password with bcrypt)
-- `users` table: Back-office administrators
+**Authentication Model (Three-Tier System):**
+- `accounts` table: Public Koomy mobile app users (email/password with bcrypt)
+- `users` table: Back-office administrators with `globalRole` for platform admins
+- `userGlobalRoleEnum`: platform_super_admin, platform_support
 - Membership claiming: Admins create cards with auto-generated 8-char `claimCode`, users claim with their Koomy account
-- Routes: `/api/accounts/register`, `/api/accounts/login`, `/api/memberships/claim`, `/api/memberships/verify/:claimCode`
+
+**Authentication Routes:**
+- Mobile: `/api/accounts/register`, `/api/accounts/login`, `/api/memberships/claim`, `/api/memberships/verify/:claimCode`
+- Web Admin: `/api/admin/login` - Returns user with memberships for community selection
+- Platform Admin: `/api/platform/login` - Returns user with globalRole, requires platform_super_admin role
+
+**Route Protection (client/src/contexts/AuthContext.tsx):**
+- `authReady`: Synchronously hydrated from localStorage on initial render
+- `isPlatformAdmin`: Computed from user.globalRole === 'platform_super_admin'
+- `isAdmin`: Computed from user + currentMembership.role === 'admin'
+- Guards prevent content flash by checking both authReady and role before rendering
 
 **Enums for Status Management:**
 - Subscription status, member status, contribution status
