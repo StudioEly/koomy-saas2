@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Eye, EyeOff, ArrowRight, Lock, UserPlus, LogIn, Ticket, Users } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, UserPlus, LogIn, Ticket, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -343,11 +343,6 @@ export default function MobileLogin() {
             </Button>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-gray-100/80 text-center">
-            <a href="/admin/dashboard" className="text-xs text-gray-400 hover:text-[#44A8FF] transition-colors flex items-center justify-center gap-1">
-              <Lock size={10} /> Accès Administration
-            </a>
-          </div>
         </div>
       </div>
     </div>
