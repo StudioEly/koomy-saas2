@@ -69,8 +69,8 @@ export default function CommunityHub() {
       </div>
 
       <div className="w-full max-w-md min-h-screen relative flex flex-col">
-        <div className="relative z-10 p-5 pt-10 pb-4 flex justify-between items-center">
-          <img src={koomyLogo} alt="Koomy" className="h-8" />
+        <div className="relative z-10 p-5 pt-8 pb-4 flex justify-between items-center">
+          <img src={koomyLogo} alt="Koomy" className="h-14" />
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{
               background: "linear-gradient(135deg, #5AB8FF 0%, #44A8FF 100%)"
