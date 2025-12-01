@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import MobileLayout from "@/components/layouts/MobileLayout";
 import { Button } from "@/components/ui/button";
 import { User, Settings, Bell, ChevronRight, HelpCircle, Shield, ArrowLeft, CreditCard } from "lucide-react";
@@ -6,18 +7,26 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function MobileProfile({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
-  const { user, currentMembership, selectCommunity } = useAuth();
+  const { user, account, currentMembership, selectCommunity, selectMembership } = useAuth();
   const [_, setLocation] = useLocation();
 
-  if (currentMembership?.communityId !== communityId) {
-    selectCommunity(communityId);
-  }
+  const currentUser = account || user;
+  const accountMembership = account?.memberships?.find(m => m.communityId === communityId);
+  const activeMembership = currentMembership || accountMembership;
+
+  useEffect(() => {
+    if (accountMembership && currentMembership?.communityId !== communityId) {
+      selectMembership(accountMembership.id);
+    } else if (!accountMembership && currentMembership?.communityId !== communityId) {
+      selectCommunity(communityId);
+    }
+  }, [communityId, accountMembership, currentMembership, selectMembership, selectCommunity]);
 
   const handleLogout = () => {
     setLocation("/app/hub");
   };
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <MobileLayout communityId={communityId}>
         <div className="p-6 pt-10 text-center text-gray-500">
@@ -27,7 +36,7 @@ export default function MobileProfile({ params }: { params: { communityId: strin
     );
   }
 
-  const pendingPayments = currentMembership?.contributionStatus !== "up_to_date";
+  const pendingPayments = activeMembership?.contributionStatus !== "up_to_date";
 
   return (
     <MobileLayout communityId={communityId}>
@@ -37,7 +46,7 @@ export default function MobileProfile({ params }: { params: { communityId: strin
         <div className="flex flex-col items-center mb-8">
           <div className="w-24 h-24 rounded-full p-1 bg-white shadow-lg mb-4 relative">
              <img 
-               src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`} 
+               src={currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.firstName || 'user'}`} 
                alt="Profile" 
                className="w-full h-full rounded-full object-cover" 
              />
@@ -45,8 +54,8 @@ export default function MobileProfile({ params }: { params: { communityId: strin
                <Settings size={14} />
              </button>
           </div>
-          <h2 className="text-xl font-bold text-gray-900">{user.firstName} {user.lastName}</h2>
-          <p className="text-gray-500">{user.email}</p>
+          <h2 className="text-xl font-bold text-gray-900">{activeMembership?.displayName || currentUser.firstName || "Membre"}</h2>
+          <p className="text-gray-500">{currentUser.email}</p>
         </div>
 
         <div className="space-y-4">

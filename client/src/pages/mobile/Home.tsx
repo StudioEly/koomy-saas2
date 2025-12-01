@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import MobileLayout from "@/components/layouts/MobileLayout";
 import { Bell, CreditCard, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,18 +10,20 @@ import type { NewsArticle, Event } from "@shared/schema";
 
 export default function MobileHome({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
-  const { user, account, currentMembership, currentCommunity, selectCommunity, selectMembership } = useAuth();
+  const { user, account, currentMembership, selectCommunity, selectMembership } = useAuth();
 
   const currentUser = account || user;
 
   const accountMembership = account?.memberships?.find(m => m.communityId === communityId);
   const activeMembership = currentMembership || accountMembership;
 
-  if (accountMembership && currentMembership?.communityId !== communityId) {
-    selectMembership(accountMembership.id);
-  } else if (!accountMembership && currentMembership?.communityId !== communityId) {
-    selectCommunity(communityId);
-  }
+  useEffect(() => {
+    if (accountMembership && currentMembership?.communityId !== communityId) {
+      selectMembership(accountMembership.id);
+    } else if (!accountMembership && currentMembership?.communityId !== communityId) {
+      selectCommunity(communityId);
+    }
+  }, [communityId, accountMembership, currentMembership, selectMembership, selectCommunity]);
 
   const { data: newsList = [] } = useQuery<NewsArticle[]>({
     queryKey: [`/api/communities/${communityId}/news`],

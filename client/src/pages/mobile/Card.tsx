@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MobileLayout from "@/components/layouts/MobileLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
@@ -11,13 +11,21 @@ export default function MobileCard({ params }: { params: { communityId: string }
   const { communityId } = params;
   const [isFlipped, setIsFlipped] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const { user, currentMembership, currentCommunity, selectCommunity } = useAuth();
+  const { user, account, currentMembership, currentCommunity, selectCommunity, selectMembership } = useAuth();
 
-  if (currentMembership?.communityId !== communityId) {
-    selectCommunity(communityId);
-  }
+  const currentUser = account || user;
+  const accountMembership = account?.memberships?.find(m => m.communityId === communityId);
+  const activeMembership = currentMembership || accountMembership;
 
-  if (!user || !currentMembership) {
+  useEffect(() => {
+    if (accountMembership && currentMembership?.communityId !== communityId) {
+      selectMembership(accountMembership.id);
+    } else if (!accountMembership && currentMembership?.communityId !== communityId) {
+      selectCommunity(communityId);
+    }
+  }, [communityId, accountMembership, currentMembership, selectMembership, selectCommunity]);
+
+  if (!currentUser || !activeMembership) {
     return (
       <MobileLayout communityId={communityId}>
         <div className="min-h-full flex items-center justify-center p-6">
@@ -62,12 +70,12 @@ export default function MobileCard({ params }: { params: { communityId: string }
                   </div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1 ${
-                  currentMembership.status === "active" 
+                  activeMembership.status === "active" 
                     ? "bg-green-500/20 border-green-400/30 text-green-100" 
                     : "bg-red-500/20 border-red-400/30 text-red-100"
                 }`}>
-                  <div className={`w-2 h-2 rounded-full ${currentMembership.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"}`}></div>
-                  {currentMembership.status === "active" ? "ACTIF" : "EXPIRÉ"}
+                  <div className={`w-2 h-2 rounded-full ${activeMembership.status === "active" ? "bg-green-400 animate-pulse" : "bg-red-400"}`}></div>
+                  {activeMembership.status === "active" ? "ACTIF" : "EXPIRÉ"}
                 </div>
               </div>
 
@@ -75,15 +83,15 @@ export default function MobileCard({ params }: { params: { communityId: string }
                  <div className="flex items-center gap-4">
                    <div className="w-20 h-20 bg-white/10 rounded-full p-1 shadow-inner backdrop-blur-sm border border-white/20">
                      <img 
-                       src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`} 
+                       src={currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.firstName || 'user'}`} 
                        className="w-full h-full rounded-full object-cover" 
                        alt="User" 
                      />
                    </div>
                    <div>
-                     <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight">{user.firstName}</h2>
-                     <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight uppercase">{user.lastName}</h2>
-                     <p className="text-blue-200 text-xs mt-1 font-medium">{currentMembership.section || "Membre"}</p>
+                     <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight">{activeMembership.displayName || currentUser.firstName || "Membre"}</h2>
+                     <h2 className="text-xl font-bold text-white shadow-black drop-shadow-md tracking-tight uppercase">{currentUser.lastName || ""}</h2>
+                     <p className="text-blue-200 text-xs mt-1 font-medium">{activeMembership.section || "Membre"}</p>
                    </div>
                  </div>
               </div>
@@ -91,7 +99,7 @@ export default function MobileCard({ params }: { params: { communityId: string }
               <div className="relative z-10 grid grid-cols-2 gap-y-2 gap-x-4 text-xs border-t border-white/10 pt-3 mt-1">
                 <div>
                   <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">N° Adhérent</p>
-                  <p className="font-mono font-medium tracking-wider">{currentMembership.memberId}</p>
+                  <p className="font-mono font-medium tracking-wider">{activeMembership.memberId}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Année</p>
@@ -99,13 +107,13 @@ export default function MobileCard({ params }: { params: { communityId: string }
                 </div>
                 <div>
                    <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Adhésion</p>
-                   <p className="font-medium">{new Date(currentMembership.joinDate).toLocaleDateString('fr-FR')}</p>
+                   <p className="font-medium">{new Date(activeMembership.joinDate).toLocaleDateString('fr-FR')}</p>
                 </div>
                 <div className="text-right">
                    <p className="text-blue-300 uppercase tracking-wider text-[9px] mb-0.5">Expiration</p>
                    <p className="font-medium text-white">
-                     {currentMembership.nextDueDate 
-                       ? new Date(currentMembership.nextDueDate).toLocaleDateString('fr-FR') 
+                     {activeMembership.nextDueDate 
+                       ? new Date(activeMembership.nextDueDate).toLocaleDateString('fr-FR') 
                        : "31/12/" + new Date().getFullYear()}
                    </p>
                 </div>
@@ -121,7 +129,7 @@ export default function MobileCard({ params }: { params: { communityId: string }
                    e.stopPropagation();
                    setShowQRModal(true);
                  }}>
-                   <QRCode value={currentMembership.memberId || "MEMBER"} size={120} />
+                   <QRCode value={activeMembership.memberId || "MEMBER"} size={120} />
                  </div>
                  
                  <p className="text-xs text-gray-500 mb-6">Scannez ce code pour valider votre présence aux événements.</p>
@@ -147,10 +155,10 @@ export default function MobileCard({ params }: { params: { communityId: string }
         {/* QR Modal */}
         <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
           <DialogContent className="bg-white sm:max-w-md border-0 shadow-2xl p-8 flex flex-col items-center">
-            <h3 className="text-xl font-bold text-center mb-2">{user.firstName} {user.lastName}</h3>
-            <p className="text-gray-500 text-sm mb-6">{currentMembership.memberId}</p>
+            <h3 className="text-xl font-bold text-center mb-2">{activeMembership.displayName || currentUser.firstName || "Membre"}</h3>
+            <p className="text-gray-500 text-sm mb-6">{activeMembership.memberId}</p>
             <div className="p-4 bg-white rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.1)] border border-gray-100">
-              <QRCode value={currentMembership.memberId || "MEMBER"} size={250} />
+              <QRCode value={activeMembership.memberId || "MEMBER"} size={250} />
             </div>
             <p className="text-center text-gray-400 text-xs mt-6 max-w-[200px]">
               Présentez ce code à l'accueil de l'événement.
