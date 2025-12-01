@@ -17,17 +17,25 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function SuperAdminDashboard() {
   const [_, setLocation] = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isPlatformAdmin, authReady } = useAuth();
   const [communities, setCommunities] = useState(MOCK_COMMUNITIES);
   const [tickets] = useState(MOCK_TICKETS);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
 
   useEffect(() => {
-    if (!user || user.globalRole !== 'platform_super_admin') {
+    if (authReady && !isPlatformAdmin) {
       setLocation("/platform/login");
     }
-  }, [user, setLocation]);
+  }, [authReady, isPlatformAdmin, setLocation]);
+
+  if (!authReady || !isPlatformAdmin) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     logout();
