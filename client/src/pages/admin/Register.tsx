@@ -1,22 +1,44 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Building2, Eye, EyeOff, Lock, Mail, ArrowRight, User, Phone, ArrowLeft } from "lucide-react";
+import { 
+  Building2, Eye, EyeOff, Lock, Mail, ArrowRight, User, Phone, ArrowLeft,
+  MapPin, Globe, CreditCard, Calendar, MessageSquare
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import koomyLogo from "@assets/koomy-logo.png";
+import { COMMUNITY_TYPES } from "@shared/schema";
 
-const COMMUNITY_TYPES = [
-  { value: "union", label: "Syndicat" },
-  { value: "association", label: "Association" },
-  { value: "club", label: "Club sportif ou loisirs" },
-  { value: "nonprofit", label: "Organisation à but non lucratif" },
-  { value: "other", label: "Autre" }
+const CATEGORIES = [
+  { value: "sport", label: "Sport" },
+  { value: "culture", label: "Culture" },
+  { value: "education", label: "Éducation" },
+  { value: "social", label: "Social" },
+  { value: "professionnel", label: "Professionnel" },
+  { value: "loisirs", label: "Loisirs" },
+  { value: "environnement", label: "Environnement" },
+  { value: "sante", label: "Santé" },
+  { value: "autre", label: "Autre" }
+];
+
+const CURRENCIES = [
+  { value: "EUR", label: "Euro (€)" },
+  { value: "USD", label: "Dollar ($)" },
+  { value: "GBP", label: "Livre (£)" },
+  { value: "CHF", label: "Franc suisse (CHF)" }
+];
+
+const BILLING_PERIODS = [
+  { value: "one_time", label: "Paiement unique" },
+  { value: "monthly", label: "Mensuel" },
+  { value: "yearly", label: "Annuel" }
 ];
 
 export default function AdminRegister() {
@@ -35,10 +57,23 @@ export default function AdminRegister() {
     confirmPassword: "",
     communityName: "",
     communityType: "",
-    communityDescription: ""
+    communityTypeOther: "",
+    category: "",
+    description: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    country: "France",
+    contactEmail: "",
+    contactPhone: "",
+    welcomeMessage: "",
+    membershipFeeEnabled: false,
+    membershipFeeAmount: "",
+    currency: "EUR",
+    billingPeriod: "yearly"
   });
 
-  const updateField = (field: string, value: string) => {
+  const updateField = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -58,20 +93,28 @@ export default function AdminRegister() {
     return true;
   };
 
+  const validateStep2 = () => {
+    if (!formData.communityName || !formData.communityType) {
+      toast.error("Veuillez remplir le nom et le type de votre communauté");
+      return false;
+    }
+    if (formData.communityType === "other" && !formData.communityTypeOther) {
+      toast.error("Veuillez préciser le type de votre communauté");
+      return false;
+    }
+    return true;
+  };
+
   const handleNextStep = () => {
-    if (validateStep1()) {
+    if (step === 1 && validateStep1()) {
       setStep(2);
+    } else if (step === 2 && validateStep2()) {
+      setStep(3);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.communityName || !formData.communityType) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -86,7 +129,20 @@ export default function AdminRegister() {
           password: formData.password,
           communityName: formData.communityName,
           communityType: formData.communityType,
-          communityDescription: formData.communityDescription
+          communityTypeOther: formData.communityTypeOther || null,
+          category: formData.category || null,
+          description: formData.description || null,
+          address: formData.address || null,
+          city: formData.city || null,
+          postalCode: formData.postalCode || null,
+          country: formData.country,
+          contactEmail: formData.contactEmail || formData.email,
+          contactPhone: formData.contactPhone || formData.phone,
+          welcomeMessage: formData.welcomeMessage || null,
+          membershipFeeEnabled: formData.membershipFeeEnabled,
+          membershipFeeAmount: formData.membershipFeeAmount ? parseInt(formData.membershipFeeAmount) * 100 : null,
+          currency: formData.currency,
+          billingPeriod: formData.billingPeriod
         }),
       });
 
@@ -116,6 +172,12 @@ export default function AdminRegister() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getCommunityTypeLabel = () => {
+    if (formData.communityType === "other") return formData.communityTypeOther || "communauté";
+    const type = COMMUNITY_TYPES.find(t => t.value === formData.communityType);
+    return type?.label.toLowerCase() || "communauté";
   };
 
   return (
@@ -150,25 +212,25 @@ export default function AdminRegister() {
           </p>
           
           <div className="mt-12 space-y-4 text-left max-w-sm">
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <div className="h-10 w-10 rounded-full bg-primary/30 flex items-center justify-center text-lg font-bold">1</div>
+            <div className={`flex items-center gap-4 ${step === 1 ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-sm rounded-xl p-4 transition-all`}>
+              <div className={`h-10 w-10 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-white/20'} flex items-center justify-center text-lg font-bold`}>1</div>
               <div>
                 <div className="font-semibold">Créez votre compte</div>
                 <div className="text-sm text-white/70">Vos informations personnelles</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <div className="h-10 w-10 rounded-full bg-primary/30 flex items-center justify-center text-lg font-bold">2</div>
+            <div className={`flex items-center gap-4 ${step === 2 ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-sm rounded-xl p-4 transition-all`}>
+              <div className={`h-10 w-10 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-white/20'} flex items-center justify-center text-lg font-bold`}>2</div>
               <div>
-                <div className="font-semibold">Configurez votre communauté</div>
-                <div className="text-sm text-white/70">Nom, type et description</div>
+                <div className="font-semibold">Identité de votre communauté</div>
+                <div className="text-sm text-white/70">Nom, type et coordonnées</div>
               </div>
             </div>
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <div className="h-10 w-10 rounded-full bg-primary/30 flex items-center justify-center text-lg font-bold">3</div>
+            <div className={`flex items-center gap-4 ${step === 3 ? 'bg-white/20' : 'bg-white/10'} backdrop-blur-sm rounded-xl p-4 transition-all`}>
+              <div className={`h-10 w-10 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-white/20'} flex items-center justify-center text-lg font-bold`}>3</div>
               <div>
-                <div className="font-semibold">Invitez vos adhérents</div>
-                <div className="text-sm text-white/70">Commencez à gérer votre communauté</div>
+                <div className="font-semibold">Paramètres d'adhésion</div>
+                <div className="text-sm text-white/70">Cotisation et accueil des membres</div>
               </div>
             </div>
           </div>
@@ -176,7 +238,7 @@ export default function AdminRegister() {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 overflow-y-auto">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-lg">
           <div className="lg:hidden flex justify-center mb-6">
             <img 
               src={koomyLogo} 
@@ -190,14 +252,17 @@ export default function AdminRegister() {
               <div className="flex justify-center gap-2 mb-4">
                 <div className={`h-2 w-12 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-gray-200'}`} />
                 <div className={`h-2 w-12 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-gray-200'}`} />
+                <div className={`h-2 w-12 rounded-full transition-colors ${step >= 3 ? 'bg-primary' : 'bg-gray-200'}`} />
               </div>
               <CardTitle className="text-2xl font-bold">
-                {step === 1 ? "Créer votre compte" : "Votre communauté"}
+                {step === 1 ? "Créer votre compte" : step === 2 ? "Votre communauté" : "Paramètres d'adhésion"}
               </CardTitle>
               <CardDescription>
                 {step === 1 
                   ? "Commencez par vos informations personnelles" 
-                  : "Configurez votre espace communautaire"}
+                  : step === 2 
+                    ? "Configurez l'identité de votre espace" 
+                    : "Définissez les paramètres de cotisation"}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
@@ -333,8 +398,8 @@ export default function AdminRegister() {
                     </div>
                   </Button>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+              ) : step === 2 ? (
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="communityName" className="text-sm font-medium text-gray-700">
                       Nom de votre communauté *
@@ -375,18 +440,154 @@ export default function AdminRegister() {
                     </Select>
                   </div>
 
+                  {formData.communityType === "other" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="communityTypeOther" className="text-sm font-medium text-gray-700">
+                        Précisez le type *
+                      </Label>
+                      <Input
+                        id="communityTypeOther"
+                        type="text"
+                        value={formData.communityTypeOther}
+                        onChange={(e) => updateField("communityTypeOther", e.target.value)}
+                        placeholder="Ex: Collectif d'artistes"
+                        className="h-12 rounded-xl border-gray-200"
+                        data-testid="input-register-community-type-other"
+                      />
+                    </div>
+                  )}
+
                   <div className="space-y-2">
-                    <Label htmlFor="communityDescription" className="text-sm font-medium text-gray-700">
-                      Description (optionnel)
+                    <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                      Catégorie
+                    </Label>
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value) => updateField("category", value)}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl border-gray-200" data-testid="select-register-category">
+                        <SelectValue placeholder="Sélectionnez une catégorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(cat => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                      Description
                     </Label>
                     <Textarea
-                      id="communityDescription"
-                      value={formData.communityDescription}
-                      onChange={(e) => updateField("communityDescription", e.target.value)}
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => updateField("description", e.target.value)}
                       placeholder="Décrivez brièvement votre communauté..."
-                      className="min-h-[100px] rounded-xl border-gray-200 resize-none"
+                      className="min-h-[80px] rounded-xl border-gray-200 resize-none"
                       data-testid="input-register-community-description"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city" className="text-sm font-medium text-gray-700">
+                        Ville
+                      </Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="city"
+                          type="text"
+                          value={formData.city}
+                          onChange={(e) => updateField("city", e.target.value)}
+                          placeholder="Lyon"
+                          className="pl-11 h-12 rounded-xl border-gray-200"
+                          data-testid="input-register-city"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="postalCode" className="text-sm font-medium text-gray-700">
+                        Code postal
+                      </Label>
+                      <Input
+                        id="postalCode"
+                        type="text"
+                        value={formData.postalCode}
+                        onChange={(e) => updateField("postalCode", e.target.value)}
+                        placeholder="69001"
+                        className="h-12 rounded-xl border-gray-200"
+                        data-testid="input-register-postal-code"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address" className="text-sm font-medium text-gray-700">
+                      Adresse
+                    </Label>
+                    <Input
+                      id="address"
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => updateField("address", e.target.value)}
+                      placeholder="12 rue de la République"
+                      className="h-12 rounded-xl border-gray-200"
+                      data-testid="input-register-address"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="country" className="text-sm font-medium text-gray-700">
+                      Pays
+                    </Label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="country"
+                        type="text"
+                        value={formData.country}
+                        onChange={(e) => updateField("country", e.target.value)}
+                        placeholder="France"
+                        className="pl-11 h-12 rounded-xl border-gray-200"
+                        data-testid="input-register-country"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contactEmail" className="text-sm font-medium text-gray-700">
+                        Email de contact
+                      </Label>
+                      <Input
+                        id="contactEmail"
+                        type="email"
+                        value={formData.contactEmail}
+                        onChange={(e) => updateField("contactEmail", e.target.value)}
+                        placeholder="contact@..."
+                        className="h-12 rounded-xl border-gray-200"
+                        data-testid="input-register-contact-email"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="contactPhone" className="text-sm font-medium text-gray-700">
+                        Téléphone
+                      </Label>
+                      <Input
+                        id="contactPhone"
+                        type="tel"
+                        value={formData.contactPhone}
+                        onChange={(e) => updateField("contactPhone", e.target.value)}
+                        placeholder="04 XX XX XX XX"
+                        className="h-12 rounded-xl border-gray-200"
+                        data-testid="input-register-contact-phone"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex gap-3 pt-2">
@@ -396,6 +597,139 @@ export default function AdminRegister() {
                       onClick={() => setStep(1)}
                       className="flex-1 h-12 rounded-xl"
                       data-testid="button-register-back"
+                    >
+                      <ArrowLeft size={18} className="mr-2" />
+                      Retour
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleNextStep}
+                      className="flex-1 h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/30 transition-all"
+                      data-testid="button-register-next-step2"
+                    >
+                      <div className="flex items-center gap-2">
+                        Continuer
+                        <ArrowRight size={18} />
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="welcomeMessage" className="text-sm font-medium text-gray-700">
+                      Message d'accueil
+                    </Label>
+                    <div className="relative">
+                      <MessageSquare className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Textarea
+                        id="welcomeMessage"
+                        value={formData.welcomeMessage}
+                        onChange={(e) => updateField("welcomeMessage", e.target.value)}
+                        placeholder={`Bienvenue dans notre ${getCommunityTypeLabel()}! Nous sommes ravis de vous accueillir.`}
+                        className="pl-11 min-h-[100px] rounded-xl border-gray-200 resize-none"
+                        data-testid="input-register-welcome-message"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">Ce message sera affiché aux nouveaux membres</p>
+                  </div>
+
+                  <div className="border rounded-xl p-4 space-y-4 bg-gray-50/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">
+                            Activer les cotisations
+                          </Label>
+                          <p className="text-xs text-gray-500">Collectez les cotisations par carte bancaire</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={formData.membershipFeeEnabled}
+                        onCheckedChange={(checked) => updateField("membershipFeeEnabled", checked)}
+                        data-testid="switch-register-membership-fee"
+                      />
+                    </div>
+
+                    {formData.membershipFeeEnabled && (
+                      <div className="space-y-4 pt-2 border-t">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="membershipFeeAmount" className="text-sm font-medium text-gray-700">
+                              Montant
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                id="membershipFeeAmount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData.membershipFeeAmount}
+                                onChange={(e) => updateField("membershipFeeAmount", e.target.value)}
+                                placeholder="50"
+                                className="h-12 rounded-xl border-gray-200 pr-12"
+                                data-testid="input-register-membership-amount"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                                {formData.currency === "EUR" ? "€" : formData.currency === "USD" ? "$" : formData.currency === "GBP" ? "£" : "CHF"}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="currency" className="text-sm font-medium text-gray-700">
+                              Devise
+                            </Label>
+                            <Select 
+                              value={formData.currency} 
+                              onValueChange={(value) => updateField("currency", value)}
+                            >
+                              <SelectTrigger className="h-12 rounded-xl border-gray-200" data-testid="select-register-currency">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CURRENCIES.map(cur => (
+                                  <SelectItem key={cur.value} value={cur.value}>
+                                    {cur.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="billingPeriod" className="text-sm font-medium text-gray-700">
+                            Période de facturation
+                          </Label>
+                          <Select 
+                            value={formData.billingPeriod} 
+                            onValueChange={(value) => updateField("billingPeriod", value)}
+                          >
+                            <SelectTrigger className="h-12 rounded-xl border-gray-200" data-testid="select-register-billing-period">
+                              <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BILLING_PERIODS.map(period => (
+                                <SelectItem key={period.value} value={period.value}>
+                                  {period.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setStep(2)}
+                      className="flex-1 h-12 rounded-xl"
+                      data-testid="button-register-back-step3"
                     >
                       <ArrowLeft size={18} className="mr-2" />
                       Retour
@@ -413,7 +747,7 @@ export default function AdminRegister() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          Créer
+                          Créer ma communauté
                           <ArrowRight size={18} />
                         </div>
                       )}

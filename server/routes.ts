@@ -256,7 +256,13 @@ export async function registerRoutes(
   // Admin Registration (creates user + community + membership)
   app.post("/api/admin/register", async (req, res) => {
     try {
-      const { firstName, lastName, email, phone, password, communityName, communityType, communityDescription } = req.body;
+      const { 
+        firstName, lastName, email, phone, password,
+        communityName, communityType, communityTypeOther, category, description,
+        address, city, postalCode, country,
+        contactEmail, contactPhone, welcomeMessage,
+        membershipFeeEnabled, membershipFeeAmount, currency, billingPeriod
+      } = req.body;
       
       if (!firstName || !lastName || !email || !password || !communityName || !communityType) {
         return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis" });
@@ -282,10 +288,25 @@ export async function registerRoutes(
         globalRole: null
       });
       
-      // Create community
+      // Create community with all fields
       const community = await storage.createCommunity({
         name: communityName,
-        description: communityDescription || `Communauté ${communityName}`,
+        ownerId: user.id,
+        communityType: communityType,
+        communityTypeOther: communityTypeOther || null,
+        category: category || null,
+        description: description || null,
+        address: address || null,
+        city: city || null,
+        postalCode: postalCode || null,
+        country: country || "France",
+        contactEmail: contactEmail || email,
+        contactPhone: contactPhone || phone || null,
+        welcomeMessage: welcomeMessage || null,
+        membershipFeeEnabled: membershipFeeEnabled || false,
+        membershipFeeAmount: membershipFeeAmount || null,
+        currency: currency || "EUR",
+        billingPeriod: billingPeriod || "yearly",
         planId: "free",
         subscriptionStatus: "active",
         primaryColor: "207 100% 63%",
@@ -318,7 +339,8 @@ export async function registerRoutes(
           community: {
             id: community.id,
             name: community.name,
-            logo: community.logo
+            logo: community.logo,
+            communityType: community.communityType
           }
         }]
       });
@@ -405,6 +427,26 @@ export async function registerRoutes(
       }
       console.error("Create community error:", error);
       return res.status(500).json({ error: "Failed to create community" });
+    }
+  });
+
+  app.put("/api/communities/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const community = await storage.getCommunity(id);
+      if (!community) {
+        return res.status(404).json({ error: "Communauté non trouvée" });
+      }
+      
+      const updates = insertCommunitySchema.partial().parse(req.body);
+      const updatedCommunity = await storage.updateCommunity(id, updates);
+      return res.json(updatedCommunity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Update community error:", error);
+      return res.status(500).json({ error: "Échec de la mise à jour de la communauté" });
     }
   });
 

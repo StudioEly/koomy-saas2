@@ -31,6 +31,7 @@ export interface IStorage {
   getCommunity(id: string): Promise<Community | undefined>;
   getAllCommunities(): Promise<Community[]>;
   createCommunity(community: InsertCommunity): Promise<Community>;
+  updateCommunity(id: string, updates: Partial<InsertCommunity>): Promise<Community>;
   updateCommunityMemberCount(id: string, count: number): Promise<void>;
   
   // Plans
@@ -166,6 +167,11 @@ export class DatabaseStorage implements IStorage {
 
   async createCommunity(insertCommunity: InsertCommunity): Promise<Community> {
     const [community] = await db.insert(communities).values(insertCommunity).returning();
+    return community;
+  }
+
+  async updateCommunity(id: string, updates: Partial<InsertCommunity>): Promise<Community> {
+    const [community] = await db.update(communities).set(updates).where(eq(communities.id, id)).returning();
     return community;
   }
 
