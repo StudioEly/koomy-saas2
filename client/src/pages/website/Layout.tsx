@@ -24,6 +24,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
     { label: "Fonctionnalités", path: "/website" },
     { label: "Tarifs", path: "/website/pricing" },
     { label: "FAQ", path: "/website/faq" },
+    { label: "Contact", path: "/website/contact" },
   ];
 
   const handleLogin = async (e: React.FormEvent) => {
