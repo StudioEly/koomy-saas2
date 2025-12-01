@@ -1,6 +1,6 @@
 import { 
   users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, faqs, messages,
-  membershipFees, paymentRequests, payments, accounts,
+  membershipFees, paymentRequests, payments, accounts, commercialContacts,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
@@ -8,7 +8,8 @@ import {
   type Message, type InsertMessage,
   type MembershipFee, type InsertMembershipFee, type PaymentRequest, type InsertPaymentRequest,
   type Payment, type InsertPayment,
-  type Account, type InsertAccount
+  type Account, type InsertAccount,
+  type CommercialContact, type InsertCommercialContact
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, isNull } from "drizzle-orm";
@@ -99,6 +100,11 @@ export interface IStorage {
   getPayment(id: string): Promise<Payment | undefined>;
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePayment(id: string, updates: Partial<Payment>): Promise<Payment>;
+  
+  // Commercial Contacts
+  getAllCommercialContacts(): Promise<CommercialContact[]>;
+  createCommercialContact(contact: InsertCommercialContact): Promise<CommercialContact>;
+  updateCommercialContactStatus(id: string, status: string): Promise<CommercialContact>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -450,6 +456,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(payments.id, id))
       .returning();
     return payment;
+  }
+  
+  // Commercial Contacts
+  async getAllCommercialContacts(): Promise<CommercialContact[]> {
+    return await db.select().from(commercialContacts).orderBy(desc(commercialContacts.createdAt));
+  }
+
+  async createCommercialContact(contact: InsertCommercialContact): Promise<CommercialContact> {
+    const [result] = await db.insert(commercialContacts).values(contact).returning();
+    return result;
+  }
+
+  async updateCommercialContactStatus(id: string, status: string): Promise<CommercialContact> {
+    const [result] = await db.update(commercialContacts)
+      .set({ status })
+      .where(eq(commercialContacts.id, id))
+      .returning();
+    return result;
   }
 }
 

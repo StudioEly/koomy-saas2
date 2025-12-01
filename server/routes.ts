@@ -5,7 +5,7 @@ import {
   insertUserSchema, insertCommunitySchema, insertMembershipSchema,
   insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
   insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema,
-  insertAccountSchema
+  insertAccountSchema, insertCommercialContactSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -931,6 +931,34 @@ Règles de conversation:
     } catch (error) {
       console.error("Chat API error:", error);
       return res.status(500).json({ error: "Failed to get chat response" });
+    }
+  });
+
+  // =====================================================
+  // PUBLIC CONTACT FORM
+  // =====================================================
+  
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const validatedData = insertCommercialContactSchema.parse(req.body);
+      const contact = await storage.createCommercialContact(validatedData);
+      return res.status(201).json(contact);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).message });
+      }
+      console.error("Contact form error:", error);
+      return res.status(500).json({ error: "Failed to submit contact form" });
+    }
+  });
+  
+  app.get("/api/platform/contacts", async (req, res) => {
+    try {
+      const contacts = await storage.getAllCommercialContacts();
+      return res.json(contacts);
+    } catch (error) {
+      console.error("Get contacts error:", error);
+      return res.status(500).json({ error: "Failed to get contacts" });
     }
   });
 

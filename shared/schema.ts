@@ -202,6 +202,19 @@ export const payments = pgTable("payments", {
   completedAt: timestamp("completed_at")
 });
 
+// Commercial Contacts (from public website contact form)
+export const commercialContacts = pgTable("commercial_contacts", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  organization: text("organization").notNull(),
+  phone: text("phone"),
+  message: text("message").notNull(),
+  type: text("type").notNull(), // "info", "demo", "devis", "partenariat", "autre"
+  status: text("status").default("new"), // "new", "contacted", "qualified", "converted", "closed"
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // Relations
 export const accountsRelations = relations(accounts, ({ many }) => ({
   memberships: many(userCommunityMemberships)
@@ -247,6 +260,7 @@ export const insertMessageSchema = createInsertSchema(messages).omit({ id: true,
 export const insertMembershipFeeSchema = createInsertSchema(membershipFees).omit({ id: true });
 export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({ id: true, createdAt: true, paidAt: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, completedAt: true });
+export const insertCommercialContactSchema = createInsertSchema(commercialContacts).omit({ id: true, createdAt: true, status: true });
 
 // Select Types
 export type Plan = typeof plans.$inferSelect;
@@ -263,6 +277,7 @@ export type Message = typeof messages.$inferSelect;
 export type MembershipFee = typeof membershipFees.$inferSelect;
 export type PaymentRequest = typeof paymentRequests.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type CommercialContact = typeof commercialContacts.$inferSelect;
 
 // Insert Types
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
@@ -279,3 +294,4 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertMembershipFee = z.infer<typeof insertMembershipFeeSchema>;
 export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type InsertCommercialContact = z.infer<typeof insertCommercialContactSchema>;

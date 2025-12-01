@@ -51,6 +51,13 @@ import SuperDashboard from "@/pages/platform/SuperDashboard";
 import WebsiteHome from "@/pages/website/Home";
 import WebsiteFAQ from "@/pages/website/FAQ";
 import WebsitePricing from "@/pages/website/Pricing";
+import WebsiteContact from "@/pages/website/Contact";
+import WebsiteDemo from "@/pages/website/Demo";
+import WebsiteTerms from "@/pages/website/Terms";
+import WebsiteLegal from "@/pages/website/Legal";
+import WebsitePrivacy from "@/pages/website/Privacy";
+import WebsiteSupport from "@/pages/website/Support";
+import WebsiteBlog from "@/pages/website/Blog";
 
 function Router() {
   return (
@@ -62,6 +69,13 @@ function Router() {
       <Route path="/website" component={WebsiteHome} />
       <Route path="/website/pricing" component={WebsitePricing} />
       <Route path="/website/faq" component={WebsiteFAQ} />
+      <Route path="/website/contact" component={WebsiteContact} />
+      <Route path="/website/demo" component={WebsiteDemo} />
+      <Route path="/website/terms" component={WebsiteTerms} />
+      <Route path="/website/legal" component={WebsiteLegal} />
+      <Route path="/website/privacy" component={WebsitePrivacy} />
+      <Route path="/website/support" component={WebsiteSupport} />
+      <Route path="/website/blog" component={WebsiteBlog} />
       <Route path="/website/signup">
         {/* Mock Signup redirecting to Admin Dashboard with toast */}
         {() => {

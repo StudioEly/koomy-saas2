@@ -97,10 +97,10 @@ Ce document recense l'ensemble des fonctionnalités créées mais non fonctionne
 | `/website/support` | Centre d'aide | Lien présent dans le footer mais page inexistante |
 | `/website/blog` | Blog | Lien présent dans le footer (# href) |
 | `/website/privacy` | Confidentialité | Lien présent dans le footer (# href) |
-| `/website/terms` | CGU | Lien présent dans le footer (# href) |
-| `/website/legal` | Mentions légales | Lien présent dans le footer (# href) |
-| `/website/contact` | Contact | Page non créée |
-| `/website/demo` | Demande de démo | Page non créée |
+| `/website/terms` | CGU | Lien présent dans le footer (# href) à creer avec du texte standard adaoté a l'europe|
+| `/website/legal` | Mentions légales | Lien présent dans le footer (# href) |à creer avec du texte standard adaoté a l'europe|
+| `/website/contact` | Contact | Page non créée | à créer avec un formulaire nom mail entité telephone avec choix du code pays, le formulaire créé un ticket  commercial, qui se retrouve dans les ticket support
+| `/website/demo` | Demande de démo | Page non créée | la demande de démo mène au formulaire de contact
 
 ### Fonctionnalités UI créées mais non fonctionnelles
 

@@ -255,15 +255,16 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
               <ul className="space-y-2 text-sm">
                 <li><Link href="/website/faq" className="hover:text-white">FAQ</Link></li>
                 <li><Link href="/website/support" className="hover:text-white">Centre d'aide</Link></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
+                <li><Link href="/website/blog" className="hover:text-white">Blog</Link></li>
+                <li><Link href="/website/contact" className="hover:text-white">Contact</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-bold mb-4">Légal</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">Confidentialité</a></li>
-                <li><a href="#" className="hover:text-white">CGU</a></li>
-                <li><a href="#" className="hover:text-white">Mentions légales</a></li>
+                <li><Link href="/website/privacy" className="hover:text-white">Confidentialité</Link></li>
+                <li><Link href="/website/terms" className="hover:text-white">CGU</Link></li>
+                <li><Link href="/website/legal" className="hover:text-white">Mentions légales</Link></li>
               </ul>
             </div>
           </div>
