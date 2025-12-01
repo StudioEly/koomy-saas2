@@ -89,7 +89,7 @@ export default function AddCard() {
       await refreshMemberships();
       
       toast.success("Carte ajoutée avec succès !");
-      setLocation(`/app/${data.membership.communityId}`);
+      setLocation(`/app/${data.membership.communityId}/home`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur d'activation");
     } finally {

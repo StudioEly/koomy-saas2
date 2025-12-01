@@ -52,7 +52,7 @@ export default function MobileLogin() {
       if (data.memberships.length === 0) {
         setLocation("/app/add-card");
       } else if (data.memberships.length === 1) {
-        setLocation(`/app/${data.memberships[0].communityId}`);
+        setLocation(`/app/${data.memberships[0].communityId}/home`);
       } else {
         setLocation("/app/hub");
       }

@@ -10,7 +10,7 @@ import {
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import OpenAI from "openai";
-import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 function generateClaimCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -22,12 +22,14 @@ function generateClaimCode(): string {
   return code;
 }
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
+const SALT_ROUNDS = 12;
+
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
 }
 
-function verifyPassword(password: string, hash: string): boolean {
-  return hashPassword(password) === hash;
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 export async function registerRoutes(
@@ -54,7 +56,7 @@ export async function registerRoutes(
       
       const account = await storage.createAccount({
         email,
-        passwordHash: hashPassword(password),
+        passwordHash: await hashPassword(password),
         firstName: firstName || null,
         lastName: lastName || null
       });
@@ -82,7 +84,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
-      if (!verifyPassword(password, account.passwordHash)) {
+      if (!await verifyPassword(password, account.passwordHash)) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
