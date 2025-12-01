@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogoUploader } from "@/components/ui/LogoUploader";
 import { 
   Building2, MapPin, Mail, Phone, Globe, CreditCard, MessageSquare, 
   Save, Loader2, CheckCircle, Palette, Landmark, Share2, FileText,
-  Facebook, Twitter, Instagram, Linkedin, Link2
+  Facebook, Twitter, Instagram, Linkedin, Link2, ImageIcon, ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -75,11 +76,14 @@ export default function AdminSettings() {
     linkedin: "",
     welcomeMessage: "",
     primaryColor: "",
+    logo: "",
     membershipFeeEnabled: false,
     membershipFeeAmount: "",
     currency: "EUR",
     billingPeriod: "yearly"
   });
+
+  const isSuperAdmin = currentMembership?.adminRole === "super_admin";
 
   useEffect(() => {
     if (community) {
@@ -105,6 +109,7 @@ export default function AdminSettings() {
         linkedin: community.linkedin || "",
         welcomeMessage: community.welcomeMessage || "",
         primaryColor: community.primaryColor || "207 100% 63%",
+        logo: community.logo || "",
         membershipFeeEnabled: community.membershipFeeEnabled || false,
         membershipFeeAmount: community.membershipFeeAmount ? String(community.membershipFeeAmount / 100) : "",
         currency: community.currency || "EUR",
@@ -138,6 +143,10 @@ export default function AdminSettings() {
 
   const updateField = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogoUpload = (logoUrl: string) => {
+    updateMutation.mutate({ logo: logoUrl });
   };
 
   const handleSave = (section: string) => {
@@ -664,7 +673,7 @@ export default function AdminSettings() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
+                  <Palette className="h-5 w-5 text-primary" />
                   Apparence et accueil
                 </CardTitle>
                 <CardDescription>
@@ -672,6 +681,33 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-base font-medium">Logo de la communauté</Label>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Cette image apparaît sur les cartes de membre et dans l'application
+                      </p>
+                    </div>
+                    {!isSuperAdmin && (
+                      <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg text-sm">
+                        <ShieldCheck className="h-4 w-4" />
+                        Super Admin uniquement
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-center p-6 bg-gray-50 rounded-lg border-2 border-dashed">
+                    <LogoUploader
+                      currentLogo={formData.logo}
+                      communityName={formData.name}
+                      onUploadComplete={handleLogoUpload}
+                      disabled={!isSuperAdmin}
+                      size="lg"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="welcomeMessage">Message d'accueil</Label>
                   <Textarea
