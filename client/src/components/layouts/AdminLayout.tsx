@@ -37,6 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: Calendar, label: "Événements", path: "/admin/events" },
     { icon: MessageSquare, label: "Messagerie", path: "/admin/messages" },
     { icon: HelpCircle, label: "Support", path: "/admin/support" },
+    { icon: Settings, label: "Paramètres", path: "/admin/settings" },
   ];
 
   return (
