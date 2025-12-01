@@ -9,10 +9,16 @@ import type { NewsArticle, Event } from "@shared/schema";
 
 export default function MobileHome({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
-  const { user, currentMembership, currentCommunity, selectCommunity } = useAuth();
+  const { user, account, currentMembership, currentCommunity, selectCommunity, selectMembership } = useAuth();
 
-  // Auto-select community if not matching current route
-  if (currentMembership?.communityId !== communityId) {
+  const currentUser = account || user;
+
+  const accountMembership = account?.memberships?.find(m => m.communityId === communityId);
+  const activeMembership = currentMembership || accountMembership;
+
+  if (accountMembership && currentMembership?.communityId !== communityId) {
+    selectMembership(accountMembership.id);
+  } else if (!accountMembership && currentMembership?.communityId !== communityId) {
     selectCommunity(communityId);
   }
 
@@ -29,14 +35,14 @@ export default function MobileHome({ params }: { params: { communityId: string }
   const recentNews = newsList.slice(0, 2);
   const nextEvent = eventsList.find(e => new Date(e.date) >= new Date());
 
-  if (!user || !currentMembership) {
+  if (!currentUser || !activeMembership) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center p-8">
           <p className="text-gray-600 font-medium">Accès refusé</p>
           <p className="text-sm text-gray-400 mt-2">Veuillez vous connecter pour accéder à cette communauté</p>
-          <Link href="/" className="text-primary text-sm mt-4 inline-block hover:underline">
-            Retour à l'accueil
+          <Link href="/app/login" className="text-primary text-sm mt-4 inline-block hover:underline">
+            Retour à la connexion
           </Link>
         </div>
       </div>
@@ -50,20 +56,20 @@ export default function MobileHome({ params }: { params: { communityId: string }
         <div className="flex justify-between items-start mb-8">
           <div>
             <p className="text-gray-500 font-medium">Bonjour,</p>
-            <h1 className="text-2xl font-bold text-gray-900">{user.firstName} {user.lastName}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{activeMembership.displayName || currentUser.firstName || "Membre"}</h1>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="secondary" className={`
-                ${currentMembership.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} 
+                ${activeMembership.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} 
                 hover:bg-opacity-80 px-3 py-1 rounded-full text-xs font-semibold border-0
               `}>
-                {currentMembership.status === "active" ? "Membre Actif" : "Expiré"}
+                {activeMembership.status === "active" ? "Membre Actif" : "Expiré"}
               </Badge>
-              {currentMembership.section && <span className="text-xs text-gray-400">{currentMembership.section}</span>}
+              {activeMembership.section && <span className="text-xs text-gray-400">{activeMembership.section}</span>}
             </div>
           </div>
           <div className="relative">
             <img 
-              src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.firstName}`} 
+              src={currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.firstName || 'user'}`} 
               alt="Profile" 
               className="w-12 h-12 rounded-full border-2 border-white shadow-md object-cover"
             />
@@ -80,7 +86,7 @@ export default function MobileHome({ params }: { params: { communityId: string }
             <div className="flex justify-between items-start relative z-10">
               <div>
                 <p className="text-blue-100 text-sm font-medium mb-1">Carte d'adhérent</p>
-                <p className="text-2xl font-mono tracking-wider font-bold text-white/90">{currentMembership.memberId}</p>
+                <p className="text-2xl font-mono tracking-wider font-bold text-white/90">{activeMembership.memberId}</p>
               </div>
               <CreditCard className="text-white/80" size={28} />
             </div>
