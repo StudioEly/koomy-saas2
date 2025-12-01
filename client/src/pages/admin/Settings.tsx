@@ -146,6 +146,7 @@ export default function AdminSettings() {
   };
 
   const handleLogoUpload = (logoUrl: string) => {
+    setFormData(prev => ({ ...prev, logo: logoUrl }));
     updateMutation.mutate({ logo: logoUrl });
   };
 

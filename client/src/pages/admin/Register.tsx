@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { 
   Building2, Eye, EyeOff, Lock, Mail, ArrowRight, User, Phone, ArrowLeft,
-  MapPin, Globe, CreditCard, Calendar, MessageSquare
+  MapPin, Globe, CreditCard, Calendar, MessageSquare, ImageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { LogoUploader } from "@/components/ui/LogoUploader";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import koomyLogo from "@assets/koomy-logo.png";
@@ -60,6 +61,7 @@ export default function AdminRegister() {
     communityTypeOther: "",
     category: "",
     description: "",
+    logo: "",
     address: "",
     city: "",
     postalCode: "",
@@ -75,6 +77,11 @@ export default function AdminRegister() {
 
   const updateField = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleLogoUpload = (logoUrl: string) => {
+    updateField("logo", logoUrl);
+    toast.success("Logo téléchargé avec succès");
   };
 
   const validateStep1 = () => {
@@ -138,6 +145,7 @@ export default function AdminRegister() {
           country: formData.country,
           contactEmail: formData.contactEmail || formData.email,
           contactPhone: formData.contactPhone || formData.phone,
+          logo: formData.logo || null,
           welcomeMessage: formData.welcomeMessage || null,
           membershipFeeEnabled: formData.membershipFeeEnabled,
           membershipFeeAmount: formData.membershipFeeAmount ? parseInt(formData.membershipFeeAmount) * 100 : null,
@@ -490,6 +498,29 @@ export default function AdminRegister() {
                       className="min-h-[80px] rounded-xl border-gray-200 resize-none"
                       data-testid="input-register-community-description"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">
+                      Logo de la communauté
+                    </Label>
+                    <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                      <LogoUploader
+                        currentLogo={formData.logo}
+                        communityName={formData.communityName}
+                        onUploadComplete={handleLogoUpload}
+                        disabled={false}
+                        size="md"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600">
+                          Téléchargez le logo de votre {getCommunityTypeLabel() || "communauté"}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Format JPG, PNG ou GIF. Taille max 5 Mo.
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
