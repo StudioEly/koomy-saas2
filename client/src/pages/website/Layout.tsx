@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLogin } from "@/hooks/useApi";
 import { toast } from "sonner";
 import ChatWidget from "@/components/ChatWidget";
-import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
+import koomyLogo from "@assets/ChatGPT Image 30 nov. 2025, 05_54_45_1764590118748.png";
 
 export default function WebsiteLayout({ children }: { children: React.ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -64,8 +64,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
       <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-md">
         <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Link href="/website" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
-            <span className="text-xl font-bold text-slate-900 tracking-tight">Koomy</span>
+            <img src={koomyLogo} alt="Koomy" className="h-8" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -237,8 +236,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-white">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold">K</div>
-                <span className="text-xl font-bold tracking-tight">Koomy</span>
+                <img src={koomyLogo} alt="Koomy" className="h-8" />
               </div>
               <p className="text-sm text-slate-400">
                 La plateforme tout-en-un pour gérer votre communauté, vos membres et vos événements.
