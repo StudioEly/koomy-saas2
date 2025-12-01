@@ -64,7 +64,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
       <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-md">
         <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Link href="/website" className="flex items-center gap-2">
-            <img src={koomyLogo} alt="Koomy" className="h-8" />
+            <img src={koomyLogo} alt="Koomy" className="h-12" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -236,7 +236,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-white">
-                <img src={koomyLogo} alt="Koomy" className="h-8" />
+                <img src={koomyLogo} alt="Koomy" className="h-10" />
               </div>
               <p className="text-sm text-slate-400">
                 La plateforme tout-en-un pour gérer votre communauté, vos membres et vos événements.
