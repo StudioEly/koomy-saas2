@@ -4,19 +4,202 @@ import { storage } from "./storage";
 import {
   insertUserSchema, insertCommunitySchema, insertMembershipSchema,
   insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
-  insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema
+  insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema,
+  insertAccountSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import OpenAI from "openai";
+import crypto from "crypto";
+
+function generateClaimCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    if (i === 4) code += '-';
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash;
+}
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   
-  // Authentication Routes
-  app.post("/api/auth/login", async (req, res) => {
+  // =====================================================
+  // PUBLIC APP AUTHENTICATION (Koomy Accounts)
+  // =====================================================
+  
+  app.post("/api/accounts/register", async (req, res) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      const existingAccount = await storage.getAccountByEmail(email);
+      if (existingAccount) {
+        return res.status(409).json({ error: "An account with this email already exists" });
+      }
+      
+      const account = await storage.createAccount({
+        email,
+        passwordHash: hashPassword(password),
+        firstName: firstName || null,
+        lastName: lastName || null
+      });
+      
+      const { passwordHash, ...accountWithoutPassword } = account;
+      
+      const memberships = await storage.getAccountMemberships(account.id);
+      
+      return res.status(201).json({
+        account: accountWithoutPassword,
+        memberships
+      });
+    } catch (error) {
+      console.error("Account registration error:", error);
+      return res.status(500).json({ error: "Registration failed" });
+    }
+  });
+  
+  app.post("/api/accounts/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      const account = await storage.getAccountByEmail(email);
+      if (!account) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      if (!verifyPassword(password, account.passwordHash)) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      const { passwordHash, ...accountWithoutPassword } = account;
+      const memberships = await storage.getAccountMemberships(account.id);
+      
+      return res.json({
+        account: accountWithoutPassword,
+        memberships
+      });
+    } catch (error) {
+      console.error("Account login error:", error);
+      return res.status(500).json({ error: "Login failed" });
+    }
+  });
+  
+  app.get("/api/accounts/:id", async (req, res) => {
+    try {
+      const account = await storage.getAccount(req.params.id);
+      if (!account) {
+        return res.status(404).json({ error: "Account not found" });
+      }
+      const { passwordHash, ...accountWithoutPassword } = account;
+      return res.json(accountWithoutPassword);
+    } catch (error) {
+      console.error("Get account error:", error);
+      return res.status(500).json({ error: "Failed to fetch account" });
+    }
+  });
+  
+  app.get("/api/accounts/:id/memberships", async (req, res) => {
+    try {
+      const memberships = await storage.getAccountMemberships(req.params.id);
+      
+      const membershipsWithCommunity = await Promise.all(
+        memberships.map(async (membership) => {
+          const community = await storage.getCommunity(membership.communityId);
+          return { ...membership, community };
+        })
+      );
+      
+      return res.json(membershipsWithCommunity);
+    } catch (error) {
+      console.error("Get account memberships error:", error);
+      return res.status(500).json({ error: "Failed to fetch memberships" });
+    }
+  });
+  
+  app.post("/api/memberships/claim", async (req, res) => {
+    try {
+      const { claimCode, accountId } = req.body;
+      
+      if (!claimCode || !accountId) {
+        return res.status(400).json({ error: "Claim code and account ID are required" });
+      }
+      
+      const normalizedCode = claimCode.toUpperCase().replace(/\s/g, '');
+      
+      const membership = await storage.getMembershipByClaimCode(normalizedCode);
+      if (!membership) {
+        return res.status(404).json({ error: "Invalid claim code" });
+      }
+      
+      if (membership.accountId) {
+        return res.status(409).json({ error: "This membership card has already been claimed" });
+      }
+      
+      const claimedMembership = await storage.claimMembership(normalizedCode, accountId);
+      if (!claimedMembership) {
+        return res.status(500).json({ error: "Failed to claim membership" });
+      }
+      
+      const community = await storage.getCommunity(claimedMembership.communityId);
+      
+      return res.json({ 
+        membership: claimedMembership,
+        community,
+        message: "Membership card successfully linked to your account!"
+      });
+    } catch (error) {
+      console.error("Claim membership error:", error);
+      return res.status(500).json({ error: "Failed to claim membership" });
+    }
+  });
+  
+  app.get("/api/memberships/verify/:claimCode", async (req, res) => {
+    try {
+      const normalizedCode = req.params.claimCode.toUpperCase().replace(/\s/g, '');
+      const membership = await storage.getMembershipByClaimCode(normalizedCode);
+      
+      if (!membership) {
+        return res.status(404).json({ error: "Invalid claim code" });
+      }
+      
+      if (membership.accountId) {
+        return res.status(409).json({ error: "This membership card has already been claimed" });
+      }
+      
+      const community = await storage.getCommunity(membership.communityId);
+      
+      return res.json({
+        valid: true,
+        displayName: membership.displayName,
+        communityName: community?.name,
+        memberId: membership.memberId
+      });
+    } catch (error) {
+      console.error("Verify claim code error:", error);
+      return res.status(500).json({ error: "Failed to verify claim code" });
+    }
+  });
+
+  // =====================================================
+  // ADMIN/BACK-OFFICE AUTHENTICATION (Users)
+  // =====================================================
+  
+  app.post("/api/auth/admin/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -25,10 +208,6 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid credentials" });
       }
       
-      // In production, use proper password hashing with bcrypt
-      // For now, simple check (password is placeholder in seed)
-      
-      // Get user's community memberships
       const memberships = await storage.getUserMemberships(user.id);
       
       return res.json({
@@ -43,7 +222,7 @@ export async function registerRoutes(
         memberships
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Admin login error:", error);
       return res.status(500).json({ error: "Login failed" });
     }
   });
@@ -165,9 +344,16 @@ export async function registerRoutes(
   app.post("/api/memberships", async (req, res) => {
     try {
       const validated = insertMembershipSchema.parse(req.body);
-      const membership = await storage.createMembership(validated);
       
-      // Update community member count
+      const claimCode = generateClaimCode();
+      
+      const membership = await storage.createMembership({
+        ...validated,
+        claimCode,
+        displayName: validated.displayName || null,
+        email: validated.email || null
+      });
+      
       const memberships = await storage.getCommunityMemberships(validated.communityId);
       await storage.updateCommunityMemberCount(validated.communityId, memberships.length);
       
@@ -178,6 +364,27 @@ export async function registerRoutes(
       }
       console.error("Create membership error:", error);
       return res.status(500).json({ error: "Failed to create membership" });
+    }
+  });
+  
+  app.post("/api/memberships/:id/regenerate-code", async (req, res) => {
+    try {
+      const membership = await storage.getMembershipById(req.params.id);
+      if (!membership) {
+        return res.status(404).json({ error: "Membership not found" });
+      }
+      
+      if (membership.accountId) {
+        return res.status(400).json({ error: "Cannot regenerate code for a claimed membership" });
+      }
+      
+      const newCode = generateClaimCode();
+      const updated = await storage.updateMembership(req.params.id, { claimCode: newCode });
+      
+      return res.json(updated);
+    } catch (error) {
+      console.error("Regenerate claim code error:", error);
+      return res.status(500).json({ error: "Failed to regenerate claim code" });
     }
   });
 
