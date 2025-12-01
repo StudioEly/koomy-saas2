@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/api/config";
 import type { PaymentRequest, Payment, MembershipFee, UserCommunityMembership } from "@shared/schema";
 
 interface MemberWithUser {
@@ -59,7 +60,7 @@ export default function AdminPayments() {
 
   const createRequestMutation = useMutation({
     mutationFn: async (data: { membershipId: string; communityId: string; feeId: string; amount: number; currency: string; dueDate: string; message?: string }) => {
-      const res = await fetch("/api/payment-requests", {
+      const res = await fetch(`${API_BASE_URL}/api/payment-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)

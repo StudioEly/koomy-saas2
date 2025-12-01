@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, Bot, User, Headphones, ArrowLeft, Loader2 } fro
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/api/config";
 
 interface Message {
   id: string;
@@ -67,7 +68,7 @@ export default function ChatWidget() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newHistory })

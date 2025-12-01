@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/api/config";
 import type { PaymentRequest, Payment } from "@shared/schema";
 
 export default function MobilePayment() {
@@ -32,7 +33,7 @@ export default function MobilePayment() {
 
   const createPaymentMutation = useMutation({
     mutationFn: async (paymentData: { membershipId: string; communityId: string; paymentRequestId?: string; amount: number; currency: string }) => {
-      const res = await fetch("/api/payments", {
+      const res = await fetch(`${API_BASE_URL}/api/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(paymentData)
@@ -51,7 +52,7 @@ export default function MobilePayment() {
 
   const processPaymentMutation = useMutation({
     mutationFn: async (paymentId: string) => {
-      const res = await fetch(`/api/payments/${paymentId}/process`, {
+      const res = await fetch(`${API_BASE_URL}/api/payments/${paymentId}/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentMethod: "card" })

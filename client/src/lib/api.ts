@@ -1,6 +1,7 @@
 import type { User, Community, Plan, UserCommunityMembership, NewsArticle, Event, SupportTicket, FAQ, Message } from "@shared/schema";
+import { API_BASE_URL } from "@/api/config";
 
-const API_BASE = "/api";
+const API_BASE = `${API_BASE_URL}/api`;
 
 async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
