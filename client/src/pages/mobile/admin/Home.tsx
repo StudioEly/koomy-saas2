@@ -1,26 +1,53 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { MOCK_COMMUNITIES, MOCK_USER } from "@/lib/mockData";
-import { ArrowLeft, QrCode, MessageSquare, Users, Calendar, X, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, QrCode, MessageSquare, Users, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Community } from "@shared/schema";
 
 export default function MobileAdminHome({ params }: { params: { communityId: string } }) {
   const [_, setLocation] = useLocation();
   const communityId = params.communityId;
-  const community = MOCK_COMMUNITIES.find(c => c.id === communityId);
+  const { user, currentCommunity, selectCommunity, logout } = useAuth();
 
-  if (!community) return <div>Communauté introuvable</div>;
+  useEffect(() => {
+    if (!user) {
+      setLocation("/app/admin/login");
+      return;
+    }
+    if (currentCommunity?.id !== communityId) {
+      selectCommunity(communityId);
+    }
+  }, [user, communityId, currentCommunity, selectCommunity, setLocation]);
+
+  const { data: community } = useQuery<Community>({
+    queryKey: [`/api/communities/${communityId}`],
+    enabled: !!communityId
+  });
+
+  const { data: members = [] } = useQuery<any[]>({
+    queryKey: [`/api/communities/${communityId}/memberships`],
+    enabled: !!communityId
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  const displayName = currentCommunity?.name || community?.name || "Communauté";
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/app/admin/login");
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
+    <div className="min-h-screen bg-gray-50 flex justify-center" data-testid="mobile-admin-home-page">
       <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col">
         
-        {/* Admin Header */}
         <header className="bg-gray-900 text-white px-4 py-4 sticky top-0 z-40">
           <div className="flex items-center justify-between mb-4">
             <Link href={`/app/${communityId}/home`}>
@@ -28,30 +55,37 @@ export default function MobileAdminHome({ params }: { params: { communityId: str
                 <ArrowLeft size={16} /> Retour App
               </a>
             </Link>
-            <Badge className="bg-purple-500 text-white border-0">Mode Admin</Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-purple-500 text-white border-0">Mode Admin</Badge>
+              <button 
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-red-400 transition-colors p-1"
+                data-testid="button-admin-logout"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
-          <h1 className="text-xl font-bold">{community.name}</h1>
-          <p className="text-sm text-gray-400">Gestion locale</p>
+          <h1 className="text-xl font-bold">{displayName}</h1>
+          <p className="text-sm text-gray-400">Connecté en tant que {user.firstName} {user.lastName}</p>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-3 gap-2 mt-6">
              <div className="bg-gray-800 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold">12</div>
+                <div className="text-lg font-bold">{members.length}</div>
+                <div className="text-[10px] text-gray-400 uppercase">Membres</div>
+             </div>
+             <div className="bg-gray-800 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold">0</div>
                 <div className="text-[10px] text-gray-400 uppercase">Messages</div>
              </div>
              <div className="bg-gray-800 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold">150</div>
-                <div className="text-[10px] text-gray-400 uppercase">Inscrits</div>
-             </div>
-             <div className="bg-gray-800 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold">85%</div>
+                <div className="text-lg font-bold">--</div>
                 <div className="text-[10px] text-gray-400 uppercase">Présence</div>
              </div>
           </div>
         </header>
 
         <main className="flex-1 p-4 space-y-4 overflow-y-auto">
-          {/* Actions Grid */}
           <div className="grid grid-cols-2 gap-4">
             <Link href={`/app/${communityId}/admin/scanner`}>
               <div className="bg-purple-50 p-6 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer active:scale-95 transition-transform border border-purple-100">
@@ -71,52 +105,56 @@ export default function MobileAdminHome({ params }: { params: { communityId: str
             </Link>
           </div>
 
-          {/* Recent Activity / Quick Tasks */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-              <h3 className="font-bold text-gray-800 text-sm">Prochain Événement</h3>
-            </div>
-            <div className="p-4">
-              <div className="flex gap-3">
-                <div className="bg-red-100 text-red-600 rounded-lg w-12 h-12 flex flex-col items-center justify-center leading-none flex-shrink-0">
-                   <span className="text-xs font-bold">DEC</span>
-                   <span className="text-lg font-bold">20</span>
-                </div>
-                <div>
-                   <h4 className="font-bold text-sm">Tournoi de Noël</h4>
-                   <p className="text-xs text-gray-500 mb-2">Club House • 14:00</p>
-                   <Button size="sm" className="h-8 text-xs w-full bg-gray-900">Voir les inscrits</Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-              <h3 className="font-bold text-gray-800 text-sm">Derniers Messages</h3>
-              <Badge variant="secondary" className="text-[10px]">3 non-lus</Badge>
+              <h3 className="font-bold text-gray-800 text-sm">Membres récents</h3>
+              <Badge variant="secondary" className="text-[10px]">{members.length} total</Badge>
             </div>
             <div className="divide-y divide-gray-100">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-3 flex gap-3 hover:bg-gray-50 cursor-pointer">
+              {members.slice(0, 3).map((member: any) => (
+                <div key={member.id} className="p-3 flex gap-3 hover:bg-gray-50 cursor-pointer">
                   <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-gray-200 text-xs">JD</AvatarFallback>
+                    <AvatarFallback className="bg-purple-100 text-purple-600 text-xs">
+                      {member.displayName?.[0]?.toUpperCase() || "M"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                      <div className="flex justify-between mb-0.5">
-                       <span className="font-bold text-xs">Jean Dupont</span>
-                       <span className="text-[10px] text-gray-400">14:20</span>
+                       <span className="font-bold text-xs">{member.displayName || "Membre"}</span>
+                       <Badge className={`text-[9px] ${member.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                         {member.status === "active" ? "Actif" : "Inactif"}
+                       </Badge>
                      </div>
-                     <p className="text-xs text-gray-500 truncate">Bonjour, je serai en retard pour le tournoi...</p>
+                     <p className="text-xs text-gray-500 truncate">{member.memberId}</p>
                   </div>
                 </div>
               ))}
+              {members.length === 0 && (
+                <div className="p-6 text-center text-gray-400 text-sm">
+                  Aucun membre pour le moment
+                </div>
+              )}
             </div>
-            <div className="p-2 text-center border-t border-gray-100">
-               <Link href={`/app/${communityId}/admin/messages`}>
-                 <a className="text-xs font-bold text-primary">Voir tout</a>
-               </Link>
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-4 text-white">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
+                <Users size={20} />
+              </div>
+              <div>
+                <p className="font-bold text-sm">Gérer votre communauté</p>
+                <p className="text-xs text-white/80">Accédez au back-office complet</p>
+              </div>
             </div>
+            <Button 
+              variant="secondary" 
+              className="w-full mt-3 bg-white text-purple-600 hover:bg-gray-100"
+              onClick={() => setLocation("/admin/dashboard")}
+              data-testid="button-go-backoffice"
+            >
+              Ouvrir le Back-Office
+            </Button>
           </div>
 
         </main>

@@ -205,12 +205,35 @@ export async function registerRoutes(
     try {
       const { email, password } = req.body;
       
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email et mot de passe requis" });
+      }
+      
       const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(401).json({ error: "Invalid credentials" });
+      if (!user || !user.password) {
+        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      }
+      
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
       
       const memberships = await storage.getUserMemberships(user.id);
+      
+      const membershipsWithCommunities = await Promise.all(
+        memberships.map(async (membership) => {
+          const community = await storage.getCommunity(membership.communityId);
+          return {
+            ...membership,
+            community: community ? {
+              id: community.id,
+              name: community.name,
+              logo: community.logo
+            } : null
+          };
+        })
+      );
       
       return res.json({
         user: {
@@ -221,11 +244,11 @@ export async function registerRoutes(
           avatar: user.avatar,
           phone: user.phone
         },
-        memberships
+        memberships: membershipsWithCommunities
       });
     } catch (error) {
       console.error("Admin login error:", error);
-      return res.status(500).json({ error: "Login failed" });
+      return res.status(500).json({ error: "Échec de connexion" });
     }
   });
 
@@ -264,6 +287,16 @@ export async function registerRoutes(
       }
       console.error("Create community error:", error);
       return res.status(500).json({ error: "Failed to create community" });
+    }
+  });
+
+  app.get("/api/communities/:communityId/memberships", async (req, res) => {
+    try {
+      const memberships = await storage.getCommunityMemberships(req.params.communityId);
+      return res.json(memberships);
+    } catch (error) {
+      console.error("Get community memberships error:", error);
+      return res.status(500).json({ error: "Failed to fetch memberships" });
     }
   });
 

@@ -1,20 +1,31 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, Route, Switch } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { MOCK_CONVERSATIONS } from "@/lib/mockData";
 
-// This is a simplified mobile version of the chat for admins
 export default function MobileAdminMessages({ params }: { params: { communityId: string } }) {
-  const [conversations, setConversations] = useState(MOCK_CONVERSATIONS);
+  const [_, setLocation] = useLocation();
+  const { user } = useAuth();
+  const [conversations] = useState(MOCK_CONVERSATIONS);
   
+  useEffect(() => {
+    if (!user) {
+      setLocation("/app/admin/login");
+    }
+  }, [user, setLocation]);
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center">
+    <div className="min-h-screen bg-gray-50 flex justify-center" data-testid="mobile-admin-messages-page">
       <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col">
         
-        {/* Header */}
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
           <div className="px-4 py-3 flex items-center gap-3">
             <Link href={`/app/${params.communityId}/admin`}>
@@ -27,7 +38,7 @@ export default function MobileAdminMessages({ params }: { params: { communityId:
           <div className="px-4 pb-3">
             <div className="relative">
                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-               <Input placeholder="Rechercher..." className="pl-9 bg-gray-50 border-gray-200 rounded-xl h-10" />
+               <Input placeholder="Rechercher..." className="pl-9 bg-gray-50 border-gray-200 rounded-xl h-10" data-testid="input-search-messages" />
             </div>
           </div>
         </header>
@@ -37,6 +48,7 @@ export default function MobileAdminMessages({ params }: { params: { communityId:
             <div 
               key={conv.id}
               className="flex items-center gap-4 p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-gray-100 cursor-pointer"
+              data-testid={`conversation-${conv.id}`}
             >
               <div className="relative">
                 <Avatar className="h-12 w-12">
@@ -62,6 +74,11 @@ export default function MobileAdminMessages({ params }: { params: { communityId:
               </div>
             </div>
           ))}
+          {conversations.length === 0 && (
+            <div className="p-8 text-center text-gray-400">
+              <p className="text-sm">Aucune conversation</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

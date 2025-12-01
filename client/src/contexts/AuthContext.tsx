@@ -8,7 +8,7 @@ interface AuthAccount extends Omit<Account, "passwordHash"> {
 }
 
 interface AuthUser extends Omit<User, "password"> {
-  memberships: UserCommunityMembership[];
+  memberships: (UserCommunityMembership & { community?: Community })[];
 }
 
 interface AuthContextType {
@@ -96,9 +96,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (membership) {
         setCurrentMembership(membership);
         localStorage.setItem(MEMBERSHIP_STORAGE_KEY, JSON.stringify(membership));
-        const community = allCommunities.find(c => c.id === communityId);
-        if (community) {
-          setCurrentCommunity(community);
+        if (membership.community) {
+          setCurrentCommunity(membership.community as Community);
+        } else {
+          const community = allCommunities.find(c => c.id === communityId);
+          if (community) {
+            setCurrentCommunity(community);
+          }
         }
       }
     } else if (account) {

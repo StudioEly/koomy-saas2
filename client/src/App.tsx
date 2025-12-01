@@ -18,6 +18,8 @@ import MobileProfile from "@/pages/mobile/Profile";
 import MobilePayment from "@/pages/mobile/Payment";
 
 // Mobile Admin Pages
+import MobileAdminLogin from "@/pages/mobile/admin/Login";
+import MobileAdminSelectCommunity from "@/pages/mobile/admin/SelectCommunity";
 import MobileAdminHome from "@/pages/mobile/admin/Home";
 import MobileAdminScanner from "@/pages/mobile/admin/Scanner";
 import MobileAdminMessages from "@/pages/mobile/admin/Messages";
@@ -84,6 +86,8 @@ function Router() {
       <Route path="/app/:communityId/support" component={MobileSupport} />
 
       {/* Mobile Admin Routes */}
+      <Route path="/app/admin/login" component={MobileAdminLogin} />
+      <Route path="/app/admin/select-community" component={MobileAdminSelectCommunity} />
       <Route path="/app/:communityId/admin" component={MobileAdminHome} />
       <Route path="/app/:communityId/admin/scanner" component={MobileAdminScanner} />
       <Route path="/app/:communityId/admin/messages" component={MobileAdminMessages} />

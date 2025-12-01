@@ -1,33 +1,45 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Camera, X, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MobileAdminScanner({ params }: { params: { communityId: string } }) {
+  const [_, setLocation] = useLocation();
+  const { user } = useAuth();
   const [scanning, setScanning] = useState(true);
   const [scannedData, setScannedData] = useState<string | null>(null);
 
-  // Simulate scan after 3 seconds
   useEffect(() => {
-    if (scanning) {
+    if (!user) {
+      setLocation("/app/admin/login");
+      return;
+    }
+  }, [user, setLocation]);
+
+  useEffect(() => {
+    if (scanning && user) {
       const timer = setTimeout(() => {
         setScanning(false);
-        setScannedData("UNSA-2024-8892"); // Mock scan result
+        setScannedData("MEMBER-2024-8892");
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [scanning]);
+  }, [scanning, user]);
 
   const handleReset = () => {
     setScannedData(null);
     setScanning(true);
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-black flex justify-center">
+    <div className="min-h-screen bg-black flex justify-center" data-testid="mobile-admin-scanner-page">
       <div className="w-full max-w-md bg-black min-h-screen relative flex flex-col">
         
-        {/* Overlay UI */}
         <div className="absolute top-0 left-0 w-full p-4 z-20 flex justify-between items-center">
           <Link href={`/app/${params.communityId}/admin`}>
              <Button variant="ghost" size="icon" className="text-white rounded-full bg-black/20 backdrop-blur-md">
@@ -38,17 +50,13 @@ export default function MobileAdminScanner({ params }: { params: { communityId: 
           <div className="w-10"></div>
         </div>
 
-        {/* Camera Viewport Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col items-center justify-center">
            {scanning ? (
              <>
-               {/* Camera Preview Simulation */}
                <div className="absolute inset-0 bg-gray-900">
-                 {/* Grid overlay */}
                  <div className="w-full h-full opacity-20" style={{backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px'}}></div>
                </div>
                
-               {/* Scanning Frame */}
                <div className="relative z-10 w-64 h-64 border-2 border-white/50 rounded-3xl flex flex-col items-center justify-center overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.8)] animate-[scan_2s_infinite_linear]"></div>
                   <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
@@ -66,7 +74,7 @@ export default function MobileAdminScanner({ params }: { params: { communityId: 
                   <CheckCircle2 size={40} />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">Validé !</h2>
-                <p className="text-gray-500 mb-6">Thomas Dubois</p>
+                <p className="text-gray-500 mb-6">Membre vérifié</p>
                 
                 <div className="w-full bg-gray-50 rounded-xl p-4 mb-6">
                   <div className="flex justify-between text-sm mb-2">
@@ -74,12 +82,12 @@ export default function MobileAdminScanner({ params }: { params: { communityId: 
                     <span className="font-bold text-green-600">À Jour</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Dernière visite</span>
-                    <span className="font-medium">15 Nov</span>
+                    <span className="text-gray-500">Code</span>
+                    <span className="font-medium font-mono">{scannedData}</span>
                   </div>
                 </div>
 
-                <Button className="w-full h-12 text-lg" onClick={handleReset}>
+                <Button className="w-full h-12 text-lg" onClick={handleReset} data-testid="button-scan-next">
                   Scanner le suivant
                 </Button>
              </div>
