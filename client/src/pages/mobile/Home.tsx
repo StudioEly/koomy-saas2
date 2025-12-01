@@ -117,19 +117,21 @@ export default function MobileHome({ params }: { params: { communityId: string }
 
         <div className="space-y-4">
           {recentNews.length > 0 ? recentNews.map((news) => (
-            <Card key={news.id} className="overflow-hidden border-0 shadow-md rounded-xl">
-              <div className="h-32 overflow-hidden relative">
-                <img src={news.image || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400"} alt={news.title} className="w-full h-full object-cover" />
-                <Badge className="absolute top-3 left-3 bg-white/90 text-gray-800 hover:bg-white backdrop-blur-sm shadow-sm border-0">
-                  {news.category || "Actualité"}
-                </Badge>
-              </div>
-              <CardContent className="p-4">
-                <p className="text-xs text-gray-400 mb-1">{new Date(news.publishedAt).toLocaleDateString('fr-FR')}</p>
-                <h3 className="font-bold text-gray-900 leading-tight mb-2">{news.title}</h3>
-                <p className="text-sm text-gray-500 line-clamp-2">{news.summary}</p>
-              </CardContent>
-            </Card>
+            <Link key={news.id} href={`/app/${communityId}/news/${news.id}`}>
+              <Card className="overflow-hidden border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow" data-testid={`card-news-${news.id}`}>
+                <div className="h-32 overflow-hidden relative">
+                  <img src={news.image || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400"} alt={news.title} className="w-full h-full object-cover" />
+                  <Badge className="absolute top-3 left-3 bg-white/90 text-gray-800 hover:bg-white backdrop-blur-sm shadow-sm border-0">
+                    {news.category || "Actualité"}
+                  </Badge>
+                </div>
+                <CardContent className="p-4">
+                  <p className="text-xs text-gray-400 mb-1">{new Date(news.publishedAt).toLocaleDateString('fr-FR')}</p>
+                  <h3 className="font-bold text-gray-900 leading-tight mb-2">{news.title}</h3>
+                  <p className="text-sm text-gray-500 line-clamp-2">{news.summary}</p>
+                </CardContent>
+              </Card>
+            </Link>
           )) : (
             <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-gray-400 text-sm">
               Aucune actualité récente
@@ -140,19 +142,27 @@ export default function MobileHome({ params }: { params: { communityId: string }
 
         {/* Events Teaser */}
         <div className="mt-8 mb-20">
+           <div className="flex justify-between items-center mb-3">
+             <h3 className="font-bold text-gray-800">Prochain Événement</h3>
+             <Link href={`/app/${communityId}/events`} className="text-sm text-primary font-medium hover:underline">
+               Tous les événements
+             </Link>
+           </div>
            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
-             <h3 className="font-bold text-gray-800 mb-2">Prochain Événement</h3>
              {nextEvent ? (
-               <div className="flex gap-3 items-center">
-                 <div className="bg-red-100 text-red-600 rounded-lg w-12 h-12 flex flex-col items-center justify-center leading-none">
-                   <span className="text-xs font-bold">{new Date(nextEvent.date).toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()}</span>
-                   <span className="text-lg font-bold">{new Date(nextEvent.date).getDate()}</span>
+               <Link href={`/app/${communityId}/events/${nextEvent.id}`}>
+                 <div className="flex gap-3 items-center cursor-pointer" data-testid={`card-event-${nextEvent.id}`}>
+                   <div className="bg-red-100 text-red-600 rounded-lg w-12 h-12 flex flex-col items-center justify-center leading-none">
+                     <span className="text-xs font-bold">{new Date(nextEvent.date).toLocaleDateString('fr-FR', { month: 'short' }).toUpperCase()}</span>
+                     <span className="text-lg font-bold">{new Date(nextEvent.date).getDate()}</span>
+                   </div>
+                   <div className="flex-1">
+                     <p className="font-semibold text-sm">{nextEvent.title}</p>
+                     <p className="text-xs text-gray-500">{nextEvent.location} • {new Date(nextEvent.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                   </div>
+                   <ChevronRight size={20} className="text-gray-400" />
                  </div>
-                 <div>
-                   <p className="font-semibold text-sm">{nextEvent.title}</p>
-                   <p className="text-xs text-gray-500">{nextEvent.location} • {new Date(nextEvent.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
-                 </div>
-               </div>
+               </Link>
              ) : (
                <p className="text-sm text-gray-400">Aucun événement à venir</p>
              )}

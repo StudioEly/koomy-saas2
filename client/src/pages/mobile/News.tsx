@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import MobileLayout from "@/components/layouts/MobileLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,27 +51,29 @@ export default function MobileNews({ params }: { params: { communityId: string }
         {/* News Grid */}
         <div className="space-y-6">
           {filteredNews.length > 0 ? filteredNews.map((news) => (
-            <Card key={news.id} className="overflow-hidden border-0 shadow-lg rounded-2xl group cursor-pointer">
-              <div className="h-48 overflow-hidden relative">
-                <img 
-                  src={news.image || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400"} 
-                  alt={news.title} 
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <Badge className="absolute top-4 left-4 bg-primary text-white border-0">
-                  {news.category || "Actualité"}
-                </Badge>
-              </div>
-              <CardContent className="p-5 relative">
-                <div className="absolute -top-6 right-5 bg-white rounded-lg px-3 py-1 shadow-sm text-xs font-bold text-gray-500">
-                   {new Date(news.publishedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+            <Link key={news.id} href={`/app/${communityId}/news/${news.id}`}>
+              <Card className="overflow-hidden border-0 shadow-lg rounded-2xl group cursor-pointer" data-testid={`card-news-${news.id}`}>
+                <div className="h-48 overflow-hidden relative">
+                  <img 
+                    src={news.image || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400"} 
+                    alt={news.title} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                  <Badge className="absolute top-4 left-4 bg-primary text-white border-0">
+                    {news.category || "Actualité"}
+                  </Badge>
                 </div>
-                <h3 className="font-bold text-xl text-gray-900 leading-tight mb-3">{news.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-4">{news.summary}</p>
-                <div className="h-1 w-12 bg-secondary rounded-full"></div>
-              </CardContent>
-            </Card>
+                <CardContent className="p-5 relative">
+                  <div className="absolute -top-6 right-5 bg-white rounded-lg px-3 py-1 shadow-sm text-xs font-bold text-gray-500">
+                     {new Date(news.publishedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-900 leading-tight mb-3">{news.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed mb-4">{news.summary}</p>
+                  <div className="h-1 w-12 bg-secondary rounded-full"></div>
+                </CardContent>
+              </Card>
+            </Link>
           )) : (
             <div className="text-center py-12 text-gray-500">
               <p>Aucune actualité disponible</p>

@@ -13,6 +13,9 @@ import AddCard from "@/pages/mobile/AddCard";
 import MobileHome from "@/pages/mobile/Home";
 import MobileCard from "@/pages/mobile/Card";
 import MobileNews from "@/pages/mobile/News";
+import MobileNewsDetail from "@/pages/mobile/NewsDetail";
+import MobileEvents from "@/pages/mobile/Events";
+import MobileEventDetail from "@/pages/mobile/EventDetail";
 import MobileMessages from "@/pages/mobile/Messages";
 import MobileProfile from "@/pages/mobile/Profile";
 import MobilePayment from "@/pages/mobile/Payment";
@@ -83,6 +86,9 @@ function Router() {
       <Route path="/app/:communityId/home" component={MobileHome} />
       <Route path="/app/:communityId/card" component={MobileCard} />
       <Route path="/app/:communityId/news" component={MobileNews} />
+      <Route path="/app/:communityId/news/:articleId" component={MobileNewsDetail} />
+      <Route path="/app/:communityId/events" component={MobileEvents} />
+      <Route path="/app/:communityId/events/:eventId" component={MobileEventDetail} />
       <Route path="/app/:communityId/messages" component={MobileMessages} />
       <Route path="/app/:communityId/profile" component={MobileProfile} />
       <Route path="/app/:communityId/payment" component={MobilePayment} />

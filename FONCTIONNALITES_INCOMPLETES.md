@@ -6,21 +6,21 @@ Ce document recense l'ensemble des fonctionnalités créées mais non fonctionne
 
 ## 1. Application Mobile Membres (`/app/*`)
 
-### Pages manquantes (404)
+### Pages manquantes (404) - RÉSOLU ✅
 
-| Route | Description | Action requise |
-|-------|-------------|----------------|
-| `/app/:communityId/news/:articleId` | Page de détail d'un article d'actualité | À créer - Cliquer sur un article ne mène nulle part |
-| `/app/:communityId/events` | Liste des événements | À créer |
-| `/app/:communityId/events/:eventId` | Détail d'un événement | À créer |
+| Route | Description | Statut |
+|-------|-------------|--------|
+| `/app/:communityId/news/:articleId` | Page de détail d'un article d'actualité | ✅ Créé - NewsDetail.tsx |
+| `/app/:communityId/events` | Liste des événements | ✅ Créé - Events.tsx |
+| `/app/:communityId/events/:eventId` | Détail d'un événement | ✅ Créé - EventDetail.tsx |
 
 ### Fonctionnalités UI créées mais non fonctionnelles
 
 | Page | Élément | Problème |
 |------|---------|----------|
-| **News.tsx** | Cartes d'actualités | Les articles sont affichés mais le clic ne navigue pas vers une page de détail |
-| **Home.tsx** | Cartes d'actualités récentes | Même problème - pas de navigation vers le détail |
-| **Home.tsx** | Section "Prochain Événement" | Affichage uniquement, pas de lien vers les détails de l'événement |
+| **News.tsx** | Cartes d'actualités | ✅ Résolu - Navigation vers le détail fonctionnelle |
+| **Home.tsx** | Cartes d'actualités récentes | ✅ Résolu - Navigation vers le détail fonctionnelle |
+| **Home.tsx** | Section "Prochain Événement" | ✅ Résolu - Lien vers le détail + lien "Tous les événements" |
 | **Messages.tsx** | Messagerie | Utilise des données mock (`MOCK_MESSAGES`), pas connectée au backend |
 | **Support.tsx** | Création de ticket | Toast de confirmation mais pas de sauvegarde réelle en base de données |
 | **Support.tsx** | FAQ | Utilise des données mock (`MOCK_FAQS`) |
