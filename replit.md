@@ -10,6 +10,35 @@ The application follows a multi-tenant architecture where each community (tenant
 
 Preferred communication style: Simple, everyday language.
 
+## Design System (Koomy Identity)
+
+**Brand Colors:**
+- Primary: Sky Blue `#44A8FF` (HSL 207 100% 63%)
+- Primary Light: `#5AB8FF`
+- Primary Dark: `#2B9AFF`
+- Backgrounds: Soft gradients from `#E8F4FF` to white
+
+**Typography:**
+- Primary Font: Nunito (rounded, friendly)
+- Fallback: Inter, sans-serif
+- Heading Font: Nunito for consistency
+
+**Design Principles:**
+- Soft, rounded corners (16-20px radius)
+- Subtle gradients and glows
+- Clean white cards with soft shadows
+- Accessible, modern, friendly aesthetic
+
+**CSS Variables (in index.css):**
+- `--koomy-primary`, `--koomy-primary-light`, `--koomy-primary-dark`
+- `--koomy-bg-soft`, `--koomy-border-soft`, `--koomy-glow`
+
+**Utility Classes:**
+- `.koomy-gradient` - Primary gradient background
+- `.koomy-glow` - Soft blue glow effect
+- `.koomy-card` - White card with soft shadow
+- `.koomy-btn` - Primary button style
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -70,11 +99,17 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 
 **Database Schema:**
-- **Platform-level tables:** `plans` for subscription tiers
+- **Platform-level tables:** `plans` for subscription tiers, `accounts` for public Koomy users
 - **Tenant tables:** `communities` representing each organization
-- **User management:** `users` table with `userCommunityMemberships` junction table for multi-tenant access
+- **User management:** `users` table (back-office admins), `accounts` table (mobile app users), `userCommunityMemberships` junction table with `accountId`, `claimCode`, `displayName` for membership claiming
 - **Community features:** `sections`, `newsArticles`, `events`, `messages`, `supportTickets`, `faqs`
 - **Financial:** `membershipFees`, `paymentRequests`, `payments`
+
+**Authentication Model:**
+- `accounts` table: Public Koomy app users (email/password with bcrypt)
+- `users` table: Back-office administrators
+- Membership claiming: Admins create cards with auto-generated 8-char `claimCode`, users claim with their Koomy account
+- Routes: `/api/accounts/register`, `/api/accounts/login`, `/api/memberships/claim`, `/api/memberships/verify/:claimCode`
 
 **Enums for Status Management:**
 - Subscription status, member status, contribution status
