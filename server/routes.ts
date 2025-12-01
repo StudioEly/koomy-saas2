@@ -5,7 +5,8 @@ import {
   insertUserSchema, insertCommunitySchema, insertMembershipSchema,
   insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
   insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema,
-  insertAccountSchema, insertCommercialContactSchema, insertSectionSchema
+  insertAccountSchema, insertCommercialContactSchema, insertSectionSchema,
+  insertFaqSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -249,6 +250,81 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Admin login error:", error);
       return res.status(500).json({ error: "Échec de connexion" });
+    }
+  });
+
+  // Admin Registration (creates user + community + membership)
+  app.post("/api/admin/register", async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, password, communityName, communityType, communityDescription } = req.body;
+      
+      if (!firstName || !lastName || !email || !password || !communityName || !communityType) {
+        return res.status(400).json({ error: "Tous les champs obligatoires doivent être remplis" });
+      }
+      
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Cet email est déjà utilisé" });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Create user
+      const user = await storage.createUser({
+        firstName,
+        lastName,
+        email,
+        phone: phone || null,
+        password: hashedPassword,
+        avatar: null,
+        globalRole: null
+      });
+      
+      // Create community
+      const community = await storage.createCommunity({
+        name: communityName,
+        description: communityDescription || `Communauté ${communityName}`,
+        planId: "free",
+        subscriptionStatus: "active",
+        primaryColor: "207 100% 63%",
+        secondaryColor: "350 80% 55%"
+      });
+      
+      // Create membership (admin role)
+      const memberId = `ADMIN-${Date.now().toString(36).toUpperCase()}`;
+      const membership = await storage.createMembership({
+        userId: user.id,
+        communityId: community.id,
+        memberId,
+        role: "admin",
+        displayName: `${firstName} ${lastName}`,
+        status: "active",
+        contributionStatus: "up_to_date"
+      });
+      
+      return res.status(201).json({
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          avatar: user.avatar,
+          phone: user.phone
+        },
+        memberships: [{
+          ...membership,
+          community: {
+            id: community.id,
+            name: community.name,
+            logo: community.logo
+          }
+        }]
+      });
+    } catch (error) {
+      console.error("Admin registration error:", error);
+      return res.status(500).json({ error: "Échec de l'inscription" });
     }
   });
 

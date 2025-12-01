@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Building2, Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react";
+import { Building2, Eye, EyeOff, Lock, Mail, ArrowRight, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import koomyLogo from "@assets/ChatGPT Image 30 nov. 2025, 05_54_45_1764590118748.png";
+import koomyLogo from "@assets/koomy-logo.png";
 
 export default function AdminLogin() {
   const [_, setLocation] = useLocation();
@@ -66,14 +66,17 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex" data-testid="admin-login-page">
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{
-        background: "linear-gradient(135deg, #44A8FF 0%, #2B9AFF 50%, #1E88E5 100%)"
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
       }}>
         <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-64 h-64 rounded-full opacity-20" style={{
-            background: "radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%)"
+            background: "radial-gradient(circle, rgba(68, 168, 255, 0.4) 0%, transparent 70%)"
           }} />
           <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full opacity-15" style={{
-            background: "radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%)"
+            background: "radial-gradient(circle, rgba(68, 168, 255, 0.3) 0%, transparent 70%)"
+          }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10" style={{
+            background: "radial-gradient(circle, rgba(68, 168, 255, 0.5) 0%, transparent 60%)"
           }} />
         </div>
         
@@ -81,10 +84,11 @@ export default function AdminLogin() {
           <img 
             src={koomyLogo} 
             alt="Koomy" 
-            className="h-20 mb-8 drop-shadow-xl"
+            className="w-72 mb-6 drop-shadow-2xl"
+            style={{ filter: "drop-shadow(0 0 30px rgba(68, 168, 255, 0.5))" }}
           />
-          <h1 className="text-4xl font-bold mb-4 text-center">
-            Espace Back-Office
+          <h1 className="text-4xl font-bold mb-4 text-center font-nunito">
+            Portail Admin
           </h1>
           <p className="text-xl text-white/80 text-center max-w-md">
             Gérez votre communauté depuis une interface simple et puissante.
@@ -109,7 +113,7 @@ export default function AdminLogin() {
             <img 
               src={koomyLogo} 
               alt="Koomy" 
-              className="h-16"
+              className="w-48"
             />
           </div>
 
@@ -195,10 +199,19 @@ export default function AdminLogin() {
                 </Button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-                <p className="text-sm text-gray-500">
-                  Accès réservé aux administrateurs autorisés
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <p className="text-sm text-gray-500 text-center mb-4">
+                  Vous n'avez pas encore de compte ?
                 </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/admin/register")}
+                  className="w-full h-12 rounded-xl border-2 border-primary/20 hover:border-primary hover:bg-primary/5 font-semibold transition-all"
+                  data-testid="button-admin-register"
+                >
+                  <UserPlus size={18} className="mr-2" />
+                  Créer mon compte et ma communauté
+                </Button>
               </div>
             </CardContent>
           </Card>

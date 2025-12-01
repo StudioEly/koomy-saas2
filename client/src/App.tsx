@@ -30,6 +30,7 @@ import MobileSupport from "@/pages/mobile/Support";
 
 // Admin Pages (Web)
 import AdminLogin from "@/pages/admin/Login";
+import AdminRegister from "@/pages/admin/Register";
 import AdminSelectCommunity from "@/pages/admin/SelectCommunity";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminMembers from "@/pages/admin/Members";
@@ -117,6 +118,7 @@ function Router() {
 
       {/* Admin Routes (Web) */}
       <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/select-community" component={AdminSelectCommunity} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/members" component={AdminMembers} />
