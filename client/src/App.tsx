@@ -26,6 +26,8 @@ import MobileAdminMessages from "@/pages/mobile/admin/Messages";
 import MobileSupport from "@/pages/mobile/Support";
 
 // Admin Pages (Web)
+import AdminLogin from "@/pages/admin/Login";
+import AdminSelectCommunity from "@/pages/admin/SelectCommunity";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminMembers from "@/pages/admin/Members";
 import AdminMemberDetails from "@/pages/admin/MemberDetails";
@@ -39,6 +41,7 @@ import AdminSupport from "@/pages/admin/Support";
 import AdminPayments from "@/pages/admin/Payments";
 
 // Platform Pages
+import PlatformLogin from "@/pages/platform/Login";
 import SuperDashboard from "@/pages/platform/SuperDashboard";
 
 // Website Pages
@@ -93,6 +96,8 @@ function Router() {
       <Route path="/app/:communityId/admin/messages" component={MobileAdminMessages} />
 
       {/* Admin Routes (Web) */}
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/select-community" component={AdminSelectCommunity} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/members" component={AdminMembers} />
       <Route path="/admin/members/:id" component={AdminMemberDetails} />
@@ -106,6 +111,7 @@ function Router() {
       <Route path="/admin/payments" component={AdminPayments} />
 
       {/* Platform Super Admin */}
+      <Route path="/platform/login" component={PlatformLogin} />
       <Route path="/platform/dashboard" component={SuperDashboard} />
 
       <Route component={NotFound} />

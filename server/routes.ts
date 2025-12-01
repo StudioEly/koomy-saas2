@@ -201,7 +201,7 @@ export async function registerRoutes(
   // ADMIN/BACK-OFFICE AUTHENTICATION (Users)
   // =====================================================
   
-  app.post("/api/auth/admin/login", async (req, res) => {
+  app.post("/api/admin/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       
@@ -248,6 +248,48 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Admin login error:", error);
+      return res.status(500).json({ error: "Échec de connexion" });
+    }
+  });
+
+  // =====================================================
+  // PLATFORM SUPER ADMIN AUTHENTICATION
+  // =====================================================
+  
+  app.post("/api/platform/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email et mot de passe requis" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      }
+      
+      if (user.globalRole !== 'platform_super_admin') {
+        return res.status(403).json({ error: "Accès non autorisé - Réservé aux administrateurs plateforme" });
+      }
+      
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      }
+      
+      return res.json({
+        user: {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          avatar: user.avatar,
+          globalRole: user.globalRole
+        }
+      });
+    } catch (error) {
+      console.error("Platform login error:", error);
       return res.status(500).json({ error: "Échec de connexion" });
     }
   });
@@ -359,6 +401,12 @@ export async function registerRoutes(
       // Fetch user details for each membership
       const membersWithDetails = await Promise.all(
         memberships.map(async (membership) => {
+          if (!membership.userId) {
+            return {
+              ...membership,
+              user: null
+            };
+          }
           const user = await storage.getUser(membership.userId);
           if (!user) return null;
           const { password, ...userWithoutPassword } = user;

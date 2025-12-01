@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { MOCK_COMMUNITIES, MOCK_PLANS, Plan } from "@/lib/mockData";
 import { MOCK_TICKETS } from "@/lib/mockSupportData";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -10,14 +11,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Settings, MessageSquare, CheckCircle, Clock, AlertCircle, TrendingUp, Shield, CreditCard, BarChart3 } from "lucide-react";
+import { Plus, Users, Settings, MessageSquare, CheckCircle, Clock, AlertCircle, TrendingUp, Shield, CreditCard, BarChart3, LogOut } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SuperAdminDashboard() {
+  const [_, setLocation] = useLocation();
+  const { user, logout } = useAuth();
   const [communities, setCommunities] = useState(MOCK_COMMUNITIES);
   const [tickets] = useState(MOCK_TICKETS);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
+
+  useEffect(() => {
+    if (!user || user.globalRole !== 'platform_super_admin') {
+      setLocation("/platform/login");
+    }
+  }, [user, setLocation]);
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/platform/login");
+  };
 
   // Mock creation handler
   const handleCreateClient = () => {
@@ -48,8 +63,17 @@ export default function SuperAdminDashboard() {
           <Badge className="bg-blue-500/20 text-blue-300 border-0">Super Owner</Badge>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">admin@koomy.app</span>
-          <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center font-bold border-2 border-blue-500 shadow-glow">KO</div>
+          <span className="text-sm text-gray-400">{user?.email}</span>
+          <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center font-bold border-2 border-blue-500">
+            {user?.firstName?.[0]}{user?.lastName?.[0]}
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="text-gray-400 hover:text-red-400 transition-colors p-2"
+            title="Déconnexion"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
       </header>
 

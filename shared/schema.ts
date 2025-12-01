@@ -14,6 +14,7 @@ export const newsStatusEnum = pgEnum("news_status", ["draft", "published"]);
 export const scopeEnum = pgEnum("scope", ["national", "local"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const paymentRequestStatusEnum = pgEnum("payment_request_status", ["pending", "paid", "expired", "cancelled"]);
+export const userGlobalRoleEnum = pgEnum("user_global_role", ["platform_super_admin", "platform_support"]);
 
 // Accounts Table (Global Koomy accounts for public app users)
 export const accounts = pgTable("accounts", {
@@ -54,7 +55,7 @@ export const communities = pgTable("communities", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
-// Users Table
+// Users Table (Back-office admins and platform admins)
 export const users = pgTable("users", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
   firstName: text("first_name").notNull(),
@@ -63,6 +64,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   phone: text("phone"),
   avatar: text("avatar"),
+  globalRole: userGlobalRoleEnum("global_role"), // null for community admins, set for platform admins
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
@@ -13,10 +14,18 @@ import {
   CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@assets/generated_images/modern_minimalist_union_logo_with_letter_u_or_abstract_knot_symbol_in_blue_and_red.png";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user, logout, currentCommunity } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      setLocation("/admin/login");
+    }
+  }, [user, setLocation]);
 
   const navItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/admin/dashboard" },
@@ -62,12 +71,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="p-4 border-t border-sidebar-border/20">
-          <Link href="/">
-            <a className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors">
-              <LogOut className="h-5 w-5" />
-              Déconnexion
-            </a>
-          </Link>
+          <button 
+            onClick={() => {
+              logout();
+              setLocation("/admin/login");
+            }}
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors w-full"
+          >
+            <LogOut className="h-5 w-5" />
+            Déconnexion
+          </button>
         </div>
       </aside>
 
@@ -75,16 +88,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <header className="bg-white shadow-sm border-b h-16 flex items-center justify-between px-8 sticky top-0 z-10">
-          <h2 className="font-semibold text-lg text-gray-800">
-            {navItems.find(i => i.path === location)?.label || "Administration"}
-          </h2>
+          <div>
+            <h2 className="font-semibold text-lg text-gray-800">
+              {navItems.find(i => i.path === location)?.label || "Administration"}
+            </h2>
+            {currentCommunity && (
+              <p className="text-xs text-gray-500">{currentCommunity.name}</p>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">Admin National</p>
-              <p className="text-xs text-gray-500">superadmin@unsa.org</p>
+              <p className="text-sm font-medium text-gray-900">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-              AN
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
             </div>
           </div>
         </header>

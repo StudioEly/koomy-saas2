@@ -9,6 +9,7 @@ interface AuthAccount extends Omit<Account, "passwordHash"> {
 
 interface AuthUser extends Omit<User, "password"> {
   memberships: (UserCommunityMembership & { community?: Community })[];
+  isPlatformAdmin?: boolean;
 }
 
 interface AuthContextType {
