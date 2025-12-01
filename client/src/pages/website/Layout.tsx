@@ -62,9 +62,9 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-white">
       <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Link href="/website" className="flex items-center gap-2">
-            <img src={koomyLogo} alt="Koomy" className="h-[168px]" />
+            <img src={koomyLogo} alt="Koomy" style={{ height: '168px', marginTop: '-76px', marginBottom: '-76px' }} />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
