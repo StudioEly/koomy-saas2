@@ -153,10 +153,11 @@ export const messages = pgTable("messages", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
   communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
   conversationId: varchar("conversation_id", { length: 50 }).notNull(),
-  senderId: varchar("sender_id", { length: 50 }).references(() => users.id).notNull(),
+  senderMembershipId: varchar("sender_membership_id", { length: 50 }).references(() => userCommunityMemberships.id),
+  senderType: text("sender_type").notNull().default("member"),
   content: text("content").notNull(),
   read: boolean("read").default(false),
-  timestamp: timestamp("timestamp").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // Membership Fees (defines contribution amounts per community)
@@ -256,7 +257,7 @@ export const insertNewsSchema = createInsertSchema(newsArticles).omit({ id: true
 export const insertEventSchema = createInsertSchema(events).omit({ id: true });
 export const insertTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, lastUpdate: true });
 export const insertFaqSchema = createInsertSchema(faqs).omit({ id: true });
-export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
+export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertMembershipFeeSchema = createInsertSchema(membershipFees).omit({ id: true });
 export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({ id: true, createdAt: true, paidAt: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, completedAt: true });

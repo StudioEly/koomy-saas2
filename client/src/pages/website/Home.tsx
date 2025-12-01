@@ -171,7 +171,7 @@ export default function WebsiteHome() {
             </Button>
           </Link>
           <p className="mt-6 text-sm text-blue-200">
-            Déjà membre ? <Link href="/app/login"><a className="underline hover:text-white">Télécharger l'app</a></Link> ou <Link href="/admin/dashboard"><a className="underline hover:text-white">Connexion Admin</a></Link>
+            Déjà membre ? <Link href="/app/login" className="underline hover:text-white">Télécharger l'app</Link> ou <Link href="/admin/dashboard" className="underline hover:text-white">Connexion Admin</Link>
           </p>
         </div>
       </section>

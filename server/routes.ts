@@ -5,7 +5,7 @@ import {
   insertUserSchema, insertCommunitySchema, insertMembershipSchema,
   insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
   insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema,
-  insertAccountSchema, insertCommercialContactSchema
+  insertAccountSchema, insertCommercialContactSchema, insertSectionSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -492,6 +492,89 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/sections", async (req, res) => {
+    try {
+      const validated = insertSectionSchema.parse(req.body);
+      const section = await storage.createSection(validated);
+      return res.status(201).json(section);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Create section error:", error);
+      return res.status(500).json({ error: "Failed to create section" });
+    }
+  });
+
+  // Dashboard Stats Route
+  app.get("/api/communities/:communityId/dashboard", async (req, res) => {
+    try {
+      const { communityId } = req.params;
+      
+      const [memberships, news, events, tickets] = await Promise.all([
+        storage.getCommunityMemberships(communityId),
+        storage.getCommunityNews(communityId),
+        storage.getCommunityEvents(communityId),
+        storage.getCommunityTickets(communityId)
+      ]);
+      
+      const now = new Date();
+      const thisMonth = now.getMonth();
+      const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      const thisYear = now.getFullYear();
+      
+      const membersThisMonth = memberships.filter(m => {
+        const joinDate = new Date(m.joinDate);
+        return joinDate.getMonth() === thisMonth && joinDate.getFullYear() === thisYear;
+      }).length;
+      
+      const membersLastMonth = memberships.filter(m => {
+        const joinDate = new Date(m.joinDate);
+        return joinDate.getMonth() === lastMonth && (lastMonth === 11 ? joinDate.getFullYear() === thisYear - 1 : joinDate.getFullYear() === thisYear);
+      }).length;
+      
+      const memberGrowth = membersLastMonth > 0 
+        ? ((membersThisMonth - membersLastMonth) / membersLastMonth * 100).toFixed(1)
+        : membersThisMonth > 0 ? "100" : "0";
+      
+      const upcomingEvents = events.filter(e => new Date(e.date) > now);
+      
+      const monthlyData = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(thisYear, thisMonth - i, 1);
+        const monthName = date.toLocaleString('fr-FR', { month: 'short' });
+        const monthMembers = memberships.filter(m => {
+          const joinDate = new Date(m.joinDate);
+          return joinDate <= new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        }).length;
+        monthlyData.push({ name: monthName, adherents: monthMembers });
+      }
+      
+      return res.json({
+        stats: {
+          totalMembers: memberships.length,
+          membersThisMonth,
+          memberGrowth: parseFloat(memberGrowth as string),
+          totalNews: news.length,
+          newsThisWeek: news.filter(n => {
+            const pubDate = new Date(n.publishedAt || Date.now());
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return pubDate > weekAgo;
+          }).length,
+          totalEvents: events.length,
+          upcomingEvents: upcomingEvents.length,
+          openTickets: tickets.filter(t => t.status === 'open').length
+        },
+        monthlyData,
+        recentNews: news.slice(0, 5),
+        upcomingEvents: upcomingEvents.slice(0, 5)
+      });
+    } catch (error) {
+      console.error("Get dashboard error:", error);
+      return res.status(500).json({ error: "Failed to fetch dashboard data" });
+    }
+  });
+
   // News Routes
   app.get("/api/communities/:communityId/news", async (req, res) => {
     try {
@@ -659,6 +742,30 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get FAQs error:", error);
       return res.status(500).json({ error: "Failed to fetch FAQs" });
+    }
+  });
+
+  app.get("/api/communities/:communityId/faqs", async (req, res) => {
+    try {
+      const faqs = await storage.getCommunityFAQs(req.params.communityId);
+      return res.json(faqs);
+    } catch (error) {
+      console.error("Get community FAQs error:", error);
+      return res.status(500).json({ error: "Failed to fetch FAQs" });
+    }
+  });
+
+  app.post("/api/faqs", async (req, res) => {
+    try {
+      const validated = insertFaqSchema.parse(req.body);
+      const faq = await storage.createFAQ(validated);
+      return res.status(201).json(faq);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Create FAQ error:", error);
+      return res.status(500).json({ error: "Failed to create FAQ" });
     }
   });
 

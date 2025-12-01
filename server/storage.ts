@@ -74,6 +74,7 @@ export interface IStorage {
   // FAQs
   getAllFAQs(): Promise<FAQ[]>;
   getFAQsByRole(role: string): Promise<FAQ[]>;
+  getCommunityFAQs(communityId: string): Promise<FAQ[]>;
   createFAQ(faq: InsertFAQ): Promise<FAQ>;
   
   // Messages
@@ -348,6 +349,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(faqs).where(eq(faqs.targetRole, role));
   }
 
+  async getCommunityFAQs(communityId: string): Promise<FAQ[]> {
+    return await db.select().from(faqs);
+  }
+
   async createFAQ(insertFAQ: InsertFAQ): Promise<FAQ> {
     const [faq] = await db.insert(faqs).values(insertFAQ).returning();
     return faq;
@@ -360,11 +365,14 @@ export class DatabaseStorage implements IStorage {
         eq(messages.communityId, communityId),
         eq(messages.conversationId, conversationId)
       ))
-      .orderBy(messages.timestamp);
+      .orderBy(messages.createdAt);
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
+    const [message] = await db.insert(messages).values({
+      ...insertMessage,
+      conversationId: insertMessage.conversationId || insertMessage.communityId
+    }).returning();
     return message;
   }
 
