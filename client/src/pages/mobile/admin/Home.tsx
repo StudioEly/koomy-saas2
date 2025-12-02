@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, QrCode, MessageSquare, Users, LogOut } from "lucide-react";
+import { QrCode, MessageSquare, Users, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -49,12 +49,7 @@ export default function MobileAdminHome({ params }: { params: { communityId: str
       <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col">
         
         <header className="bg-gray-900 text-white px-4 py-4 sticky top-0 z-40">
-          <div className="flex items-center justify-between mb-4">
-            <Link href={`/app/${communityId}/home`}>
-              <a className="text-gray-300 hover:text-white flex items-center gap-1 text-sm">
-                <ArrowLeft size={16} /> Retour App
-              </a>
-            </Link>
+          <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-2">
               <Badge className="bg-purple-500 text-white border-0">Mode Admin</Badge>
               <button 
