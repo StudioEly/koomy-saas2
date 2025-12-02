@@ -211,9 +211,29 @@ Preferred communication style: Simple, everyday language.
 - **class-variance-authority**: Utility for managing component variants
 - **clsx/tailwind-merge**: Conditional className utilities
 
+### Internationalization (i18n)
+- **Library**: react-i18next
+- **Configuration**: `client/src/i18n/config.ts`
+- **Translation Files**: `client/src/i18n/locales/fr.json` and `en.json`
+- **Supported Languages**: French (default), English
+- **Language Switcher**: Globe icon in public website header (toggles FR/EN)
+- **State Management**: Language stored in memory (no URL prefix)
+- **Translated Sections**: Navigation, Home, Pricing (including plan names/descriptions/features), Contact, FAQ, Login Modal, Footer
+
 ### Future Integration Points
 - Email service (Nodemailer dependency present)
 - Payment processing (Stripe dependency present)
 - AI features (OpenAI and Google Generative AI dependencies present)
 - File uploads (Multer dependency present)
 - Excel export (XLSX dependency present)
+
+## Recent Changes
+
+| Date | Changes |
+|------|---------|
+| 2025-12-02 | Added complete i18n support (FR/EN) for public website with react-i18next |
+| 2025-12-02 | Translated all pricing page content including dynamic plan data |
+| 2025-12-02 | Added language switcher to website header |
+| 2025-12-01 | Implemented Full Access VIP system for platform admins |
+| 2025-12-01 | Secured full access routes with platform_super_admin verification |
+| 2025-11-30 | Subscription plans system with 5 canonical plans and member quotas |

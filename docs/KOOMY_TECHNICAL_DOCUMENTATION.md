@@ -24,6 +24,7 @@
 | ORM | Drizzle ORM |
 | Validation | Zod |
 | UI Components | Radix UI, shadcn/ui |
+| Internationalization | react-i18next |
 
 ### Multi-Tenant Architecture
 
@@ -43,15 +44,92 @@
 
 ---
 
+## Design System (Koomy Identity)
+
+### Brand Colors
+
+| Color | Hex | HSL | Usage |
+|-------|-----|-----|-------|
+| Primary (Sky Blue) | `#44A8FF` | 207 100% 63% | Main brand color, buttons, links |
+| Primary Light | `#5AB8FF` | - | Hover states |
+| Primary Dark | `#2B9AFF` | - | Active states |
+| Background Soft | `#E8F4FF` | - | Page backgrounds |
+
+### Typography
+
+- **Primary Font**: Nunito (rounded, friendly)
+- **Fallback**: Inter, sans-serif
+
+### Design Principles
+
+- Soft, rounded corners (16-20px radius)
+- Subtle gradients and glows
+- Clean white cards with soft shadows
+- Accessible, modern, friendly aesthetic
+
+### CSS Utility Classes
+
+| Class | Purpose |
+|-------|---------|
+| `.koomy-gradient` | Primary gradient background |
+| `.koomy-glow` | Soft blue glow effect |
+| `.koomy-card` | White card with soft shadow |
+| `.koomy-btn` | Primary button style |
+
+---
+
+## Internationalization (i18n)
+
+### Supported Languages
+
+| Language | Code | Default |
+|----------|------|---------|
+| French | `fr` | Yes |
+| English | `en` | No |
+
+### Implementation
+
+- **Library**: react-i18next
+- **Translation Files**: `client/src/i18n/locales/{lang}.json`
+- **Language Switcher**: Located in public website header (globe icon)
+- **State Management**: Language stored in memory (no URL prefix)
+
+### Translated Sections
+
+| Section | Coverage |
+|---------|----------|
+| Navigation | Full |
+| Home Page | Full |
+| Pricing Page | Full (including plan names/descriptions/features) |
+| Contact Page | Full |
+| FAQ Page | Full |
+| Login Modal | Full |
+| Footer | Full |
+
+### Translation Key Structure
+
+```json
+{
+  "nav": { ... },
+  "login": { ... },
+  "home": { "hero": {...}, "features": {...}, ... },
+  "pricing": { "plans": { "PLAN_CODE": { "name", "description", "features" } }, ... },
+  "contact": { ... },
+  "faq": { ... },
+  "footer": { ... }
+}
+```
+
+---
+
 ## User Roles & Permissions
 
 ### Platform Level (SaaS Owner)
 
-| Role | Permissions |
-|------|-------------|
-| **Super Admin** | Full platform access, manage all tenants, view all metrics |
-| **Support Admin** | View/manage support tickets, limited tenant access |
-| **Content Admin** | Manage platform-wide content, FAQs |
+| Role | Global Role Value | Permissions |
+|------|-------------------|-------------|
+| **Platform Super Admin** | `platform_super_admin` | Full platform access, manage all tenants, grant VIP access |
+| **Platform Support** | `platform_support` | View/manage support tickets, limited tenant access |
 
 ### Community Level (Tenant)
 
@@ -64,23 +142,64 @@
 
 ---
 
+## Authentication Model (Three-Tier System)
+
+### 1. Accounts Table (Mobile App Users)
+
+- Public Koomy users who access the mobile app
+- Email/password authentication with bcrypt hashing
+- Can be members of multiple communities
+
+### 2. Users Table (Back-Office Admins)
+
+- Community administrators
+- Login via `/api/admin/login`
+- Can have `globalRole` for platform-level access
+
+### 3. Membership Claiming System
+
+- Admins create member cards with auto-generated 8-character `claimCode`
+- Users claim membership by entering the code in the mobile app
+- Links account to community membership
+
+### Authentication Routes
+
+| Portal | Endpoint | Returns |
+|--------|----------|---------|
+| Mobile App | `/api/accounts/register` | Account + memberships |
+| Mobile App | `/api/accounts/login` | Account + memberships |
+| Mobile App | `/api/memberships/claim` | Claimed membership |
+| Web Admin | `/api/admin/login` | User + memberships |
+| Platform Admin | `/api/platform/login` | User with globalRole |
+
+### Demo Credentials
+
+| Portal | Email | Password |
+|--------|-------|----------|
+| Platform Admin | `platform@koomy.app` | `Admin2025!` |
+| Community Admin | `admin@koomy.app` | `Admin2025!` |
+
+---
+
 ## Application Portals
 
 ### 1. Commercial Public Website (`/website`)
 
-**Purpose:** Marketing and user acquisition
+**Purpose:** Marketing and user acquisition (bilingual FR/EN)
 
 | Page | Route | Description |
 |------|-------|-------------|
 | Home | `/website` | Landing page with hero, features, CTA |
 | Pricing | `/website/pricing` | Subscription plans comparison |
 | FAQ | `/website/faq` | Frequently asked questions |
+| Contact | `/website/contact` | Contact form with request types |
 | Signup | `/website/signup` | New organization registration |
 
 **Key Components:**
-- Login popup modal (accessible from header "Connexion" button)
+- Language switcher (FR/EN toggle in header)
+- Login popup modal (accessible from header)
 - Feature showcase cards
-- Pricing tier comparison
+- Pricing tier comparison with translated plan content
 - Mobile app download CTAs
 - Responsive navigation
 
@@ -100,14 +219,6 @@
 | Payment | `/app/:communityId/payment` | Contribution payments |
 | Support | `/app/:communityId/support` | Help & FAQs |
 
-**Key Features:**
-- Digital membership card with QR code
-- Real-time news feed
-- Direct messaging with administrators
-- Multi-community support (users can belong to multiple organizations)
-- Contribution status display
-- Online payment for membership fees
-
 ### 3. Mobile Admin/Delegate App (`/app/:communityId/admin`)
 
 **Purpose:** Field administrators and delegates
@@ -117,12 +228,6 @@
 | Admin Home | `/app/:communityId/admin` | Admin dashboard |
 | QR Scanner | `/app/:communityId/admin/scanner` | Member verification |
 | Messages | `/app/:communityId/admin/messages` | Member communications |
-
-**Key Features:**
-- QR code scanner for member verification
-- Member status check (contribution status, expiry)
-- Quick member lookup
-- Direct messaging
 
 ### 4. Web Admin Back-Office (`/admin`)
 
@@ -142,17 +247,6 @@
 | Payments | `/admin/payments` | Payment & contribution management |
 | Support | `/admin/support` | Ticket management |
 
-**Key Features:**
-- Member CRUD operations
-- Bulk import/export
-- News article editor with scope targeting
-- Event creation with registration
-- Multi-admin role management
-- Section/regional management
-- Payment request management
-- Bulk contribution calls
-- Support ticket handling
-
 ### 5. SaaS Owner Portal (`/platform`)
 
 **Purpose:** Platform-wide management for Koomy operators
@@ -163,10 +257,87 @@
 
 **Key Features:**
 - MRR (Monthly Recurring Revenue) tracking
-- Client (tenant) overview
-- Subscription status monitoring
+- Client (tenant) overview with subscription status
+- VIP badge for communities with full access
+- "Offrir" button to grant/revoke full access
 - Platform admin management
-- Support ticket escalation
+
+---
+
+## Subscription Plans
+
+### Plan Codes & Pricing
+
+| Code | Name | Max Members | Monthly | Yearly | Target |
+|------|------|-------------|---------|--------|--------|
+| `STARTER_FREE` | Free Starter | 50 | €0 | €0 | Small clubs starting out |
+| `COMMUNAUTE_STANDARD` | Communauté Standard | 1,000 | €9.90 | €99 | Growing associations |
+| `COMMUNAUTE_PRO` | Communauté Pro | 5,000 | €29 | €290 | Large organizations |
+| `ENTREPRISE_CUSTOM` | Grand Compte | Unlimited | Custom | Custom | Federations |
+| `WHITE_LABEL` | White Label | Unlimited | - | €4,900 | Branded platform |
+
+### Plan Features
+
+| Feature | Starter | Standard | Pro | Enterprise | White Label |
+|---------|---------|----------|-----|------------|-------------|
+| Digital membership cards | ✓ | ✓ | ✓ | ✓ | ✓ |
+| News feed | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Basic events | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Email support | ✓ | ✓ | ✓ | ✓ | ✓ |
+| QR code cards | - | ✓ | ✓ | ✓ | ✓ |
+| Dues management | - | ✓ | ✓ | ✓ | ✓ |
+| Member-admin messaging | - | ✓ | ✓ | ✓ | ✓ |
+| Priority support | - | ✓ | ✓ | ✓ | ✓ |
+| Multi-admin with roles | - | - | ✓ | ✓ | ✓ |
+| Unlimited sections | - | - | ✓ | ✓ | ✓ |
+| Advanced analytics | - | - | ✓ | ✓ | ✓ |
+| API integrations | - | - | ✓ | ✓ | ✓ |
+| 24/7 support | - | - | ✓ | ✓ | ✓ |
+| Dedicated success manager | - | - | - | ✓ | ✓ |
+| Custom integrations | - | - | - | ✓ | ✓ |
+| Guaranteed SLA | - | - | - | ✓ | ✓ |
+| Custom branding | - | - | - | - | ✓ |
+| Custom domain | - | - | - | - | ✓ |
+
+### Member Quota Enforcement
+
+- `storage.createMembership()` checks plan limits before creating new members
+- `storage.changeCommunityPlan()` prevents downgrade when member count exceeds new plan limit
+- API route `GET /api/communities/:id/quota` returns current usage vs limit
+
+---
+
+## Full Access VIP System (Platform Admin Only)
+
+Allows SaaS owner to grant free unlimited access to specific communities for promotional/VIP purposes.
+
+### Database Fields (Communities Table)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `fullAccessGrantedAt` | TIMESTAMP | When access was granted |
+| `fullAccessExpiresAt` | TIMESTAMP | When access expires (null = forever) |
+| `fullAccessReason` | TEXT | Reason for granting |
+| `fullAccessGrantedBy` | VARCHAR FK | Admin who granted access |
+
+### Storage Methods
+
+| Method | Description |
+|--------|-------------|
+| `hasActiveFullAccess(communityId)` | Check if community has active VIP status |
+| `grantFullAccess(communityId, grantedBy, reason, expiresAt?)` | Grant VIP access |
+| `revokeFullAccess(communityId, revokedBy)` | Revoke VIP access |
+| `getCommunitiesWithFullAccess()` | List all VIP communities |
+
+### API Routes
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/platform/communities/:id/full-access` | Grant VIP access |
+| DELETE | `/api/platform/communities/:id/full-access` | Revoke VIP access |
+| GET | `/api/platform/full-access-communities` | List VIP communities |
+
+**Security:** All routes require `platform_super_admin` role verification.
 
 ---
 
@@ -177,13 +348,19 @@
 #### `plans`
 | Column | Type | Description |
 |--------|------|-------------|
-| id | VARCHAR(50) PK | Plan identifier (free, growth, scale, enterprise) |
+| id | SERIAL PK | Auto-increment ID |
+| code | VARCHAR(50) UNIQUE | Plan identifier (STARTER_FREE, etc.) |
 | name | TEXT | Display name |
-| max_members | INTEGER | Member limit |
+| description | TEXT | Plan description |
+| max_members | INTEGER | Member limit (null = unlimited) |
 | price_monthly | INTEGER | Monthly price in cents |
 | price_yearly | INTEGER | Yearly price in cents |
 | features | JSONB | Feature list array |
 | is_popular | BOOLEAN | Featured plan flag |
+| is_public | BOOLEAN | Show on public pricing page |
+| is_custom | BOOLEAN | Requires custom quote |
+| is_white_label | BOOLEAN | White label plan |
+| sort_order | INTEGER | Display order |
 
 #### `communities`
 | Column | Type | Description |
@@ -195,11 +372,30 @@
 | secondary_color | TEXT | HSL color value |
 | description | TEXT | Organization description |
 | member_count | INTEGER | Cached member count |
-| plan_id | VARCHAR(50) FK | Reference to plans |
-| subscription_status | ENUM | active, past_due, canceled |
+| plan_id | INTEGER FK | Reference to plans |
+| billing_status | ENUM | active, past_due, canceled, trialing |
+| trial_ends_at | TIMESTAMP | Trial expiration |
+| stripe_customer_id | TEXT | Stripe customer ID |
+| stripe_subscription_id | TEXT | Stripe subscription ID |
+| full_access_granted_at | TIMESTAMP | VIP access start |
+| full_access_expires_at | TIMESTAMP | VIP access end |
+| full_access_reason | TEXT | VIP reason |
+| full_access_granted_by | VARCHAR FK | Admin who granted VIP |
 | created_at | TIMESTAMP | Creation date |
 
-#### `users`
+#### `accounts` (Mobile App Users)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | VARCHAR(50) PK | UUID |
+| first_name | TEXT | First name |
+| last_name | TEXT | Last name |
+| email | TEXT UNIQUE | Email address |
+| password | TEXT | Bcrypt hashed password |
+| phone | TEXT | Phone number |
+| avatar | TEXT | Avatar URL |
+| created_at | TIMESTAMP | Registration date |
+
+#### `users` (Back-Office Admins)
 | Column | Type | Description |
 |--------|------|-------------|
 | id | VARCHAR(50) PK | UUID |
@@ -209,15 +405,19 @@
 | password | TEXT | Hashed password |
 | phone | TEXT | Phone number |
 | avatar | TEXT | Avatar URL |
+| global_role | ENUM | platform_super_admin, platform_support |
 | created_at | TIMESTAMP | Registration date |
 
 #### `user_community_memberships`
 | Column | Type | Description |
 |--------|------|-------------|
 | id | VARCHAR(50) PK | UUID |
-| user_id | VARCHAR(50) FK | Reference to users |
+| account_id | VARCHAR(50) FK | Reference to accounts (nullable) |
+| user_id | VARCHAR(50) FK | Reference to users (nullable) |
 | community_id | VARCHAR(50) FK | Reference to communities |
-| member_id | TEXT | Organization-specific ID (e.g., UNSA-2024-8892) |
+| member_id | TEXT | Organization-specific ID |
+| claim_code | VARCHAR(8) UNIQUE | Code for membership claiming |
+| display_name | TEXT | Member display name |
 | role | TEXT | member, admin |
 | admin_role | ENUM | super_admin, support_admin, finance_admin, content_admin |
 | status | ENUM | active, expired, suspended |
@@ -226,297 +426,137 @@
 | contribution_status | ENUM | up_to_date, expired, pending, late |
 | next_due_date | TIMESTAMP | Next payment due |
 
-#### `sections`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| community_id | VARCHAR(50) FK | Parent community |
-| name | TEXT | Section name |
-
-#### `news_articles`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| community_id | VARCHAR(50) FK | Parent community |
-| title | TEXT | Article title |
-| summary | TEXT | Short description |
-| content | TEXT | Full content |
-| category | TEXT | Category tag |
-| image | TEXT | Featured image URL |
-| scope | ENUM | national, local |
-| section | TEXT | Target section (if local) |
-| author | TEXT | Author name |
-| status | ENUM | draft, published |
-| published_at | TIMESTAMP | Publication date |
-
-#### `events`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| community_id | VARCHAR(50) FK | Parent community |
-| title | TEXT | Event title |
-| description | TEXT | Event details |
-| date | TIMESTAMP | Start date/time |
-| end_date | TIMESTAMP | End date/time |
-| location | TEXT | Venue |
-| type | TEXT | Event category |
-| scope | ENUM | national, local |
-| section | TEXT | Target section (if local) |
-| participants | INTEGER | Registration count |
-
-#### `support_tickets`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| user_id | VARCHAR(50) FK | Requesting user |
-| community_id | VARCHAR(50) FK | Related community |
-| subject | TEXT | Ticket subject |
-| message | TEXT | Initial message |
-| status | ENUM | open, in_progress, resolved, closed |
-| priority | ENUM | low, medium, high |
-| created_at | TIMESTAMP | Submission date |
-| last_update | TIMESTAMP | Last activity |
-
-#### `faqs`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| question | TEXT | FAQ question |
-| answer | TEXT | FAQ answer |
-| category | TEXT | Category grouping |
-| target_role | TEXT | member, admin, all |
-
-#### `messages`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| community_id | VARCHAR(50) FK | Parent community |
-| conversation_id | VARCHAR(50) | Thread identifier |
-| sender_id | VARCHAR(50) FK | Message author |
-| content | TEXT | Message body |
-| read | BOOLEAN | Read status |
-| timestamp | TIMESTAMP | Send time |
-
-### Payment Tables
-
-#### `membership_fees`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| community_id | VARCHAR(50) FK | Parent community |
-| name | TEXT | Fee name (e.g., "Annual Contribution") |
-| amount | INTEGER | Amount in cents |
-| currency | TEXT | Currency code (EUR) |
-| period | TEXT | annual, semi-annual, quarterly |
-| description | TEXT | Fee description |
-| is_active | BOOLEAN | Whether fee is currently active |
-| created_at | TIMESTAMP | Creation date |
-
-#### `payment_requests`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| membership_id | VARCHAR(50) FK | Target membership |
-| community_id | VARCHAR(50) FK | Parent community |
-| fee_id | VARCHAR(50) FK | Reference to membership_fees |
-| amount | INTEGER | Amount in cents |
-| currency | TEXT | Currency code |
-| status | ENUM | pending, paid, expired, cancelled |
-| message | TEXT | Custom message |
-| due_date | TIMESTAMP | Payment deadline |
-| created_at | TIMESTAMP | Request creation |
-| paid_at | TIMESTAMP | Payment completion |
-
-#### `payments`
-| Column | Type | Description |
-|--------|------|-------------|
-| id | VARCHAR(50) PK | UUID |
-| membership_id | VARCHAR(50) FK | Paying membership |
-| community_id | VARCHAR(50) FK | Parent community |
-| payment_request_id | VARCHAR(50) FK | Optional linked request |
-| amount | INTEGER | Amount in cents |
-| currency | TEXT | Currency code |
-| status | ENUM | pending, completed, failed, refunded |
-| payment_method | TEXT | card, bank_transfer |
-| payment_reference | TEXT | External payment ID |
-| created_at | TIMESTAMP | Payment initiation |
-| completed_at | TIMESTAMP | Payment completion |
-
 ---
 
 ## API Endpoints
 
 ### Authentication
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/login` | User login |
+| POST | `/api/accounts/register` | Mobile user registration |
+| POST | `/api/accounts/login` | Mobile user login |
+| POST | `/api/admin/login` | Web admin login |
+| POST | `/api/platform/login` | Platform admin login |
+| POST | `/api/memberships/claim` | Claim membership with code |
+| GET | `/api/memberships/verify/:claimCode` | Verify claim code |
+
+### Plans & Billing
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/plans` | List all plans (?public=true for public only) |
+| GET | `/api/plans/:id` | Get plan by ID |
+| GET | `/api/plans/code/:code` | Get plan by code |
+| GET | `/api/communities/:id/quota` | Check member quota |
+| PATCH | `/api/communities/:id/plan` | Change community plan |
+
+### Full Access (Platform Admin)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/platform/communities/:id/full-access` | Grant VIP access |
+| DELETE | `/api/platform/communities/:id/full-access` | Revoke VIP access |
+| GET | `/api/platform/full-access-communities` | List VIP communities |
 
 ### Communities
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/communities` | List all communities |
 | GET | `/api/communities/:id` | Get community details |
 | POST | `/api/communities` | Create new community |
 
-### Plans
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/plans` | List subscription plans |
-
-### Users
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users/:id` | Get user profile |
-| POST | `/api/users` | Create new user |
-
 ### Memberships
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/users/:userId/memberships` | Get user's community memberships |
+| GET | `/api/accounts/:accountId/memberships` | Get account's memberships |
 | GET | `/api/communities/:communityId/members` | List community members |
 | POST | `/api/memberships` | Create membership |
 | PATCH | `/api/memberships/:id` | Update membership |
 
-### News
+### Contact
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/communities/:communityId/news` | List community news |
-| GET | `/api/news/:id` | Get article details |
-| POST | `/api/news` | Create article |
-| PATCH | `/api/news/:id` | Update article |
-
-### Events
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/communities/:communityId/events` | List community events |
-| GET | `/api/events/:id` | Get event details |
-| POST | `/api/events` | Create event |
-| PATCH | `/api/events/:id` | Update event |
-
-### Support
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/tickets` | List all tickets (admin) |
-| GET | `/api/users/:userId/tickets` | Get user's tickets |
-| GET | `/api/communities/:communityId/tickets` | Get community tickets |
-| POST | `/api/tickets` | Create ticket |
-| PATCH | `/api/tickets/:id` | Update ticket status |
-
-### FAQs
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/faqs` | List all FAQs |
-| GET | `/api/faqs?role=member` | Get role-specific FAQs |
-
-### Messages
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/communities/:communityId/messages/:conversationId` | Get conversation |
-| POST | `/api/messages` | Send message |
-| PATCH | `/api/messages/:id/read` | Mark as read |
-
-### Membership Fees
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/communities/:communityId/fees` | List community fees |
-| POST | `/api/fees` | Create new fee type |
-| PATCH | `/api/fees/:id` | Update fee |
-
-### Payment Requests
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/memberships/:membershipId/payment-requests` | Get member's payment requests |
-| GET | `/api/communities/:communityId/payment-requests` | List community payment requests |
-| POST | `/api/payment-requests` | Create payment request |
-| PATCH | `/api/payment-requests/:id` | Update payment request |
-
-### Payments
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/memberships/:membershipId/payments` | Get member's payment history |
-| GET | `/api/communities/:communityId/payments` | List community payments |
-| POST | `/api/payments` | Create payment |
-| POST | `/api/payments/:id/process` | Process payment (mock Stripe) |
-
----
-
-## Subscription Plans
-
-| Plan | Members | Monthly | Yearly | Target |
-|------|---------|---------|--------|--------|
-| **Free Starter** | Up to 100 | €0 | €0 | Small clubs |
-| **Growth** | Up to 500 | €49 | €490 | Growing associations |
-| **Scale** | Up to 2,000 | €149 | €1,490 | Large organizations |
-| **Enterprise** | Unlimited | Custom | Custom | Federations |
-
-### Plan Features Comparison
-
-| Feature | Free | Growth | Scale | Enterprise |
-|---------|------|--------|-------|------------|
-| Digital membership cards | ✓ | ✓ | ✓ | ✓ |
-| News feed | ✓ | ✓ | ✓ | ✓ |
-| Basic member database | ✓ | ✓ | ✓ | ✓ |
-| QR code verification | - | ✓ | ✓ | ✓ |
-| Member messaging | - | ✓ | ✓ | ✓ |
-| Event management | - | ✓ | ✓ | ✓ |
-| Basic analytics | - | ✓ | ✓ | ✓ |
-| Multi-role admins | - | - | ✓ | ✓ |
-| Custom branding | - | - | ✓ | ✓ |
-| Section management | - | - | ✓ | ✓ |
-| Advanced analytics | - | - | ✓ | ✓ |
-| API access | - | - | ✓ | ✓ |
-| White-label | - | - | - | ✓ |
-| Dedicated support | - | - | - | ✓ |
-| Custom integrations | - | - | - | ✓ |
-
----
-
-## UI Components Library
-
-### Core Components (shadcn/ui based)
-
-| Component | Usage |
-|-----------|-------|
-| Button | Primary actions, CTAs, form submissions |
-| Input | Text fields, email, password |
-| Dialog | Modals, popups, confirmations |
-| Card | Content containers, list items |
-| Avatar | User profile images |
-| Badge | Status indicators, tags |
-| Tabs | Section navigation |
-| Select | Dropdown selections |
-| Toast | Notifications, feedback |
-| Accordion | Collapsible FAQ sections |
-| ScrollArea | Scrollable content regions |
-
-### Custom Components
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| MobileLayout | `/components/layouts/` | Mobile app shell with bottom nav |
-| AdminLayout | `/components/layouts/` | Admin sidebar navigation |
-| WebsiteLayout | `/pages/website/` | Public website header/footer |
-| QR Code Card | `/pages/mobile/Card.tsx` | Digital membership display |
+| POST | `/api/contact` | Submit contact form |
 
 ---
 
 ## Security Considerations
 
 ### Authentication
-- Email/password login
+- Email/password login with bcrypt hashing
 - Session-based authentication
 - Role-based access control (RBAC)
+- Platform admin routes protected by `platform_super_admin` verification
 
 ### Data Isolation
 - All queries filtered by `community_id`
 - Users can only access communities they belong to
 - Admin actions scoped to authorized communities
 
+### Full Access Route Security
+- All grant/revoke operations verify userId has `platform_super_admin` globalRole
+- Audit trail via `fullAccessGrantedBy` field
+
 ### Best Practices
-- Password hashing (bcrypt recommended for production)
+- Password hashing with bcrypt
 - HTTPS enforcement
 - Input validation with Zod schemas
 - SQL injection prevention via Drizzle ORM
+
+---
+
+## File Structure
+
+```
+├── client/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layouts/
+│   │   │   │   ├── AdminLayout.tsx
+│   │   │   │   └── MobileLayout.tsx
+│   │   │   └── ui/
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx
+│   │   ├── hooks/
+│   │   │   └── useApi.ts
+│   │   ├── i18n/
+│   │   │   ├── config.ts
+│   │   │   └── locales/
+│   │   │       ├── fr.json
+│   │   │       └── en.json
+│   │   ├── lib/
+│   │   │   ├── api.ts
+│   │   │   └── queryClient.ts
+│   │   └── pages/
+│   │       ├── admin/
+│   │       ├── mobile/
+│   │       ├── platform/
+│   │       │   └── SuperDashboard.tsx
+│   │       └── website/
+│   │           ├── Layout.tsx
+│   │           ├── Home.tsx
+│   │           ├── Pricing.tsx
+│   │           ├── Contact.tsx
+│   │           └── FAQ.tsx
+│   └── index.html
+├── docs/
+│   └── KOOMY_TECHNICAL_DOCUMENTATION.md
+├── server/
+│   ├── db.ts
+│   ├── index.ts
+│   ├── routes.ts
+│   ├── seed.ts
+│   └── storage.ts
+├── shared/
+│   └── schema.ts
+├── attached_assets/
+│   └── (community collage image for homepage)
+└── package.json
+```
 
 ---
 
@@ -551,48 +591,19 @@ npm run start
 
 ---
 
-## File Structure
-
-```
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── layouts/
-│   │   │   └── ui/
-│   │   ├── contexts/
-│   │   │   └── AuthContext.tsx
-│   │   ├── hooks/
-│   │   │   └── useApi.ts
-│   │   ├── lib/
-│   │   │   ├── api.ts
-│   │   │   └── queryClient.ts
-│   │   └── pages/
-│   │       ├── admin/
-│   │       ├── mobile/
-│   │       ├── platform/
-│   │       └── website/
-│   └── index.html
-├── server/
-│   ├── db.ts
-│   ├── index.ts
-│   ├── routes.ts
-│   ├── seed.ts
-│   └── storage.ts
-├── shared/
-│   └── schema.ts
-└── package.json
-```
-
----
-
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1.0 | 2025-11-30 | Initial prototype - Full frontend with mock data |
 | 0.2.0 | 2025-11-30 | PostgreSQL integration, API routes, real authentication |
+| 0.3.0 | 2025-12-01 | Three-tier authentication (accounts/users/platform admins), membership claiming |
+| 0.4.0 | 2025-12-01 | Subscription plans system with 5 canonical plans, member quota enforcement |
+| 0.5.0 | 2025-12-01 | Full Access VIP system for platform admins, security hardening |
+| 0.6.0 | 2025-12-02 | Internationalization (i18n) - French/English support for public website |
+| 0.6.1 | 2025-12-02 | Complete translations for Pricing, Contact, FAQ pages including plan content |
 
 ---
 
-*Document generated for Koomy SaaS Platform Prototype*
-*Last updated: November 30, 2025*
+*Document generated for Koomy SaaS Platform*
+*Last updated: December 2, 2025*
