@@ -1308,6 +1308,87 @@ export async function registerRoutes(
     }
   });
 
+  // =====================================================
+  // PLATFORM FINANCIAL METRICS (Platform Super Admin)
+  // =====================================================
+
+  // Get comprehensive platform metrics
+  app.get("/api/platform/metrics", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const metrics = await storage.getPlatformMetrics();
+      return res.json(metrics);
+    } catch (error: any) {
+      console.error("Get platform metrics error:", error);
+      return res.status(500).json({ error: "Failed to get platform metrics" });
+    }
+  });
+
+  // Get monthly revenue history (last 12 months)
+  app.get("/api/platform/revenue-history", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const history = await storage.getMonthlyRevenueHistory();
+      return res.json(history);
+    } catch (error: any) {
+      console.error("Get revenue history error:", error);
+      return res.status(500).json({ error: "Failed to get revenue history" });
+    }
+  });
+
+  // Get top communities by revenue
+  app.get("/api/platform/top-communities", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const topCommunities = await storage.getTopCommunitiesByRevenue(limit);
+      return res.json(topCommunities);
+    } catch (error: any) {
+      console.error("Get top communities error:", error);
+      return res.status(500).json({ error: "Failed to get top communities" });
+    }
+  });
+
+  // Get all platform payments with community info
+  app.get("/api/platform/payments", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const payments = await storage.getAllPlatformPayments();
+      return res.json(payments);
+    } catch (error: any) {
+      console.error("Get platform payments error:", error);
+      return res.status(500).json({ error: "Failed to get platform payments" });
+    }
+  });
+
   // ChatGPT-powered Chat for Public Website
   const openai = new OpenAI({
     apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,

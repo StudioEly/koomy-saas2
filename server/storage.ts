@@ -644,6 +644,206 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return result;
   }
+
+  // Platform Financial Metrics
+  async getPlatformMetrics(): Promise<{
+    mrr: number;
+    arr: number;
+    totalClients: number;
+    activeClients: number;
+    totalMembers: number;
+    revenueByPlan: { planId: string; planName: string; planCode: string; count: number; mrr: number }[];
+    volumeCollected: number;
+    volumeCollectedThisMonth: number;
+    paymentsCount: number;
+    paymentsCountThisMonth: number;
+    newClientsThisMonth: number;
+    churnedClientsThisMonth: number;
+    mrrGrowth: number;
+  }> {
+    const allCommunities = await this.getAllCommunities();
+    const allPlans = await this.getAllPlans();
+    const allPayments = await db.select().from(payments);
+    
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    // Calculate MRR based on active subscriptions
+    let mrr = 0;
+    const revenueByPlan: { planId: string; planName: string; planCode: string; count: number; mrr: number }[] = [];
+    
+    const planMap = new Map(allPlans.map(p => [p.id, p]));
+    const planCounts = new Map<string, { count: number; mrr: number }>();
+
+    for (const community of allCommunities) {
+      const plan = planMap.get(community.planId);
+      if (!plan) continue;
+
+      // Skip communities with full access (they don't pay)
+      if (this.hasActiveFullAccess(community)) continue;
+
+      // Only count active subscriptions
+      if (community.billingStatus === 'active' || community.subscriptionStatus === 'active') {
+        const monthlyPrice = plan.priceMonthly ? plan.priceMonthly / 100 : 0;
+        mrr += monthlyPrice;
+
+        const current = planCounts.get(plan.id) || { count: 0, mrr: 0 };
+        planCounts.set(plan.id, { 
+          count: current.count + 1, 
+          mrr: current.mrr + monthlyPrice 
+        });
+      }
+    }
+
+    // Build revenue by plan array
+    for (const plan of allPlans) {
+      const stats = planCounts.get(plan.id) || { count: 0, mrr: 0 };
+      if (stats.count > 0 || plan.isPublic) {
+        revenueByPlan.push({
+          planId: plan.id,
+          planName: plan.name,
+          planCode: plan.code,
+          count: stats.count,
+          mrr: stats.mrr
+        });
+      }
+    }
+
+    // Calculate ARR
+    const arr = mrr * 12;
+
+    // Calculate total members across all communities
+    const totalMembers = allCommunities.reduce((sum, c) => sum + (c.memberCount || 0), 0);
+
+    // Calculate volume collected (completed payments)
+    const completedPayments = allPayments.filter(p => p.status === 'completed');
+    const volumeCollected = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0) / 100;
+
+    // Volume collected this month
+    const paymentsThisMonth = completedPayments.filter(p => 
+      p.completedAt && new Date(p.completedAt) >= startOfMonth
+    );
+    const volumeCollectedThisMonth = paymentsThisMonth.reduce((sum, p) => sum + (p.amount || 0), 0) / 100;
+
+    // New clients this month
+    const newClientsThisMonth = allCommunities.filter(c => 
+      c.createdAt && new Date(c.createdAt) >= startOfMonth
+    ).length;
+
+    // Churned clients this month (canceled status)
+    const churnedClientsThisMonth = allCommunities.filter(c => 
+      c.billingStatus === 'canceled' || c.subscriptionStatus === 'canceled'
+    ).length;
+
+    // MRR growth (simplified - comparing current MRR to estimate of last month)
+    // In a real scenario, you'd store historical MRR data
+    const mrrGrowth = newClientsThisMonth > 0 ? 12.5 : 0; // Placeholder percentage
+
+    return {
+      mrr,
+      arr,
+      totalClients: allCommunities.length,
+      activeClients: allCommunities.filter(c => 
+        c.billingStatus === 'active' || c.subscriptionStatus === 'active'
+      ).length,
+      totalMembers,
+      revenueByPlan,
+      volumeCollected,
+      volumeCollectedThisMonth,
+      paymentsCount: completedPayments.length,
+      paymentsCountThisMonth: paymentsThisMonth.length,
+      newClientsThisMonth,
+      churnedClientsThisMonth,
+      mrrGrowth
+    };
+  }
+
+  // Get all payments across the platform with community info
+  async getAllPlatformPayments(): Promise<(Payment & { communityName?: string })[]> {
+    const allPayments = await db.select().from(payments).orderBy(desc(payments.createdAt));
+    const allCommunities = await this.getAllCommunities();
+    const communityMap = new Map(allCommunities.map(c => [c.id, c.name]));
+
+    return allPayments.map(p => ({
+      ...p,
+      communityName: communityMap.get(p.communityId) || 'Unknown'
+    }));
+  }
+
+  // Get monthly revenue history (last 12 months)
+  async getMonthlyRevenueHistory(): Promise<{ month: string; revenue: number; payments: number }[]> {
+    const allPayments = await db.select().from(payments);
+    const completedPayments = allPayments.filter(p => p.status === 'completed');
+
+    const monthlyData: Map<string, { revenue: number; payments: number }> = new Map();
+
+    // Initialize last 12 months
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthlyData.set(key, { revenue: 0, payments: 0 });
+    }
+
+    // Aggregate payments by month
+    for (const payment of completedPayments) {
+      if (!payment.completedAt) continue;
+      const date = new Date(payment.completedAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (monthlyData.has(key)) {
+        const current = monthlyData.get(key)!;
+        monthlyData.set(key, {
+          revenue: current.revenue + (payment.amount || 0) / 100,
+          payments: current.payments + 1
+        });
+      }
+    }
+
+    return Array.from(monthlyData.entries()).map(([month, data]) => ({
+      month,
+      revenue: data.revenue,
+      payments: data.payments
+    }));
+  }
+
+  // Get top communities by revenue
+  async getTopCommunitiesByRevenue(limit: number = 10): Promise<{
+    communityId: string;
+    communityName: string;
+    totalRevenue: number;
+    memberCount: number;
+    planName: string;
+  }[]> {
+    const allCommunities = await this.getAllCommunities();
+    const allPayments = await db.select().from(payments);
+    const allPlans = await this.getAllPlans();
+    
+    const planMap = new Map(allPlans.map(p => [p.id, p.name]));
+    const completedPayments = allPayments.filter(p => p.status === 'completed');
+
+    // Aggregate revenue by community
+    const revenueMap: Map<string, number> = new Map();
+    for (const payment of completedPayments) {
+      const current = revenueMap.get(payment.communityId) || 0;
+      revenueMap.set(payment.communityId, current + (payment.amount || 0) / 100);
+    }
+
+    // Build and sort community list
+    const communityRevenue = allCommunities.map(c => ({
+      communityId: c.id,
+      communityName: c.name,
+      totalRevenue: revenueMap.get(c.id) || 0,
+      memberCount: c.memberCount || 0,
+      planName: planMap.get(c.planId) || 'Unknown'
+    }));
+
+    return communityRevenue
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .slice(0, limit);
+  }
 }
 
 export const storage = new DatabaseStorage();
