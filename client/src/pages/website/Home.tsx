@@ -2,6 +2,7 @@ import WebsiteLayout from "./Layout";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Smartphone, Users, Shield, LayoutDashboard } from "lucide-react";
 import { Link } from "wouter";
+import communityCollage from "@assets/Multicolor Vivid Summer Photo Collage A4 Document (1)_1764652857180.png";
 
 export default function WebsiteHome() {
   return (
@@ -41,8 +42,8 @@ export default function WebsiteHome() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-blue-100 to-purple-100 rounded-full blur-3xl opacity-60"></div>
               <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 rotate-2 hover:rotate-0 transition-transform duration-500">
                 <img 
-                  src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1000&q=80" 
-                  alt="Dashboard Preview" 
+                  src={communityCollage} 
+                  alt="Communautés Koomy" 
                   className="rounded-xl shadow-inner border border-slate-100"
                 />
                 <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-xl border border-slate-100 flex items-center gap-4 animate-in slide-in-from-bottom-4 duration-1000 delay-300">
