@@ -14,5 +14,18 @@
       ],
       "destination": "/website/:path*"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "koomy-saas-git-main-rites-projects-0af03fac.vercel.app"
+        }
+      ],
+      "destination": "https://koomy.app/$1",
+      "permanent": true
+    }
   ]
 }
