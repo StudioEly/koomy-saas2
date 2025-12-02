@@ -2,11 +2,12 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Menu, X, Eye, EyeOff, ArrowRight, LogIn } from "lucide-react";
+import { Menu, X, Eye, EyeOff, ArrowRight, LogIn, Globe } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogin } from "@/hooks/useApi";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import ChatWidget from "@/components/ChatWidget";
 import koomyLogo from "@assets/ChatGPT Image 30 nov. 2025, 05_54_45_1764590118748.png";
 
@@ -19,12 +20,19 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
   const [location, setLocation] = useLocation();
   const { setUser } = useAuth();
   const loginMutation = useLogin();
+  const { t, i18n } = useTranslation();
+
+  const currentLang = i18n.language;
+  const toggleLanguage = () => {
+    const newLang = currentLang === 'fr' ? 'en' : 'fr';
+    i18n.changeLanguage(newLang);
+  };
 
   const navItems = [
-    { label: "Fonctionnalités", path: "/website" },
-    { label: "Tarifs", path: "/website/pricing" },
+    { label: t('nav.features'), path: "/website" },
+    { label: t('nav.pricing'), path: "/website/pricing" },
     { label: "FAQ", path: "/website/faq" },
-    { label: "Contact", path: "/website/contact" },
+    { label: t('nav.contact'), path: "/website/contact" },
   ];
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -83,6 +91,14 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
+            <button
+              onClick={toggleLanguage}
+              className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-blue-600 transition-colors px-2 py-1 rounded-md hover:bg-blue-50"
+              data-testid="button-language-toggle"
+            >
+              <Globe size={16} />
+              {currentLang.toUpperCase()}
+            </button>
             <Button 
               variant="ghost" 
               className="text-slate-700 hover:text-blue-600 hover:bg-blue-50"
@@ -90,11 +106,11 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
               data-testid="button-open-login"
             >
               <LogIn size={18} className="mr-2" />
-              Connexion
+              {t('nav.login')}
             </Button>
             <Link href="/website/signup">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200">
-                Créer mon club
+                {t('nav.signup')}
               </Button>
             </Link>
           </div>
@@ -118,17 +134,24 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
                 </Link>
               ))}
               <hr className="border-slate-100 my-2" />
+              <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 text-base font-medium text-slate-700 py-2"
+              >
+                <Globe size={18} />
+                {currentLang === 'fr' ? 'English' : 'Français'}
+              </button>
               <Button 
                 variant="outline" 
                 className="w-full justify-start" 
                 onClick={openLoginModal}
               >
                 <LogIn size={18} className="mr-2" />
-                Se connecter
+                {t('nav.login')}
               </Button>
               <Link href="/website/signup">
                 <Button className="w-full bg-blue-600 text-white" onClick={() => setIsMenuOpen(false)}>
-                  Créer mon club
+                  {t('nav.signup')}
                 </Button>
               </Link>
             </nav>
@@ -240,37 +263,37 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
                 <img src={koomyLogo} alt="Koomy" className="h-16" />
               </div>
               <p className="text-sm text-slate-400">
-                La plateforme tout-en-un pour gérer votre communauté, vos membres et vos événements.
+                {t('footer.description')}
               </p>
             </div>
             <div>
-              <h4 className="text-white font-bold mb-4">Produit</h4>
+              <h4 className="text-white font-bold mb-4">{t('footer.product')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/website" className="hover:text-white">Fonctionnalités</Link></li>
-                <li><Link href="/website/pricing" className="hover:text-white">Tarifs</Link></li>
-                <li><Link href="/website/download" className="hover:text-white">Application Mobile</Link></li>
+                <li><Link href="/website" className="hover:text-white">{t('footer.features')}</Link></li>
+                <li><Link href="/website/pricing" className="hover:text-white">{t('footer.pricing')}</Link></li>
+                <li><Link href="/website/demo" className="hover:text-white">{t('footer.demo')}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-bold mb-4">Ressources</h4>
+              <h4 className="text-white font-bold mb-4">{t('footer.resources')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/website/faq" className="hover:text-white">FAQ</Link></li>
-                <li><Link href="/website/support" className="hover:text-white">Centre d'aide</Link></li>
-                <li><Link href="/website/blog" className="hover:text-white">Blog</Link></li>
-                <li><Link href="/website/contact" className="hover:text-white">Contact</Link></li>
+                <li><Link href="/website/faq" className="hover:text-white">{t('footer.faq')}</Link></li>
+                <li><Link href="/website/support" className="hover:text-white">{t('footer.support')}</Link></li>
+                <li><Link href="/website/blog" className="hover:text-white">{t('footer.blog')}</Link></li>
+                <li><Link href="/website/contact" className="hover:text-white">{t('nav.contact')}</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-bold mb-4">Légal</h4>
+              <h4 className="text-white font-bold mb-4">{t('footer.legal')}</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/website/privacy" className="hover:text-white">Confidentialité</Link></li>
-                <li><Link href="/website/terms" className="hover:text-white">CGU</Link></li>
-                <li><Link href="/website/legal" className="hover:text-white">Mentions légales</Link></li>
+                <li><Link href="/website/privacy" className="hover:text-white">{t('footer.privacy')}</Link></li>
+                <li><Link href="/website/terms" className="hover:text-white">{t('footer.terms')}</Link></li>
+                <li><Link href="/website/legal" className="hover:text-white">{t('footer.cookies')}</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-            <p>© 2025 Koomy. Tous droits réservés.</p>
+            <p>© 2025 Koomy. {t('footer.allRights')}</p>
             <div className="flex gap-4">
               <a href="#" className="hover:text-white">Twitter</a>
               <a href="#" className="hover:text-white">LinkedIn</a>
