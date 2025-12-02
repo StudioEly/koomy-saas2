@@ -134,8 +134,33 @@ Preferred communication style: Simple, everyday language.
 **Authentication Model (Three-Tier System):**
 - `accounts` table: Public Koomy mobile app users (email/password with bcrypt)
 - `users` table: Back-office administrators with `globalRole` for platform admins
-- `userGlobalRoleEnum`: platform_super_admin, platform_support
+- `userGlobalRoleEnum`: platform_super_admin, platform_support, platform_commercial
 - Membership claiming: Admins create cards with auto-generated 8-char `claimCode`, users claim with their Koomy account
+
+**Platform Analytics System:**
+- Storage methods for comprehensive analytics:
+  - `getTopCommunitiesByMembers()` - Ranking by member count
+  - `getAtRiskCommunities()` - Detection of at-risk communities (quota limit, inactive, late payments)
+  - `getMemberGrowthHistory()` - 12-month growth tracking
+  - `getPlanUtilizationRates()` - Usage rates per plan
+  - `getCommunityRegistrationsTimeline()` - 30-day registration timeline
+  - `getCommunityGeographicDistribution()` - Country/city distribution
+- API routes under `/api/platform/analytics/*`:
+  - `GET /api/platform/analytics/top-by-members` - Top communities by member count
+  - `GET /api/platform/analytics/at-risk` - At-risk communities list
+  - `GET /api/platform/analytics/member-growth` - Member growth history
+  - `GET /api/platform/analytics/plan-utilization` - Plan utilization rates
+  - `GET /api/platform/analytics/registrations` - Registration timeline
+  - `GET /api/platform/analytics/geographic` - Geographic distribution
+
+**Platform User Management:**
+- Storage methods: `getPlatformUsers()`, `createPlatformUser()`, `updatePlatformUserRole()`, `demotePlatformUser()`, `countPlatformSuperAdmins()`
+- API routes under `/api/platform/users/*`:
+  - `GET /api/platform/users` - List all platform users (passwords excluded)
+  - `POST /api/platform/users` - Create new platform user (password hashed with bcrypt)
+  - `PATCH /api/platform/users/:id/role` - Update user role
+  - `DELETE /api/platform/users/:id/role` - Demote platform user
+- Security: Last super admin cannot be demoted, all routes require platform_super_admin authorization
 
 **Authentication Routes:**
 - Mobile: `/api/accounts/register`, `/api/accounts/login`, `/api/memberships/claim`, `/api/memberships/verify/:claimCode`
@@ -231,6 +256,11 @@ Preferred communication style: Simple, everyday language.
 
 | Date | Changes |
 |------|---------|
+| 2025-12-02 | Added platform_commercial role to userGlobalRoleEnum |
+| 2025-12-02 | Implemented comprehensive community analytics (at-risk, growth, utilization, geographic) |
+| 2025-12-02 | Added platform user management with CRUD operations and role-based permissions |
+| 2025-12-02 | Redesigned SuperDashboard with Analytics and Team Management tabs |
+| 2025-12-02 | Added recharts visualizations for member growth, registrations timeline, plan utilization |
 | 2025-12-02 | Added complete i18n support (FR/EN) for public website with react-i18next |
 | 2025-12-02 | Translated all pricing page content including dynamic plan data |
 | 2025-12-02 | Added language switcher to website header |

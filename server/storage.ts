@@ -844,6 +844,340 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.totalRevenue - a.totalRevenue)
       .slice(0, limit);
   }
+
+  // =====================================================
+  // COMMUNITY ANALYTICS
+  // =====================================================
+
+  // Get top communities by member count
+  async getTopCommunitiesByMembers(limit: number = 10): Promise<{
+    communityId: string;
+    communityName: string;
+    memberCount: number;
+    planName: string;
+    country: string | null;
+  }[]> {
+    const allCommunities = await this.getAllCommunities();
+    const allPlans = await this.getAllPlans();
+    const planMap = new Map(allPlans.map(p => [p.id, p.name]));
+
+    return allCommunities
+      .map(c => ({
+        communityId: c.id,
+        communityName: c.name,
+        memberCount: c.memberCount || 0,
+        planName: planMap.get(c.planId) || 'Unknown',
+        country: c.country
+      }))
+      .sort((a, b) => b.memberCount - a.memberCount)
+      .slice(0, limit);
+  }
+
+  // Get at-risk communities (low activity, late payments, approaching quota)
+  async getAtRiskCommunities(): Promise<{
+    communityId: string;
+    communityName: string;
+    riskType: 'quota_limit' | 'low_activity' | 'late_payments' | 'inactive';
+    riskLevel: 'high' | 'medium' | 'low';
+    details: string;
+    memberCount: number;
+    planName: string;
+  }[]> {
+    const allCommunities = await this.getAllCommunities();
+    const allPlans = await this.getAllPlans();
+    const planMap = new Map(allPlans.map(p => [p.id, p]));
+    const atRiskCommunities: {
+      communityId: string;
+      communityName: string;
+      riskType: 'quota_limit' | 'low_activity' | 'late_payments' | 'inactive';
+      riskLevel: 'high' | 'medium' | 'low';
+      details: string;
+      memberCount: number;
+      planName: string;
+    }[] = [];
+
+    for (const community of allCommunities) {
+      const plan = planMap.get(community.planId);
+      if (!plan) continue;
+
+      const memberCount = community.memberCount || 0;
+      const maxMembers = plan.maxMembers;
+
+      // Check quota limit risk
+      if (maxMembers && memberCount > 0) {
+        const usagePercent = (memberCount / maxMembers) * 100;
+        if (usagePercent >= 90) {
+          atRiskCommunities.push({
+            communityId: community.id,
+            communityName: community.name,
+            riskType: 'quota_limit',
+            riskLevel: usagePercent >= 95 ? 'high' : 'medium',
+            details: `${usagePercent.toFixed(0)}% du quota utilisé (${memberCount}/${maxMembers})`,
+            memberCount,
+            planName: plan.name
+          });
+        }
+      }
+
+      // Check for inactive communities (no members)
+      if (memberCount === 0) {
+        const createdAt = community.createdAt ? new Date(community.createdAt) : null;
+        const daysSinceCreation = createdAt ? Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+        
+        if (daysSinceCreation > 30) {
+          atRiskCommunities.push({
+            communityId: community.id,
+            communityName: community.name,
+            riskType: 'inactive',
+            riskLevel: daysSinceCreation > 90 ? 'high' : 'medium',
+            details: `Aucun membre depuis ${daysSinceCreation} jours`,
+            memberCount: 0,
+            planName: plan.name
+          });
+        }
+      }
+
+      // Check for late billing status
+      if (community.billingStatus === 'past_due' || community.billingStatus === 'unpaid') {
+        atRiskCommunities.push({
+          communityId: community.id,
+          communityName: community.name,
+          riskType: 'late_payments',
+          riskLevel: community.billingStatus === 'unpaid' ? 'high' : 'medium',
+          details: `Statut: ${community.billingStatus === 'past_due' ? 'Paiement en retard' : 'Impayé'}`,
+          memberCount,
+          planName: plan.name
+        });
+      }
+    }
+
+    return atRiskCommunities.sort((a, b) => {
+      const levelOrder = { high: 0, medium: 1, low: 2 };
+      return levelOrder[a.riskLevel] - levelOrder[b.riskLevel];
+    });
+  }
+
+  // Get member growth history (last 12 months)
+  async getMemberGrowthHistory(): Promise<{ month: string; totalMembers: number; newMembers: number }[]> {
+    const allMemberships = await db.select().from(userCommunityMemberships);
+    const monthlyData: Map<string, { total: number; new: number }> = new Map();
+
+    // Initialize last 12 months
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthlyData.set(key, { total: 0, new: 0 });
+    }
+
+    // Count memberships by creation month
+    let cumulativeTotal = 0;
+    const sortedMonths = Array.from(monthlyData.keys()).sort();
+    
+    for (const membership of allMemberships) {
+      if (!membership.joinDate) continue;
+      const date = new Date(membership.joinDate);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (monthlyData.has(key)) {
+        const current = monthlyData.get(key)!;
+        monthlyData.set(key, { ...current, new: current.new + 1 });
+      }
+    }
+
+    // Calculate cumulative totals
+    for (const month of sortedMonths) {
+      const data = monthlyData.get(month)!;
+      cumulativeTotal += data.new;
+      monthlyData.set(month, { ...data, total: cumulativeTotal });
+    }
+
+    return sortedMonths.map(month => ({
+      month,
+      totalMembers: monthlyData.get(month)!.total,
+      newMembers: monthlyData.get(month)!.new
+    }));
+  }
+
+  // Get plan utilization rates
+  async getPlanUtilizationRates(): Promise<{
+    planId: string;
+    planName: string;
+    maxMembers: number | null;
+    totalMembersUsed: number;
+    totalMembersAllowed: number;
+    utilizationPercent: number;
+    communityCount: number;
+  }[]> {
+    const allCommunities = await this.getAllCommunities();
+    const allPlans = await this.getAllPlans();
+    
+    const planStats: Map<string, { 
+      membersUsed: number; 
+      membersAllowed: number; 
+      count: number 
+    }> = new Map();
+
+    // Initialize stats for each plan
+    for (const plan of allPlans) {
+      planStats.set(plan.id, { membersUsed: 0, membersAllowed: 0, count: 0 });
+    }
+
+    // Aggregate community data by plan
+    for (const community of allCommunities) {
+      const plan = allPlans.find(p => p.id === community.planId);
+      if (!plan) continue;
+
+      const stats = planStats.get(plan.id)!;
+      const memberCount = community.memberCount || 0;
+      const maxAllowed = plan.maxMembers || 0;
+
+      planStats.set(plan.id, {
+        membersUsed: stats.membersUsed + memberCount,
+        membersAllowed: stats.membersAllowed + maxAllowed,
+        count: stats.count + 1
+      });
+    }
+
+    return allPlans.map(plan => {
+      const stats = planStats.get(plan.id)!;
+      const utilizationPercent = stats.membersAllowed > 0 
+        ? (stats.membersUsed / stats.membersAllowed) * 100 
+        : 0;
+
+      return {
+        planId: plan.id,
+        planName: plan.name,
+        maxMembers: plan.maxMembers,
+        totalMembersUsed: stats.membersUsed,
+        totalMembersAllowed: stats.membersAllowed,
+        utilizationPercent: Math.round(utilizationPercent * 10) / 10,
+        communityCount: stats.count
+      };
+    });
+  }
+
+  // Get new community registrations timeline
+  async getCommunityRegistrationsTimeline(): Promise<{ date: string; count: number; communityNames: string[] }[]> {
+    const allCommunities = await this.getAllCommunities();
+    const dailyData: Map<string, { count: number; names: string[] }> = new Map();
+
+    // Initialize last 30 days
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const key = date.toISOString().split('T')[0];
+      dailyData.set(key, { count: 0, names: [] });
+    }
+
+    // Count registrations by day
+    for (const community of allCommunities) {
+      if (!community.createdAt) continue;
+      const key = new Date(community.createdAt).toISOString().split('T')[0];
+      
+      if (dailyData.has(key)) {
+        const current = dailyData.get(key)!;
+        dailyData.set(key, { 
+          count: current.count + 1, 
+          names: [...current.names, community.name] 
+        });
+      }
+    }
+
+    return Array.from(dailyData.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, data]) => ({
+        date,
+        count: data.count,
+        communityNames: data.names
+      }));
+  }
+
+  // Get geographic distribution of communities
+  async getCommunityGeographicDistribution(): Promise<{
+    country: string;
+    count: number;
+    totalMembers: number;
+    cities: { city: string; count: number }[];
+  }[]> {
+    const allCommunities = await this.getAllCommunities();
+    const countryData: Map<string, { 
+      count: number; 
+      members: number; 
+      cities: Map<string, number> 
+    }> = new Map();
+
+    for (const community of allCommunities) {
+      const country = community.country || 'Non spécifié';
+      const city = community.city || 'Ville non spécifiée';
+      const memberCount = community.memberCount || 0;
+
+      if (!countryData.has(country)) {
+        countryData.set(country, { count: 0, members: 0, cities: new Map() });
+      }
+
+      const data = countryData.get(country)!;
+      data.count += 1;
+      data.members += memberCount;
+
+      const currentCityCount = data.cities.get(city) || 0;
+      data.cities.set(city, currentCityCount + 1);
+    }
+
+    return Array.from(countryData.entries())
+      .map(([country, data]) => ({
+        country,
+        count: data.count,
+        totalMembers: data.members,
+        cities: Array.from(data.cities.entries())
+          .map(([city, count]) => ({ city, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+
+  // =====================================================
+  // PLATFORM USER MANAGEMENT
+  // =====================================================
+
+  // Get all platform users (users with global roles)
+  async getPlatformUsers(): Promise<User[]> {
+    return await db.select().from(users)
+      .where(sql`${users.globalRole} IS NOT NULL`)
+      .orderBy(desc(users.createdAt));
+  }
+
+  // Create platform user
+  async createPlatformUser(userData: InsertUser & { globalRole: string }): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
+  // Update platform user role
+  async updatePlatformUserRole(userId: string, role: string | null): Promise<User> {
+    const [user] = await db.update(users)
+      .set({ globalRole: role as any })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  // Count platform super admins (to prevent deleting the last one)
+  async countPlatformSuperAdmins(): Promise<number> {
+    const result = await db.select().from(users)
+      .where(eq(users.globalRole, 'platform_super_admin'));
+    return result.length;
+  }
+
+  // Delete platform user (demote to regular user)
+  async demotePlatformUser(userId: string): Promise<User> {
+    const [user] = await db.update(users)
+      .set({ globalRole: null })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
 }
 
 export const storage = new DatabaseStorage();

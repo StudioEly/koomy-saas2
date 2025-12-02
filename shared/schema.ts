@@ -14,7 +14,7 @@ export const newsStatusEnum = pgEnum("news_status", ["draft", "published"]);
 export const scopeEnum = pgEnum("scope", ["national", "local"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "completed", "failed", "refunded"]);
 export const paymentRequestStatusEnum = pgEnum("payment_request_status", ["pending", "paid", "expired", "cancelled"]);
-export const userGlobalRoleEnum = pgEnum("user_global_role", ["platform_super_admin", "platform_support"]);
+export const userGlobalRoleEnum = pgEnum("user_global_role", ["platform_super_admin", "platform_support", "platform_commercial"]);
 export const billingPeriodEnum = pgEnum("billing_period", ["one_time", "monthly", "yearly"]);
 
 // Community Types

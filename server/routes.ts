@@ -1389,6 +1389,253 @@ export async function registerRoutes(
     }
   });
 
+  // =====================================================
+  // PLATFORM COMMUNITY ANALYTICS
+  // =====================================================
+
+  // Get top communities by members
+  app.get("/api/platform/analytics/top-by-members", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const topCommunities = await storage.getTopCommunitiesByMembers(limit);
+      return res.json(topCommunities);
+    } catch (error: any) {
+      console.error("Get top communities by members error:", error);
+      return res.status(500).json({ error: "Failed to get top communities by members" });
+    }
+  });
+
+  // Get at-risk communities
+  app.get("/api/platform/analytics/at-risk", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const atRiskCommunities = await storage.getAtRiskCommunities();
+      return res.json(atRiskCommunities);
+    } catch (error: any) {
+      console.error("Get at-risk communities error:", error);
+      return res.status(500).json({ error: "Failed to get at-risk communities" });
+    }
+  });
+
+  // Get member growth history
+  app.get("/api/platform/analytics/member-growth", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const growthHistory = await storage.getMemberGrowthHistory();
+      return res.json(growthHistory);
+    } catch (error: any) {
+      console.error("Get member growth history error:", error);
+      return res.status(500).json({ error: "Failed to get member growth history" });
+    }
+  });
+
+  // Get plan utilization rates
+  app.get("/api/platform/analytics/plan-utilization", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const utilizationRates = await storage.getPlanUtilizationRates();
+      return res.json(utilizationRates);
+    } catch (error: any) {
+      console.error("Get plan utilization rates error:", error);
+      return res.status(500).json({ error: "Failed to get plan utilization rates" });
+    }
+  });
+
+  // Get community registrations timeline
+  app.get("/api/platform/analytics/registrations", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const timeline = await storage.getCommunityRegistrationsTimeline();
+      return res.json(timeline);
+    } catch (error: any) {
+      console.error("Get registrations timeline error:", error);
+      return res.status(500).json({ error: "Failed to get registrations timeline" });
+    }
+  });
+
+  // Get geographic distribution
+  app.get("/api/platform/analytics/geographic", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const distribution = await storage.getCommunityGeographicDistribution();
+      return res.json(distribution);
+    } catch (error: any) {
+      console.error("Get geographic distribution error:", error);
+      return res.status(500).json({ error: "Failed to get geographic distribution" });
+    }
+  });
+
+  // =====================================================
+  // PLATFORM USER MANAGEMENT
+  // =====================================================
+
+  // Get all platform users
+  app.get("/api/platform/users", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const platformUsers = await storage.getPlatformUsers();
+      // Remove passwords from response
+      const usersWithoutPasswords = platformUsers.map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      });
+      return res.json(usersWithoutPasswords);
+    } catch (error: any) {
+      console.error("Get platform users error:", error);
+      return res.status(500).json({ error: "Failed to get platform users" });
+    }
+  });
+
+  // Create platform user
+  app.post("/api/platform/users", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const { email, password, firstName, lastName, globalRole } = req.body;
+      
+      if (!email || !password || !globalRole) {
+        return res.status(400).json({ error: "Email, password, and globalRole are required" });
+      }
+
+      // Check if email already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Un utilisateur avec cet email existe déjà" });
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+
+      const user = await storage.createPlatformUser({
+        email,
+        password: hashedPassword,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        globalRole,
+        avatar: null,
+        phone: null
+      });
+
+      const { password: _, ...userWithoutPassword } = user;
+      return res.status(201).json(userWithoutPassword);
+    } catch (error: any) {
+      console.error("Create platform user error:", error);
+      return res.status(500).json({ error: "Failed to create platform user" });
+    }
+  });
+
+  // Update platform user role
+  app.patch("/api/platform/users/:id/role", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const targetUserId = req.params.id;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const { globalRole } = req.body;
+
+      // If demoting from super_admin, check if it's the last one
+      const targetUser = await storage.getUser(targetUserId);
+      if (targetUser?.globalRole === 'platform_super_admin' && globalRole !== 'platform_super_admin') {
+        const superAdminCount = await storage.countPlatformSuperAdmins();
+        if (superAdminCount <= 1) {
+          return res.status(400).json({ error: "Impossible de supprimer le dernier Super Admin" });
+        }
+      }
+
+      const user = await storage.updatePlatformUserRole(targetUserId, globalRole);
+      const { password, ...userWithoutPassword } = user;
+      return res.json(userWithoutPassword);
+    } catch (error: any) {
+      console.error("Update platform user role error:", error);
+      return res.status(500).json({ error: "Failed to update platform user role" });
+    }
+  });
+
+  // Demote platform user (remove platform role)
+  app.delete("/api/platform/users/:id/role", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const targetUserId = req.params.id;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      // Check if it's the last super admin
+      const targetUser = await storage.getUser(targetUserId);
+      if (targetUser?.globalRole === 'platform_super_admin') {
+        const superAdminCount = await storage.countPlatformSuperAdmins();
+        if (superAdminCount <= 1) {
+          return res.status(400).json({ error: "Impossible de supprimer le dernier Super Admin" });
+        }
+      }
+
+      const user = await storage.demotePlatformUser(targetUserId);
+      const { password, ...userWithoutPassword } = user;
+      return res.json({ 
+        success: true, 
+        message: "Rôle plateforme retiré",
+        user: userWithoutPassword 
+      });
+    } catch (error: any) {
+      console.error("Demote platform user error:", error);
+      return res.status(500).json({ error: "Failed to demote platform user" });
+    }
+  });
+
   // ChatGPT-powered Chat for Public Website
   const openai = new OpenAI({
     apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
