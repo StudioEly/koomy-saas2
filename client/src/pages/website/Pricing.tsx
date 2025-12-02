@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import WebsiteLayout from "./Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, HelpCircle, Loader2, Building2, Star, Zap, Crown, Shield } from "lucide-react";
+import { CheckCircle, HelpCircle, Building2, Star, Zap, Crown, Shield } from "lucide-react";
 import { Link } from "wouter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { Plan } from "@shared/schema";
+import { staticPlans } from "@/data/staticPlans";
 
 function formatPrice(amount: number | null, period: "monthly" | "yearly" = "monthly"): string {
   if (amount === null || amount === undefined) return "";
@@ -37,17 +37,9 @@ export default function WebsitePricing() {
   const { t, i18n } = useTranslation();
   const [isYearly, setIsYearly] = useState(true);
 
-  const { data: plans, isLoading, error } = useQuery<Plan[]>({
-    queryKey: ["/api/plans", { public: "true" }],
-    queryFn: async () => {
-      const res = await fetch("/api/plans?public=true");
-      if (!res.ok) throw new Error("Failed to fetch plans");
-      return res.json();
-    }
-  });
-
-  const displayPlans = plans?.filter(plan => !plan.isWhiteLabel) || [];
-  const whiteLabelPlan = plans?.find(plan => plan.isWhiteLabel);
+  const plans = staticPlans;
+  const displayPlans = plans.filter(plan => !plan.isWhiteLabel);
+  const whiteLabelPlan = plans.find(plan => plan.isWhiteLabel);
 
   const getPlanName = (plan: Plan) => {
     if (plan.code) {
@@ -105,16 +97,6 @@ export default function WebsitePricing() {
         </div>
 
         <div className="container mx-auto px-4 max-w-7xl">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
-            </div>
-          ) : error ? (
-            <div className="text-center py-20 text-red-500">
-              {t('pricing.loadingError')}
-            </div>
-          ) : (
-            <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {displayPlans.map((plan) => {
                   const price = isYearly ? plan.priceYearly : plan.priceMonthly;
@@ -254,8 +236,6 @@ export default function WebsitePricing() {
                   </Card>
                 </div>
               )}
-            </>
-          )}
         </div>
       </div>
 

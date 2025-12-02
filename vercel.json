@@ -8,11 +8,18 @@
       "destination": "/website"
     },
     {
-      "source": "/:path*",
+      "source": "/website/:path*",
       "has": [
         { "type": "host", "value": "koomy.app" }
       ],
       "destination": "/website/:path*"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "host", "value": "koomy.app" }
+      ],
+      "destination": "/index.html"
     }
   ],
   "redirects": [
