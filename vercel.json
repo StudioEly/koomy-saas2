@@ -1,117 +1,18 @@
 {
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "koomy-saas-git-main-rites-projects-0af03fac.vercel.app"
-        }
-      ],
-      "destination": "https://koomy.app/$1",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     {
       "source": "/",
       "has": [
-        {
-          "type": "host",
-          "value": "koomy.app"
-        }
+        { "type": "host", "value": "koomy.app" }
       ],
       "destination": "/website"
     },
     {
       "source": "/:path*",
       "has": [
-        {
-          "type": "host",
-          "value": "koomy.app"
-        }
+        { "type": "host", "value": "koomy.app" }
       ],
       "destination": "/website/:path*"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "app.koomy.app"
-        }
-      ],
-      "destination": "/app/login"
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "app.koomy.app"
-        }
-      ],
-      "destination": "/app/:path*"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "app-pro.koomy.app"
-        }
-      ],
-      "destination": "/app/admin/login"
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "app-pro.koomy.app"
-        }
-      ],
-      "destination": "/app/admin/:path*"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "backoffice.koomy.app"
-        }
-      ],
-      "destination": "/admin/login"
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "backoffice.koomy.app"
-        }
-      ],
-      "destination": "/admin/:path*"
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "lorpesikoomyadmin.koomy.app"
-        }
-      ],
-      "destination": "/platform/login"
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "lorpesikoomyadmin.koomy.app"
-        }
-      ],
-      "destination": "/platform/:path*"
     }
   ]
 }
