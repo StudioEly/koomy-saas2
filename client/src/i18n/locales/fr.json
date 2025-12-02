@@ -73,29 +73,137 @@
     }
   },
   "pricing": {
-    "title": "Tarification simple et transparente",
-    "subtitle": "Choisissez le forfait adapté à la taille de votre communauté. Sans engagement, évoluez à tout moment.",
+    "title": "Des tarifs simples et transparents",
+    "subtitle": "Choisissez le plan adapté à la taille de votre communauté. Commencez gratuitement, évoluez quand vous êtes prêt.",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "twoMonthsFree": "-2 mois offerts",
     "perMonth": "/mois",
     "perYear": "/an",
+    "upTo": "Jusqu'à",
     "members": "membres",
-    "unlimited": "illimité",
-    "popular": "Populaire",
-    "features": {
-      "mobileApp": "Application mobile membres",
-      "adminDashboard": "Dashboard administrateur",
-      "memberCards": "Cartes d'adhérent digitales",
-      "messaging": "Messagerie intégrée",
-      "events": "Gestion événements",
-      "payments": "Paiements en ligne",
-      "support": "Support prioritaire",
-      "api": "Accès API",
-      "whiteLabel": "Marque blanche",
-      "dedicated": "Accompagnement dédié"
+    "unlimitedMembers": "Membres illimités",
+    "onQuote": "Sur devis",
+    "customPricing": "Tarification personnalisée",
+    "freeForever": "Gratuit à vie",
+    "billedYearly": "Facturé {{price}} par an",
+    "billedMonthly": "Facturation mensuelle",
+    "mostPopular": "Le plus populaire",
+    "contactUs": "Contactez-nous",
+    "createFreeAccount": "Créer un compte gratuit",
+    "startFreeTrial": "Commencer l'essai gratuit",
+    "loadingError": "Une erreur est survenue lors du chargement des plans.",
+    "startingFrom": "À partir de",
+    "setupIncluded": "Installation et configuration incluses",
+    "requestDemo": "Demander une démo",
+    "faq": {
+      "title": "Questions fréquentes sur les tarifs",
+      "changePlan": {
+        "question": "Puis-je changer de plan à tout moment ?",
+        "answer": "Oui, vous pouvez passer à un plan supérieur ou inférieur à tout moment depuis votre espace d'administration dans la section \"Facturation\". Les changements prennent effet immédiatement et la différence est calculée au prorata de votre période de facturation."
+      },
+      "hiddenFees": {
+        "question": "Y a-t-il des frais cachés ?",
+        "answer": "Non, aucun frais caché. Le prix affiché est le prix que vous payez. Les frais de transaction pour les paiements par carte bancaire de vos membres sont standards (1.4% + 0.25€ par transaction réussie via Stripe)."
+      },
+      "freeTrial": {
+        "question": "Comment fonctionne l'essai gratuit ?",
+        "answer": "Vous bénéficiez de 14 jours d'essai complet sur les plans Communauté Plus et Communauté Pro, sans carte bancaire requise. À la fin de l'essai, vous pouvez choisir de souscrire ou de continuer avec le plan gratuit (limité à 50 membres)."
+      },
+      "memberLimit": {
+        "question": "Que se passe-t-il si je dépasse ma limite de membres ?",
+        "answer": "Si vous approchez de votre limite de membres, vous recevrez une notification. Une fois la limite atteinte, vous ne pourrez plus ajouter de nouveaux membres tant que vous n'aurez pas mis à niveau votre plan ou libéré des places."
+      },
+      "federation": {
+        "question": "Proposez-vous des tarifs pour les grandes fédérations ?",
+        "answer": "Oui, le plan Grand Compte est conçu pour les grandes structures avec des besoins spécifiques. Contactez notre équipe commerciale pour une offre sur mesure incluant le déploiement multi-sites, les intégrations personnalisées et un accompagnement dédié."
+      }
     },
-    "cta": {
-      "free": "Commencer gratuitement",
-      "start": "Démarrer",
-      "contact": "Nous contacter"
+    "moreQuestions": {
+      "title": "Encore des questions ?",
+      "subtitle": "Notre équipe est là pour vous aider à choisir la meilleure solution pour votre communauté.",
+      "contactSales": "Contacter les ventes",
+      "viewFaq": "Consulter la FAQ"
+    }
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Une question ? Un projet ? Notre équipe est à votre écoute pour vous accompagner.",
+    "form": {
+      "name": "Nom complet",
+      "namePlaceholder": "Jean Dupont",
+      "email": "Email",
+      "emailPlaceholder": "jean@exemple.com",
+      "organization": "Nom de l'organisation",
+      "organizationPlaceholder": "Association, syndicat, club...",
+      "phone": "Téléphone",
+      "phonePlaceholder": "06 12 34 56 78",
+      "requestType": "Type de demande",
+      "requestTypes": {
+        "info": "Demande d'informations",
+        "demo": "Demande de démonstration",
+        "quote": "Demande de devis",
+        "partnership": "Partenariat",
+        "other": "Autre"
+      },
+      "message": "Message",
+      "messagePlaceholder": "Décrivez votre projet ou posez vos questions...",
+      "submit": "Envoyer le message",
+      "submitting": "Envoi en cours...",
+      "privacyNotice": "En soumettant ce formulaire, vous acceptez notre",
+      "privacyPolicy": "politique de confidentialité"
+    },
+    "info": {
+      "title": "Nos coordonnées",
+      "email": "Email",
+      "phone": "Téléphone",
+      "phoneHours": "Du lundi au vendredi, 9h-18h",
+      "address": "Adresse"
+    },
+    "quickHelp": {
+      "title": "Besoin d'une réponse rapide ?",
+      "subtitle": "Consultez notre FAQ pour trouver les réponses aux questions les plus fréquentes.",
+      "viewFaq": "Voir la FAQ"
+    },
+    "success": {
+      "title": "Message envoyé !",
+      "message": "Merci pour votre message. Notre équipe vous répondra dans les plus brefs délais.",
+      "sendAnother": "Envoyer un autre message"
+    },
+    "toast": {
+      "success": "Message envoyé avec succès !",
+      "error": "Une erreur est survenue. Veuillez réessayer."
+    }
+  },
+  "faq": {
+    "title": "Foire Aux Questions",
+    "subtitle": "Retrouvez les réponses aux questions les plus fréquentes sur Koomy.",
+    "questions": {
+      "resetPassword": {
+        "question": "Comment réinitialiser mon mot de passe ?",
+        "answer": "Vous pouvez réinitialiser votre mot de passe depuis l'écran de connexion en cliquant sur 'Mot de passe oublié'."
+      },
+      "memberCard": {
+        "question": "Où trouver ma carte d'adhérent ?",
+        "answer": "Votre carte d'adhérent est accessible depuis l'onglet 'Carte' de l'application mobile."
+      },
+      "scanQr": {
+        "question": "Comment scanner un QR code lors d'un événement ?",
+        "answer": "Utilisez l'application Admin Mobile et accédez à la section 'Scanner' pour valider les entrées."
+      },
+      "multipleCommunities": {
+        "question": "Puis-je gérer plusieurs communautés ?",
+        "answer": "Oui, vous pouvez basculer entre vos différentes communautés depuis le 'Community Hub'."
+      },
+      "isFree": {
+        "question": "Est-ce que Koomy est gratuit ?",
+        "answer": "Nous proposons un plan gratuit pour les petites communautés (moins de 100 membres). Pour les besoins plus importants, nos plans payants offrent des fonctionnalités avancées. Consultez notre page Tarifs pour plus de détails."
+      }
+    },
+    "needHelp": {
+      "title": "Vous ne trouvez pas votre réponse ?",
+      "subtitle": "Notre équipe support est disponible pour vous aider.",
+      "contactSupport": "Contacter le Support"
     }
   },
   "footer": {
@@ -116,6 +224,7 @@
     "allRights": "Tous droits réservés."
   },
   "common": {
-    "or": "ou"
+    "or": "ou",
+    "required": "*"
   }
 }

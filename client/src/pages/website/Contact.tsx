@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import WebsiteLayout from "./Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ const COUNTRY_CODES = [
 ];
 
 export default function WebsiteContact() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -54,9 +56,9 @@ export default function WebsiteContact() {
       }
 
       setIsSubmitted(true);
-      toast.success("Message envoyé avec succès !");
+      toast.success(t('contact.toast.success'));
     } catch (error) {
-      toast.error("Une erreur est survenue. Veuillez réessayer.");
+      toast.error(t('contact.toast.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -70,9 +72,9 @@ export default function WebsiteContact() {
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle size={40} className="text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Message envoyé !</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">{t('contact.success.title')}</h1>
             <p className="text-slate-600 mb-6">
-              Merci pour votre message. Notre équipe vous répondra dans les plus brefs délais.
+              {t('contact.success.message')}
             </p>
             <Button 
               onClick={() => {
@@ -89,7 +91,7 @@ export default function WebsiteContact() {
               }}
               variant="outline"
             >
-              Envoyer un autre message
+              {t('contact.success.sendAnother')}
             </Button>
           </div>
         </div>
@@ -101,9 +103,9 @@ export default function WebsiteContact() {
     <WebsiteLayout>
       <div className="bg-slate-50 py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Contactez-nous</h1>
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">{t('contact.title')}</h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            Une question ? Un projet ? Notre équipe est à votre écoute pour vous accompagner.
+            {t('contact.subtitle')}
           </p>
         </div>
       </div>
@@ -115,25 +117,25 @@ export default function WebsiteContact() {
               <form onSubmit={handleSubmit} className="space-y-6" data-testid="contact-form">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nom complet *</Label>
+                    <Label htmlFor="name">{t('contact.form.name')} *</Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Jean Dupont"
+                      placeholder={t('contact.form.namePlaceholder')}
                       required
                       className="h-11"
                       data-testid="input-name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">{t('contact.form.email')} *</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="jean@exemple.com"
+                      placeholder={t('contact.form.emailPlaceholder')}
                       required
                       className="h-11"
                       data-testid="input-email"
@@ -142,12 +144,12 @@ export default function WebsiteContact() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="organization">Nom de l'organisation *</Label>
+                  <Label htmlFor="organization">{t('contact.form.organization')} *</Label>
                   <Input
                     id="organization"
                     value={formData.organization}
                     onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                    placeholder="Association, syndicat, club..."
+                    placeholder={t('contact.form.organizationPlaceholder')}
                     required
                     className="h-11"
                     data-testid="input-organization"
@@ -155,7 +157,7 @@ export default function WebsiteContact() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone</Label>
+                  <Label htmlFor="phone">{t('contact.form.phone')}</Label>
                   <div className="flex gap-2">
                     <Select
                       value={formData.countryCode}
@@ -180,7 +182,7 @@ export default function WebsiteContact() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="06 12 34 56 78"
+                      placeholder={t('contact.form.phonePlaceholder')}
                       className="flex-1 h-11"
                       data-testid="input-phone"
                     />
@@ -188,7 +190,7 @@ export default function WebsiteContact() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">Type de demande</Label>
+                  <Label htmlFor="type">{t('contact.form.requestType')}</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -197,22 +199,22 @@ export default function WebsiteContact() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="info">Demande d'informations</SelectItem>
-                      <SelectItem value="demo">Demande de démonstration</SelectItem>
-                      <SelectItem value="devis">Demande de devis</SelectItem>
-                      <SelectItem value="partenariat">Partenariat</SelectItem>
-                      <SelectItem value="autre">Autre</SelectItem>
+                      <SelectItem value="info">{t('contact.form.requestTypes.info')}</SelectItem>
+                      <SelectItem value="demo">{t('contact.form.requestTypes.demo')}</SelectItem>
+                      <SelectItem value="devis">{t('contact.form.requestTypes.quote')}</SelectItem>
+                      <SelectItem value="partenariat">{t('contact.form.requestTypes.partnership')}</SelectItem>
+                      <SelectItem value="autre">{t('contact.form.requestTypes.other')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message *</Label>
+                  <Label htmlFor="message">{t('contact.form.message')} *</Label>
                   <Textarea
                     id="message"
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Décrivez votre projet ou posez vos questions..."
+                    placeholder={t('contact.form.messagePlaceholder')}
                     required
                     rows={5}
                     className="resize-none"
@@ -227,19 +229,19 @@ export default function WebsiteContact() {
                   data-testid="button-submit"
                 >
                   {isSubmitting ? (
-                    "Envoi en cours..."
+                    t('contact.form.submitting')
                   ) : (
                     <span className="flex items-center gap-2">
                       <Send size={18} />
-                      Envoyer le message
+                      {t('contact.form.submit')}
                     </span>
                   )}
                 </Button>
 
                 <p className="text-xs text-slate-500 text-center">
-                  En soumettant ce formulaire, vous acceptez notre{" "}
+                  {t('contact.form.privacyNotice')}{" "}
                   <a href="/website/privacy" className="text-blue-600 hover:underline">
-                    politique de confidentialité
+                    {t('contact.form.privacyPolicy')}
                   </a>.
                 </p>
               </form>
@@ -248,14 +250,14 @@ export default function WebsiteContact() {
 
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <h3 className="font-bold text-slate-900 mb-4">Nos coordonnées</h3>
+              <h3 className="font-bold text-slate-900 mb-4">{t('contact.info.title')}</h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Mail size={18} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">Email</p>
+                    <p className="font-medium text-slate-900">{t('contact.info.email')}</p>
                     <a href="mailto:contact@koomy.app" className="text-blue-600 hover:underline">
                       contact@koomy.app
                     </a>
@@ -266,9 +268,9 @@ export default function WebsiteContact() {
                     <Phone size={18} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">Téléphone</p>
+                    <p className="font-medium text-slate-900">{t('contact.info.phone')}</p>
                     <p className="text-slate-600">+33 1 23 45 67 89</p>
-                    <p className="text-xs text-slate-500">Du lundi au vendredi, 9h-18h</p>
+                    <p className="text-xs text-slate-500">{t('contact.info.phoneHours')}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -276,7 +278,7 @@ export default function WebsiteContact() {
                     <MapPin size={18} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">Adresse</p>
+                    <p className="font-medium text-slate-900">{t('contact.info.address')}</p>
                     <p className="text-slate-600">
                       123 Avenue de la République<br />
                       75011 Paris, France
@@ -287,13 +289,13 @@ export default function WebsiteContact() {
             </div>
 
             <div className="bg-blue-50 rounded-2xl border border-blue-100 p-6">
-              <h3 className="font-bold text-blue-900 mb-2">Besoin d'une réponse rapide ?</h3>
+              <h3 className="font-bold text-blue-900 mb-2">{t('contact.quickHelp.title')}</h3>
               <p className="text-blue-700 text-sm mb-4">
-                Consultez notre FAQ pour trouver les réponses aux questions les plus fréquentes.
+                {t('contact.quickHelp.subtitle')}
               </p>
               <a href="/website/faq">
                 <Button variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-100">
-                  Voir la FAQ
+                  {t('contact.quickHelp.viewFaq')}
                 </Button>
               </a>
             </div>
