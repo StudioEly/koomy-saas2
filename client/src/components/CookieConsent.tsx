@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -14,9 +14,35 @@ type CookiePreferences = {
 const COOKIE_CONSENT_KEY = "koomy_cookie_consent";
 const COOKIE_PREFERENCES_KEY = "koomy_cookie_preferences";
 
+type CookieConsentContextType = {
+  showBanner: () => void;
+  preferences: CookiePreferences;
+};
+
+const CookieConsentContext = createContext<CookieConsentContextType | null>(null);
+
+export function useCookieConsent() {
+  const context = useContext(CookieConsentContext);
+  if (!context) {
+    return { 
+      showBanner: () => {}, 
+      preferences: { necessary: true, analytics: false, marketing: false, functional: false } 
+    };
+  }
+  return context;
+}
+
+export function getStoredCookiePreferences(): CookiePreferences {
+  const savedPrefs = localStorage.getItem(COOKIE_PREFERENCES_KEY);
+  if (savedPrefs) {
+    return JSON.parse(savedPrefs);
+  }
+  return { necessary: true, analytics: false, marketing: false, functional: false };
+}
+
 export default function CookieConsent() {
   const { t } = useTranslation();
-  const [showBanner, setShowBanner] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [preferences, setPreferences] = useState<CookiePreferences>({
     necessary: true,
@@ -28,7 +54,7 @@ export default function CookieConsent() {
   useEffect(() => {
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!consent) {
-      const timer = setTimeout(() => setShowBanner(true), 1000);
+      const timer = setTimeout(() => setIsVisible(true), 1000);
       return () => clearTimeout(timer);
     } else {
       const savedPrefs = localStorage.getItem(COOKIE_PREFERENCES_KEY);
@@ -38,11 +64,21 @@ export default function CookieConsent() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleOpenCookieSettings = () => {
+      setIsVisible(true);
+      setShowSettings(true);
+    };
+    
+    window.addEventListener('openCookieSettings', handleOpenCookieSettings);
+    return () => window.removeEventListener('openCookieSettings', handleOpenCookieSettings);
+  }, []);
+
   const saveConsent = (prefs: CookiePreferences) => {
     localStorage.setItem(COOKIE_CONSENT_KEY, "true");
     localStorage.setItem(COOKIE_PREFERENCES_KEY, JSON.stringify(prefs));
     setPreferences(prefs);
-    setShowBanner(false);
+    setIsVisible(false);
     setShowSettings(false);
   };
 
@@ -68,7 +104,7 @@ export default function CookieConsent() {
     saveConsent(preferences);
   };
 
-  if (!showBanner) return null;
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none" data-testid="cookie-consent-container">
@@ -254,4 +290,8 @@ export default function CookieConsent() {
       </div>
     </div>
   );
+}
+
+export function openCookieSettings() {
+  window.dispatchEvent(new CustomEvent('openCookieSettings'));
 }

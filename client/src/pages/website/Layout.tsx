@@ -9,6 +9,7 @@ import { useLogin } from "@/hooks/useApi";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import ChatWidget from "@/components/ChatWidget";
+import CookieConsent, { openCookieSettings } from "@/components/CookieConsent";
 import koomyLogo from "@assets/ChatGPT Image 30 nov. 2025, 05_54_45_1764590118748.png";
 
 export default function WebsiteLayout({ children }: { children: React.ReactNode }) {
@@ -254,6 +255,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
       </main>
 
       <ChatWidget />
+      <CookieConsent />
 
       <footer className="bg-slate-900 text-slate-300 py-12 border-t border-slate-800">
         <div className="container mx-auto px-4 md:px-6">
@@ -289,6 +291,15 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
                 <li><Link href="/website/privacy" className="hover:text-white">{t('footer.privacy')}</Link></li>
                 <li><Link href="/website/terms" className="hover:text-white">{t('footer.terms')}</Link></li>
                 <li><Link href="/website/legal" className="hover:text-white">{t('footer.cookies')}</Link></li>
+                <li>
+                  <button 
+                    onClick={openCookieSettings}
+                    className="hover:text-white cursor-pointer"
+                    data-testid="button-footer-cookie-settings"
+                  >
+                    {t('cookies.settingsTitle', 'Paramètres cookies')}
+                  </button>
+                </li>
               </ul>
             </div>
           </div>
