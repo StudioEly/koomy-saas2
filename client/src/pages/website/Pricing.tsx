@@ -34,7 +34,7 @@ function getPlanIcon(planCode: string | null) {
 }
 
 export default function WebsitePricing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isYearly, setIsYearly] = useState(true);
 
   const { data: plans, isLoading, error } = useQuery<Plan[]>({
@@ -48,6 +48,30 @@ export default function WebsitePricing() {
 
   const displayPlans = plans?.filter(plan => !plan.isWhiteLabel) || [];
   const whiteLabelPlan = plans?.find(plan => plan.isWhiteLabel);
+
+  const getPlanName = (plan: Plan) => {
+    if (plan.code) {
+      const translated = t(`pricing.plans.${plan.code}.name`, { defaultValue: "" });
+      if (translated) return translated;
+    }
+    return plan.name;
+  };
+
+  const getPlanDescription = (plan: Plan) => {
+    if (plan.code) {
+      const translated = t(`pricing.plans.${plan.code}.description`, { defaultValue: "" });
+      if (translated) return translated;
+    }
+    return plan.description;
+  };
+
+  const getPlanFeatures = (plan: Plan): string[] => {
+    if (plan.code) {
+      const translated = t(`pricing.plans.${plan.code}.features`, { returnObjects: true, defaultValue: null }) as string[] | null;
+      if (Array.isArray(translated) && translated.length > 0) return translated;
+    }
+    return (plan.features as string[]) || [];
+  };
 
   return (
     <WebsiteLayout>
@@ -98,6 +122,10 @@ export default function WebsitePricing() {
                     ? Math.round(plan.priceYearly / 12) 
                     : plan.priceMonthly;
                   
+                  const planName = getPlanName(plan);
+                  const planDescription = getPlanDescription(plan);
+                  const planFeatures = getPlanFeatures(plan);
+                  
                   return (
                     <Card 
                       key={plan.id} 
@@ -119,10 +147,10 @@ export default function WebsitePricing() {
                         <div className="mx-auto mb-3 w-16 h-16 rounded-full bg-sky-100 flex items-center justify-center text-sky-600">
                           {getPlanIcon(plan.code)}
                         </div>
-                        <CardTitle className="text-2xl font-bold text-slate-900">{plan.name}</CardTitle>
+                        <CardTitle className="text-2xl font-bold text-slate-900">{planName}</CardTitle>
                         <CardDescription className="text-slate-500 mt-1">
                           {plan.maxMembers 
-                            ? <>{t('pricing.upTo')} <span className="font-bold text-slate-700">{plan.maxMembers.toLocaleString('fr-FR')} {t('pricing.members')}</span></>
+                            ? <>{t('pricing.upTo')} <span className="font-bold text-slate-700">{plan.maxMembers.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('pricing.members')}</span></>
                             : <span className="font-bold text-slate-700">{t('pricing.unlimitedMembers')}</span>
                           }
                         </CardDescription>
@@ -155,9 +183,9 @@ export default function WebsitePricing() {
                             </>
                           )}
                         </div>
-                        <p className="text-sm text-slate-600 mb-4">{plan.description}</p>
+                        <p className="text-sm text-slate-600 mb-4">{planDescription}</p>
                         <ul className="space-y-3">
-                          {(plan.features as string[] || []).map((feature, i) => (
+                          {planFeatures.map((feature, i) => (
                             <li key={i} className="flex items-start gap-3 text-sm text-slate-600">
                               <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
                               <span>{feature}</span>
@@ -200,10 +228,10 @@ export default function WebsitePricing() {
                         </div>
                       </div>
                       <div className="flex-1 text-center lg:text-left">
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2">{whiteLabelPlan.name}</h3>
-                        <p className="text-slate-600 mb-4">{whiteLabelPlan.description}</p>
+                        <h3 className="text-2xl font-bold text-slate-900 mb-2">{getPlanName(whiteLabelPlan)}</h3>
+                        <p className="text-slate-600 mb-4">{getPlanDescription(whiteLabelPlan)}</p>
                         <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                          {(whiteLabelPlan.features as string[] || []).slice(0, 4).map((feature, i) => (
+                          {getPlanFeatures(whiteLabelPlan).slice(0, 4).map((feature, i) => (
                             <span key={i} className="inline-flex items-center gap-1 text-sm bg-white px-3 py-1 rounded-full border border-sky-200 text-sky-700">
                               <CheckCircle className="h-4 w-4" />
                               {feature}

@@ -96,6 +96,70 @@
     "startingFrom": "À partir de",
     "setupIncluded": "Installation et configuration incluses",
     "requestDemo": "Demander une démo",
+    "plans": {
+      "STARTER_FREE": {
+        "name": "Free Starter",
+        "description": "Idéal pour les petites communautés qui débutent",
+        "features": [
+          "Jusqu'à 50 membres",
+          "Cartes de membre digitales",
+          "Fil d'actualités",
+          "Événements basiques",
+          "Support par email"
+        ]
+      },
+      "COMMUNAUTE_STANDARD": {
+        "name": "Communauté Plus",
+        "description": "Pour les associations et clubs en croissance",
+        "features": [
+          "Jusqu'à 1 000 membres",
+          "Cartes de membre avec QR code",
+          "Gestion des cotisations",
+          "Événements et inscriptions",
+          "Messagerie membres-admins",
+          "Statistiques de base",
+          "Support prioritaire"
+        ]
+      },
+      "COMMUNAUTE_PRO": {
+        "name": "Communauté Pro",
+        "description": "Pour les grandes organisations avec des besoins avancés",
+        "features": [
+          "Jusqu'à 5 000 membres",
+          "Multi-administrateurs avec rôles",
+          "Sections/régions illimitées",
+          "Personnalisation complète",
+          "Analytiques avancées",
+          "Export de données",
+          "Intégrations API",
+          "Support 24/7"
+        ]
+      },
+      "ENTREPRISE_CUSTOM": {
+        "name": "Grand Compte",
+        "description": "Solution sur mesure pour les très grandes organisations",
+        "features": [
+          "Membres illimités",
+          "Configuration personnalisée",
+          "Manager de succès dédié",
+          "Intégrations sur mesure",
+          "SLA garanti",
+          "Formation des équipes",
+          "Sécurité renforcée",
+          "Support prioritaire 24/7"
+        ]
+      },
+      "WHITE_LABEL": {
+        "name": "Marque Blanche",
+        "description": "Votre propre plateforme à vos couleurs",
+        "features": [
+          "Application à votre marque",
+          "Domaine personnalisé",
+          "Support dédié",
+          "Déploiement sur mesure"
+        ]
+      }
+    },
     "faq": {
       "title": "Questions fréquentes sur les tarifs",
       "changePlan": {

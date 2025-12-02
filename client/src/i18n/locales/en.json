@@ -96,6 +96,70 @@
     "startingFrom": "Starting from",
     "setupIncluded": "Setup and configuration included",
     "requestDemo": "Request a demo",
+    "plans": {
+      "STARTER_FREE": {
+        "name": "Free Starter",
+        "description": "Perfect for small communities just getting started",
+        "features": [
+          "Up to 50 members",
+          "Digital membership cards",
+          "News feed",
+          "Basic events",
+          "Email support"
+        ]
+      },
+      "COMMUNAUTE_STANDARD": {
+        "name": "Community Plus",
+        "description": "For growing associations and clubs",
+        "features": [
+          "Up to 1,000 members",
+          "Membership cards with QR code",
+          "Dues management",
+          "Events and registrations",
+          "Member-admin messaging",
+          "Basic analytics",
+          "Priority support"
+        ]
+      },
+      "COMMUNAUTE_PRO": {
+        "name": "Community Pro",
+        "description": "For large organizations with advanced needs",
+        "features": [
+          "Up to 5,000 members",
+          "Multi-admin with roles",
+          "Unlimited sections/regions",
+          "Full customization",
+          "Advanced analytics",
+          "Data export",
+          "API integrations",
+          "24/7 support"
+        ]
+      },
+      "ENTREPRISE_CUSTOM": {
+        "name": "Enterprise",
+        "description": "Custom solution for very large organizations",
+        "features": [
+          "Unlimited members",
+          "Custom configuration",
+          "Dedicated success manager",
+          "Custom integrations",
+          "Guaranteed SLA",
+          "Team training",
+          "Enhanced security",
+          "Priority 24/7 support"
+        ]
+      },
+      "WHITE_LABEL": {
+        "name": "White Label",
+        "description": "Your own platform with your branding",
+        "features": [
+          "Branded application",
+          "Custom domain",
+          "Dedicated support",
+          "Custom deployment"
+        ]
+      }
+    },
     "faq": {
       "title": "Frequently asked pricing questions",
       "changePlan": {
