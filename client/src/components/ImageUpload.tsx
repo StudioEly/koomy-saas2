@@ -47,7 +47,11 @@ export default function ImageUpload({
         throw new Error("Impossible d'obtenir l'URL d'upload");
       }
       
-      const { uploadURL } = await getUrlRes.json();
+      const { uploadURL, objectPath } = await getUrlRes.json();
+
+      if (!objectPath) {
+        throw new Error("Chemin de l'image invalide");
+      }
 
       const uploadRes = await fetch(uploadURL, {
         method: "PUT",
@@ -59,17 +63,6 @@ export default function ImageUpload({
         throw new Error("Échec de l'upload");
       }
 
-      const finalizeRes = await fetch("/api/uploads/image/finalize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uploadURL })
-      });
-
-      if (!finalizeRes.ok) {
-        throw new Error("Échec de la finalisation");
-      }
-
-      const { objectPath } = await finalizeRes.json();
       onChange(objectPath);
       toast.success("Image uploadée avec succès");
     } catch (error) {

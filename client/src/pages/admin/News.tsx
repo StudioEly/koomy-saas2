@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Globe, MapPin, Calendar, Edit, Trash2, Eye, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import ImageUpload from "@/components/ImageUpload";
 import type { NewsArticle, Section } from "@shared/schema";
 
 export default function AdminNews() {
@@ -293,35 +294,30 @@ export default function AdminNews() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                    <Label>Catégorie</Label>
-                    <Select 
-                      value={newNews.category}
-                      onValueChange={(v) => setNewNews({ ...newNews, category: v })}
-                    >
-                      <SelectTrigger data-testid="select-news-category">
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="National">National</SelectItem>
-                        <SelectItem value="Local">Local</SelectItem>
-                        <SelectItem value="Legal">Juridique</SelectItem>
-                        <SelectItem value="Events">Événement</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="image">Image URL (optionnel)</Label>
-                    <Input 
-                      id="image" 
-                      placeholder="https://..."
-                      value={newNews.image}
-                      onChange={(e) => setNewNews({ ...newNews, image: e.target.value })}
-                      data-testid="input-news-image"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Catégorie</Label>
+                  <Select 
+                    value={newNews.category}
+                    onValueChange={(v) => setNewNews({ ...newNews, category: v })}
+                  >
+                    <SelectTrigger data-testid="select-news-category">
+                      <SelectValue placeholder="Sélectionner..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="National">National</SelectItem>
+                      <SelectItem value="Local">Local</SelectItem>
+                      <SelectItem value="Legal">Juridique</SelectItem>
+                      <SelectItem value="Events">Événement</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                <ImageUpload
+                  value={newNews.image}
+                  onChange={(url) => setNewNews({ ...newNews, image: url })}
+                  label="Image de couverture (aperçu dans la liste)"
+                  folder="news"
+                />
               </div>
               <DialogFooter>
                 <Button 
@@ -491,6 +487,13 @@ export default function AdminNews() {
                 onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
               />
             </div>
+
+            <ImageUpload
+              value={newNews.image}
+              onChange={(url) => setNewNews({ ...newNews, image: url })}
+              label="Image de couverture"
+              folder="news"
+            />
           </div>
           <DialogFooter>
             <DialogClose asChild>

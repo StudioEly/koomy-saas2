@@ -726,28 +726,11 @@ export async function registerRoutes(
     try {
       const { folder = "images" } = req.body;
       const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL(folder);
-      return res.json({ uploadURL });
+      const { uploadURL, objectPath } = await objectStorageService.getObjectEntityUploadInfo(folder);
+      return res.json({ uploadURL, objectPath });
     } catch (error) {
       console.error("Get image upload URL error:", error);
       return res.status(500).json({ error: "Failed to get upload URL" });
-    }
-  });
-
-  app.post("/api/uploads/image/finalize", async (req, res) => {
-    try {
-      const { uploadURL } = req.body;
-      if (!uploadURL) {
-        return res.status(400).json({ error: "uploadURL is required" });
-      }
-
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
-
-      return res.json({ objectPath });
-    } catch (error) {
-      console.error("Finalize image upload error:", error);
-      return res.status(500).json({ error: "Failed to finalize upload" });
     }
   });
 
