@@ -240,9 +240,11 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Plan non trouvé");
     }
 
+    const memberCount = community.memberCount ?? 0;
+    
     // Check if downgrade is possible (member count <= new plan max members)
-    if (newPlan.maxMembers !== null && community.memberCount > newPlan.maxMembers) {
-      throw new PlanDowngradeNotAllowedError(community.memberCount, newPlan.maxMembers, newPlan.name);
+    if (newPlan.maxMembers !== null && memberCount > newPlan.maxMembers) {
+      throw new PlanDowngradeNotAllowedError(memberCount, newPlan.maxMembers, newPlan.name);
     }
 
     // Update the community's plan
@@ -254,7 +256,7 @@ export class DatabaseStorage implements IStorage {
     return updated;
   }
 
-  async checkMemberQuota(communityId: string): Promise<{ canAdd: boolean; current: number; max: number | null; planName: string }> {
+  async checkMemberQuota(communityId: string): Promise<{ canAdd: boolean; current: number; max: number | null; planName: string; hasFullAccess: boolean }> {
     const community = await this.getCommunity(communityId);
     if (!community) {
       throw new Error("Communauté non trouvée");
@@ -265,16 +267,75 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Plan non trouvé");
     }
 
-    const current = community.memberCount;
+    const current = community.memberCount ?? 0;
     const max = plan.maxMembers;
-    const canAdd = max === null || current < max;
+    
+    // Check if community has active full access
+    const hasFullAccess = this.hasActiveFullAccess(community);
+    
+    // If full access is active, always allow adding members
+    const canAdd = hasFullAccess || max === null || current < max;
 
     return {
       canAdd,
       current,
       max,
-      planName: plan.name
+      planName: plan.name,
+      hasFullAccess
     };
+  }
+
+  // Full Access Management
+  hasActiveFullAccess(community: Community): boolean {
+    if (!community.fullAccessGrantedAt) return false;
+    if (!community.fullAccessExpiresAt) return true; // Permanent access
+    return new Date() < new Date(community.fullAccessExpiresAt);
+  }
+
+  async grantFullAccess(
+    communityId: string, 
+    grantedBy: string, 
+    reason: string, 
+    expiresAt?: Date | null
+  ): Promise<Community> {
+    const [updated] = await db.update(communities)
+      .set({
+        fullAccessGrantedAt: new Date(),
+        fullAccessExpiresAt: expiresAt ?? null,
+        fullAccessReason: reason,
+        fullAccessGrantedBy: grantedBy
+      })
+      .where(eq(communities.id, communityId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error("Communauté non trouvée");
+    }
+    
+    return updated;
+  }
+
+  async revokeFullAccess(communityId: string): Promise<Community> {
+    const [updated] = await db.update(communities)
+      .set({
+        fullAccessGrantedAt: null,
+        fullAccessExpiresAt: null,
+        fullAccessReason: null,
+        fullAccessGrantedBy: null
+      })
+      .where(eq(communities.id, communityId))
+      .returning();
+    
+    if (!updated) {
+      throw new Error("Communauté non trouvée");
+    }
+    
+    return updated;
+  }
+
+  async getCommunitiesWithFullAccess(): Promise<Community[]> {
+    const allCommunities = await db.select().from(communities);
+    return allCommunities.filter(c => this.hasActiveFullAccess(c));
   }
 
   // Memberships
