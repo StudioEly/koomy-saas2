@@ -12,7 +12,8 @@ import {
   MapPin,
   HelpCircle,
   CreditCard,
-  Building2
+  Building2,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: Calendar, label: "Événements", path: "/admin/events" },
     { icon: MessageSquare, label: "Messagerie", path: "/admin/messages" },
     { icon: HelpCircle, label: "Support", path: "/admin/support" },
+    { icon: Receipt, label: "Facturation", path: "/admin/billing" },
     { icon: Settings, label: "Paramètres", path: "/admin/settings" },
   ];
 

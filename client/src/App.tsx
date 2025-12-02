@@ -44,6 +44,7 @@ import AdminSections from "@/pages/admin/Sections";
 import AdminSupport from "@/pages/admin/Support";
 import AdminPayments from "@/pages/admin/Payments";
 import AdminSettings from "@/pages/admin/Settings";
+import AdminBilling from "@/pages/admin/Billing";
 
 // Platform Pages
 import PlatformLogin from "@/pages/platform/Login";
@@ -132,6 +133,7 @@ function Router() {
       <Route path="/admin/sections" component={AdminSections} />
       <Route path="/admin/support" component={AdminSupport} />
       <Route path="/admin/payments" component={AdminPayments} />
+      <Route path="/admin/billing" component={AdminBilling} />
       <Route path="/admin/settings" component={AdminSettings} />
 
       {/* Platform Super Admin */}
