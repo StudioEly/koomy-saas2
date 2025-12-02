@@ -214,8 +214,21 @@ export const supportTickets = pgTable("support_tickets", {
   message: text("message").notNull(),
   status: ticketStatusEnum("status").default("open"),
   priority: ticketPriorityEnum("priority").default("medium"),
+  assignedTo: varchar("assigned_to", { length: 50 }).references(() => users.id),
+  assignedAt: timestamp("assigned_at"),
+  resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastUpdate: timestamp("last_update").defaultNow().notNull()
+});
+
+// Ticket Responses (replies to support tickets)
+export const ticketResponses = pgTable("ticket_responses", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id", { length: 50 }).references(() => supportTickets.id).notNull(),
+  userId: varchar("user_id", { length: 50 }).references(() => users.id).notNull(),
+  message: text("message").notNull(),
+  isInternal: boolean("is_internal").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // FAQs
@@ -334,7 +347,8 @@ export const insertMembershipSchema = createInsertSchema(userCommunityMembership
 export const insertSectionSchema = createInsertSchema(sections).omit({ id: true });
 export const insertNewsSchema = createInsertSchema(newsArticles).omit({ id: true, publishedAt: true });
 export const insertEventSchema = createInsertSchema(events).omit({ id: true });
-export const insertTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, lastUpdate: true });
+export const insertTicketSchema = createInsertSchema(supportTickets).omit({ id: true, createdAt: true, lastUpdate: true, assignedAt: true, resolvedAt: true });
+export const insertTicketResponseSchema = createInsertSchema(ticketResponses).omit({ id: true, createdAt: true });
 export const insertFaqSchema = createInsertSchema(faqs).omit({ id: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true });
 export const insertMembershipFeeSchema = createInsertSchema(membershipFees).omit({ id: true });
@@ -352,6 +366,7 @@ export type Section = typeof sections.$inferSelect;
 export type NewsArticle = typeof newsArticles.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type SupportTicket = typeof supportTickets.$inferSelect;
+export type TicketResponse = typeof ticketResponses.$inferSelect;
 export type FAQ = typeof faqs.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type MembershipFee = typeof membershipFees.$inferSelect;
@@ -369,6 +384,7 @@ export type InsertSection = z.infer<typeof insertSectionSchema>;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type InsertTicketResponse = z.infer<typeof insertTicketResponseSchema>;
 export type InsertFAQ = z.infer<typeof insertFaqSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertMembershipFee = z.infer<typeof insertMembershipFeeSchema>;

@@ -1636,6 +1636,259 @@ export async function registerRoutes(
     }
   });
 
+  // =====================================================
+  // PAYMENT TRACKING & ANALYTICS
+  // =====================================================
+
+  // Get payment analytics
+  app.get("/api/platform/payments/analytics", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const analytics = await storage.getPaymentAnalytics();
+      return res.json(analytics);
+    } catch (error: any) {
+      console.error("Get payment analytics error:", error);
+      return res.status(500).json({ error: "Failed to get payment analytics" });
+    }
+  });
+
+  // Get pending invoices
+  app.get("/api/platform/payments/pending", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const pendingInvoices = await storage.getPendingInvoices();
+      return res.json(pendingInvoices);
+    } catch (error: any) {
+      console.error("Get pending invoices error:", error);
+      return res.status(500).json({ error: "Failed to get pending invoices" });
+    }
+  });
+
+  // Get failed payments
+  app.get("/api/platform/payments/failed", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const failedPayments = await storage.getRecentFailedPayments(50);
+      return res.json(failedPayments);
+    } catch (error: any) {
+      console.error("Get failed payments error:", error);
+      return res.status(500).json({ error: "Failed to get failed payments" });
+    }
+  });
+
+  // Get all platform payments
+  app.get("/api/platform/payments", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const allPayments = await storage.getAllPlatformPayments();
+      return res.json(allPayments);
+    } catch (error: any) {
+      console.error("Get all payments error:", error);
+      return res.status(500).json({ error: "Failed to get payments" });
+    }
+  });
+
+  // Get revenue history
+  app.get("/api/platform/payments/revenue-history", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const history = await storage.getMonthlyRevenueHistory();
+      return res.json(history);
+    } catch (error: any) {
+      console.error("Get revenue history error:", error);
+      return res.status(500).json({ error: "Failed to get revenue history" });
+    }
+  });
+
+  // =====================================================
+  // PLATFORM TICKET MANAGEMENT
+  // =====================================================
+
+  // Get all tickets with details
+  app.get("/api/platform/tickets", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const tickets = await storage.getAllTicketsWithDetails();
+      return res.json(tickets);
+    } catch (error: any) {
+      console.error("Get all tickets error:", error);
+      return res.status(500).json({ error: "Failed to get tickets" });
+    }
+  });
+
+  // Get single ticket with full details
+  app.get("/api/platform/tickets/:id", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const ticketId = req.params.id;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const ticket = await storage.getTicketWithDetails(ticketId);
+      if (!ticket) {
+        return res.status(404).json({ error: "Ticket not found" });
+      }
+      
+      // Remove password from user if present
+      if (ticket.user) {
+        const { password, ...userWithoutPassword } = ticket.user;
+        return res.json({ ...ticket, user: userWithoutPassword });
+      }
+      
+      return res.json(ticket);
+    } catch (error: any) {
+      console.error("Get ticket details error:", error);
+      return res.status(500).json({ error: "Failed to get ticket details" });
+    }
+  });
+
+  // Assign ticket to platform user
+  app.patch("/api/platform/tickets/:id/assign", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const ticketId = req.params.id;
+      const { assignedTo } = req.body;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      if (!assignedTo) {
+        return res.status(400).json({ error: "assignedTo is required" });
+      }
+
+      const ticket = await storage.assignTicket(ticketId, assignedTo);
+      return res.json(ticket);
+    } catch (error: any) {
+      console.error("Assign ticket error:", error);
+      return res.status(500).json({ error: "Failed to assign ticket" });
+    }
+  });
+
+  // Update ticket status
+  app.patch("/api/platform/tickets/:id/status", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const ticketId = req.params.id;
+      const { status } = req.body;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      if (!status) {
+        return res.status(400).json({ error: "status is required" });
+      }
+
+      const updates: any = { status, lastUpdate: new Date() };
+      if (status === 'resolved' || status === 'closed') {
+        updates.resolvedAt = new Date();
+      }
+
+      const ticket = await storage.updateTicket(ticketId, updates);
+      return res.json(ticket);
+    } catch (error: any) {
+      console.error("Update ticket status error:", error);
+      return res.status(500).json({ error: "Failed to update ticket status" });
+    }
+  });
+
+  // Add response to ticket
+  app.post("/api/platform/tickets/:id/responses", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const ticketId = req.params.id;
+      const { message, isInternal } = req.body;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      if (!message) {
+        return res.status(400).json({ error: "message is required" });
+      }
+
+      const response = await storage.createTicketResponse({
+        ticketId,
+        userId,
+        message,
+        isInternal: isInternal || false
+      });
+
+      // Update ticket status to in_progress if it was open
+      const ticket = await storage.getTicketWithDetails(ticketId);
+      if (ticket && ticket.status === 'open') {
+        await storage.updateTicket(ticketId, { status: 'in_progress', lastUpdate: new Date() });
+      }
+
+      return res.status(201).json(response);
+    } catch (error: any) {
+      console.error("Add ticket response error:", error);
+      return res.status(500).json({ error: "Failed to add ticket response" });
+    }
+  });
+
+  // Get ticket responses
+  app.get("/api/platform/tickets/:id/responses", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      const ticketId = req.params.id;
+      
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const responses = await storage.getTicketResponses(ticketId);
+      return res.json(responses);
+    } catch (error: any) {
+      console.error("Get ticket responses error:", error);
+      return res.status(500).json({ error: "Failed to get ticket responses" });
+    }
+  });
+
   // ChatGPT-powered Chat for Public Website
   const openai = new OpenAI({
     apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,

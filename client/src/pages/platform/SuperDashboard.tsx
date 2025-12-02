@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { MOCK_PLANS, Plan } from "@/lib/mockData";
-import { MOCK_TICKETS } from "@/lib/mockSupportData";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +106,52 @@ type PlatformUser = {
   createdAt: string;
 };
 
+type PlatformTicket = {
+  id: string;
+  userId: string;
+  communityId: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high';
+  assignedTo: string | null;
+  createdAt: string;
+  lastUpdate: string;
+  userName: string;
+  communityName: string;
+  assignedUserName: string | null;
+  responseCount: number;
+};
+
+type TicketResponse = {
+  id: string;
+  ticketId: string;
+  userId: string;
+  message: string;
+  isInternal: boolean;
+  createdAt: string;
+};
+
+type TicketWithDetails = PlatformTicket & {
+  responses: TicketResponse[];
+  user: { id: string; firstName: string; lastName: string; email: string } | null;
+  community: { id: string; name: string } | null;
+  assignedUser: { id: string; firstName: string; lastName: string } | null;
+};
+
+type PaymentAnalytics = {
+  totalVolume: number;
+  totalVolumeThisMonth: number;
+  failedPayments: { count: number; amount: number };
+  pendingPayments: { count: number; amount: number };
+  completedPayments: { count: number; amount: number };
+  refundedPayments: { count: number; amount: number };
+  failureRate: number;
+  averagePaymentAmount: number;
+  paymentsByMethod: { method: string; count: number; amount: number }[];
+  monthlyForecast: { month: string; expectedRevenue: number }[];
+};
+
 const PLAN_COLORS: Record<string, string> = {
   'STARTER_FREE': '#94a3b8',
   'COMMUNAUTE_STANDARD': '#3b82f6',
@@ -147,9 +193,14 @@ export default function SuperAdminDashboard() {
   const [_, setLocation] = useLocation();
   const { user, logout, isPlatformAdmin, authReady } = useAuth();
   const queryClient = useQueryClient();
-  const [tickets] = useState(MOCK_TICKETS);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
+  
+  // Ticket management state
+  const [selectedTicket, setSelectedTicket] = useState<TicketWithDetails | null>(null);
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [ticketResponse, setTicketResponse] = useState("");
+  const [ticketFilter, setTicketFilter] = useState<'all' | 'open' | 'in_progress' | 'resolved' | 'closed'>('all');
   
   const [fullAccessModalOpen, setFullAccessModalOpen] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
@@ -279,6 +330,28 @@ export default function SuperAdminDashboard() {
     enabled: !!user?.id
   });
 
+  // Tickets
+  const { data: tickets = [], isLoading: ticketsLoading, refetch: refetchTickets } = useQuery<PlatformTicket[]>({
+    queryKey: ["platform-tickets"],
+    queryFn: async () => {
+      const response = await fetch(`/api/platform/tickets?userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch tickets");
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
+  // Payment analytics
+  const { data: paymentAnalytics } = useQuery<PaymentAnalytics>({
+    queryKey: ["payment-analytics"],
+    queryFn: async () => {
+      const response = await fetch(`/api/platform/payments/analytics?userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch payment analytics");
+      return response.json();
+    },
+    enabled: !!user?.id
+  });
+
   // Grant full access mutation
   const grantFullAccessMutation = useMutation({
     mutationFn: async ({ communityId, reason, expiresAt }: { communityId: string; reason: string; expiresAt: string | null }) => {
@@ -390,6 +463,88 @@ export default function SuperAdminDashboard() {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     }
   });
+
+  // Ticket mutations
+  const assignTicketMutation = useMutation({
+    mutationFn: async ({ ticketId, assignedTo }: { ticketId: string; assignedTo: string }) => {
+      const response = await fetch(`/api/platform/tickets/${ticketId}/assign?userId=${user?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignedTo })
+      });
+      if (!response.ok) throw new Error("Failed to assign ticket");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-tickets"] });
+      toast({ title: "Ticket assigné" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible d'assigner le ticket", variant: "destructive" });
+    }
+  });
+
+  const updateTicketStatusMutation = useMutation({
+    mutationFn: async ({ ticketId, status }: { ticketId: string; status: string }) => {
+      const response = await fetch(`/api/platform/tickets/${ticketId}/status?userId=${user?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) throw new Error("Failed to update ticket status");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-tickets"] });
+      toast({ title: "Statut mis à jour" });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le statut", variant: "destructive" });
+    }
+  });
+
+  const addTicketResponseMutation = useMutation({
+    mutationFn: async ({ ticketId, message, isInternal }: { ticketId: string; message: string; isInternal: boolean }) => {
+      const response = await fetch(`/api/platform/tickets/${ticketId}/responses?userId=${user?.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, isInternal })
+      });
+      if (!response.ok) throw new Error("Failed to add response");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-tickets"] });
+      setTicketResponse("");
+      toast({ title: "Réponse envoyée" });
+      // Refresh selected ticket
+      if (selectedTicket) {
+        fetchTicketDetails(selectedTicket.id);
+      }
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible d'envoyer la réponse", variant: "destructive" });
+    }
+  });
+
+  // Fetch ticket details
+  const fetchTicketDetails = async (ticketId: string) => {
+    try {
+      const response = await fetch(`/api/platform/tickets/${ticketId}?userId=${user?.id}`);
+      if (!response.ok) throw new Error("Failed to fetch ticket details");
+      const ticket = await response.json();
+      setSelectedTicket(ticket);
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de charger les détails du ticket", variant: "destructive" });
+    }
+  };
+
+  const openTicketModal = (ticket: PlatformTicket) => {
+    fetchTicketDetails(ticket.id);
+    setTicketModalOpen(true);
+  };
+
+  const filteredTickets = tickets.filter(t => ticketFilter === 'all' || t.status === ticketFilter);
 
   const resetFullAccessForm = () => {
     setSelectedCommunity(null);
@@ -856,8 +1011,55 @@ export default function SuperAdminDashboard() {
                   </Card>
                 </div>
 
+                {/* Payment Tracking Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 mb-6">
+                  <Card className="border-l-4 border-l-emerald-500">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Volume de Transactions</p>
+                        <div className="p-2 bg-emerald-100 rounded-lg"><Activity className="h-4 w-4 text-emerald-600" /></div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{formatCurrency(paymentAnalytics?.totalVolume || 0)}</div>
+                      <p className="text-xs text-gray-500 mt-2">Ce mois: {formatCurrency(paymentAnalytics?.totalVolumeThisMonth || 0)}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 border-l-red-500">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Paiements Échoués</p>
+                        <div className="p-2 bg-red-100 rounded-lg"><AlertCircle className="h-4 w-4 text-red-600" /></div>
+                      </div>
+                      <div className="text-2xl font-bold text-red-600">{paymentAnalytics?.failedPayments?.count || 0}</div>
+                      <p className="text-xs text-gray-500 mt-2">Total: {formatCurrency(paymentAnalytics?.failedPayments?.amount || 0)}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 border-l-orange-500">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Factures en Attente</p>
+                        <div className="p-2 bg-orange-100 rounded-lg"><Clock className="h-4 w-4 text-orange-600" /></div>
+                      </div>
+                      <div className="text-2xl font-bold text-orange-600">{paymentAnalytics?.pendingPayments?.count || 0}</div>
+                      <p className="text-xs text-gray-500 mt-2">Montant: {formatCurrency(paymentAnalytics?.pendingPayments?.amount || 0)}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Prévision Cash Flow</p>
+                        <div className="p-2 bg-blue-100 rounded-lg"><TrendingUp className="h-4 w-4 text-blue-600" /></div>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-600">{formatCurrency(paymentAnalytics?.monthlyForecast?.[0]?.expectedRevenue || (metrics?.mrr || 0))}</div>
+                      <p className="text-xs text-gray-500 mt-2">Projection prochain mois</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
                 {/* Financial Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-3 mb-4">
@@ -1368,53 +1570,300 @@ export default function SuperAdminDashboard() {
                 <h1 className="text-3xl font-bold text-gray-900">Gestion des Tickets</h1>
                 <p className="text-gray-500">Support centralisé pour tous les clients.</p>
               </div>
+              <div className="flex items-center gap-2">
+                <Select value={ticketFilter} onValueChange={(v) => setTicketFilter(v as any)}>
+                  <SelectTrigger className="w-40" data-testid="select-ticket-filter">
+                    <SelectValue placeholder="Filtrer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous ({tickets.length})</SelectItem>
+                    <SelectItem value="open">Ouverts ({tickets.filter(t => t.status === 'open').length})</SelectItem>
+                    <SelectItem value="in_progress">En cours ({tickets.filter(t => t.status === 'in_progress').length})</SelectItem>
+                    <SelectItem value="resolved">Résolus ({tickets.filter(t => t.status === 'resolved').length})</SelectItem>
+                    <SelectItem value="closed">Fermés ({tickets.filter(t => t.status === 'closed').length})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Priorité</TableHead>
-                      <TableHead>Sujet</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Demandeur</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tickets.map((ticket) => (
-                      <TableRow key={ticket.id}>
-                        <TableCell>
-                          {ticket.priority === 'high' ? (<Badge variant="destructive" className="gap-1"><AlertCircle size={10}/> Haute</Badge>) : ticket.priority === 'medium' ? (<Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100 gap-1">Moyenne</Badge>) : (<Badge variant="outline" className="text-gray-500 gap-1">Basse</Badge>)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium text-gray-900">{ticket.subject}</div>
-                          <div className="text-xs text-gray-500 truncate max-w-[300px]">{ticket.message}</div>
-                        </TableCell>
-                        <TableCell><div className="text-sm text-gray-700 font-medium">{ticket.communityName}</div></TableCell>
-                        <TableCell>
-                          <div className="text-sm">{ticket.userName}</div>
-                          <div className="text-[10px] uppercase text-gray-400 font-bold">{ticket.userRole}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={ticket.status === "open" ? "bg-green-50 text-green-700 border-green-200" : ticket.status === "in_progress" ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-gray-50 text-gray-600"}>
-                            {ticket.status === "open" ? "Ouvert" : ticket.status === "in_progress" ? "En cours" : "Fermé"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-500">{new Date(ticket.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right"><Button size="sm" variant="outline">Gérer</Button></TableCell>
+            {/* Ticket Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700">Ouverts</p>
+                      <p className="text-2xl font-bold text-green-800">{tickets.filter(t => t.status === 'open').length}</p>
+                    </div>
+                    <AlertCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-700">En cours</p>
+                      <p className="text-2xl font-bold text-blue-800">{tickets.filter(t => t.status === 'in_progress').length}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-purple-50 border-purple-200">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-purple-700">Résolus</p>
+                      <p className="text-2xl font-bold text-purple-800">{tickets.filter(t => t.status === 'resolved').length}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gray-50 border-gray-200">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">Total</p>
+                      <p className="text-2xl font-bold text-gray-800">{tickets.length}</p>
+                    </div>
+                    <MessageSquare className="h-8 w-8 text-gray-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {ticketsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+              </div>
+            ) : filteredTickets.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Aucun ticket {ticketFilter !== 'all' ? `avec le statut "${ticketFilter}"` : ''}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-24">Priorité</TableHead>
+                        <TableHead>Sujet</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Demandeur</TableHead>
+                        <TableHead>Assigné à</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Réponses</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTickets.map((ticket) => (
+                        <TableRow key={ticket.id} className="cursor-pointer hover:bg-gray-50" onClick={() => openTicketModal(ticket)}>
+                          <TableCell>
+                            {ticket.priority === 'high' ? (
+                              <Badge variant="destructive" className="gap-1"><AlertCircle size={10}/> Haute</Badge>
+                            ) : ticket.priority === 'medium' ? (
+                              <Badge variant="secondary" className="bg-orange-100 text-orange-800 hover:bg-orange-100 gap-1">Moyenne</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-gray-500 gap-1">Basse</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium text-gray-900">{ticket.subject}</div>
+                            <div className="text-xs text-gray-500 truncate max-w-[250px]">{ticket.message}</div>
+                          </TableCell>
+                          <TableCell><div className="text-sm text-gray-700 font-medium">{ticket.communityName}</div></TableCell>
+                          <TableCell>
+                            <div className="text-sm">{ticket.userName}</div>
+                          </TableCell>
+                          <TableCell>
+                            {ticket.assignedUserName ? (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{ticket.assignedUserName}</Badge>
+                            ) : (
+                              <span className="text-xs text-gray-400">Non assigné</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={
+                              ticket.status === "open" ? "bg-green-50 text-green-700 border-green-200" : 
+                              ticket.status === "in_progress" ? "bg-blue-50 text-blue-700 border-blue-200" : 
+                              ticket.status === "resolved" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                              "bg-gray-50 text-gray-600"
+                            }>
+                              {ticket.status === "open" ? "Ouvert" : ticket.status === "in_progress" ? "En cours" : ticket.status === "resolved" ? "Résolu" : "Fermé"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{ticket.responseCount}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">{new Date(ticket.createdAt).toLocaleDateString('fr-FR')}</TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openTicketModal(ticket); }} data-testid={`button-manage-ticket-${ticket.id}`}>
+                              Gérer
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Ticket Details Modal */}
+      <Dialog open={ticketModalOpen} onOpenChange={setTicketModalOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-blue-500" />
+              Ticket #{selectedTicket?.id?.slice(0, 8)}
+            </DialogTitle>
+            <DialogDescription>{selectedTicket?.subject}</DialogDescription>
+          </DialogHeader>
+
+          {selectedTicket ? (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Ticket Info */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <p className="text-xs text-gray-500">Statut</p>
+                  <Select 
+                    value={selectedTicket.status} 
+                    onValueChange={(v) => updateTicketStatusMutation.mutate({ ticketId: selectedTicket.id, status: v })}
+                  >
+                    <SelectTrigger className="h-8 text-xs" data-testid="select-ticket-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Ouvert</SelectItem>
+                      <SelectItem value="in_progress">En cours</SelectItem>
+                      <SelectItem value="resolved">Résolu</SelectItem>
+                      <SelectItem value="closed">Fermé</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Priorité</p>
+                  <Badge className={
+                    selectedTicket.priority === 'high' ? 'bg-red-100 text-red-700' :
+                    selectedTicket.priority === 'medium' ? 'bg-orange-100 text-orange-700' :
+                    'bg-gray-100 text-gray-700'
+                  }>
+                    {selectedTicket.priority === 'high' ? 'Haute' : selectedTicket.priority === 'medium' ? 'Moyenne' : 'Basse'}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Client</p>
+                  <p className="text-sm font-medium">{selectedTicket.community?.name || selectedTicket.communityName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Assigné à</p>
+                  <Select
+                    value={selectedTicket.assignedTo || ""}
+                    onValueChange={(v) => v && assignTicketMutation.mutate({ ticketId: selectedTicket.id, assignedTo: v })}
+                  >
+                    <SelectTrigger className="h-8 text-xs" data-testid="select-ticket-assign">
+                      <SelectValue placeholder="Non assigné" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {platformUsers.map(u => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.firstName} {u.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Original Message */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{selectedTicket.user ? `${selectedTicket.user.firstName} ${selectedTicket.user.lastName}` : selectedTicket.userName}</p>
+                    <p className="text-xs text-gray-500">{new Date(selectedTicket.createdAt).toLocaleString('fr-FR')}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700">{selectedTicket.message}</p>
+              </div>
+
+              {/* Responses */}
+              <div className="flex-1 overflow-auto mb-4">
+                <ScrollArea className="h-[200px] pr-4">
+                  {selectedTicket.responses && selectedTicket.responses.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedTicket.responses.map((response) => (
+                        <div key={response.id} className={`p-3 rounded-lg ${response.isInternal ? 'bg-yellow-50 border border-yellow-200' : 'bg-white border border-gray-200'}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${response.isInternal ? 'bg-yellow-100' : 'bg-green-100'}`}>
+                              <Headphones className={`h-3 w-3 ${response.isInternal ? 'text-yellow-600' : 'text-green-600'}`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs font-medium">Agent Support</p>
+                              <p className="text-xs text-gray-500">{new Date(response.createdAt).toLocaleString('fr-FR')}</p>
+                            </div>
+                            {response.isInternal && <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700">Note interne</Badge>}
+                          </div>
+                          <p className="text-sm text-gray-700">{response.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-400 text-sm py-8">Aucune réponse pour le moment</p>
+                  )}
+                </ScrollArea>
+              </div>
+
+              {/* Response Form */}
+              <div className="border-t pt-4">
+                <Textarea
+                  placeholder="Écrire une réponse..."
+                  value={ticketResponse}
+                  onChange={(e) => setTicketResponse(e.target.value)}
+                  className="min-h-[80px] mb-3"
+                  data-testid="input-ticket-response"
+                />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" id="internal" className="rounded" />
+                    <label htmlFor="internal" className="text-xs text-gray-500">Note interne (non visible par le client)</label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setTicketModalOpen(false)}>Fermer</Button>
+                    <Button 
+                      onClick={() => addTicketResponseMutation.mutate({ 
+                        ticketId: selectedTicket.id, 
+                        message: ticketResponse, 
+                        isInternal: (document.getElementById('internal') as HTMLInputElement)?.checked || false
+                      })}
+                      disabled={!ticketResponse.trim() || addTicketResponseMutation.isPending}
+                      data-testid="button-send-response"
+                    >
+                      {addTicketResponseMutation.isPending ? "Envoi..." : "Envoyer"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Full Access Modal */}
       <Dialog open={fullAccessModalOpen} onOpenChange={(open) => { setFullAccessModalOpen(open); if (!open) resetFullAccessForm(); }}>

@@ -1,10 +1,10 @@
 import { 
-  users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, faqs, messages,
+  users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, ticketResponses, faqs, messages,
   membershipFees, paymentRequests, payments, accounts, commercialContacts, PLAN_CODES,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
-  type SupportTicket, type InsertTicket, type FAQ, type InsertFAQ,
+  type SupportTicket, type InsertTicket, type TicketResponse, type InsertTicketResponse, type FAQ, type InsertFAQ,
   type Message, type InsertMessage,
   type MembershipFee, type InsertMembershipFee, type PaymentRequest, type InsertPaymentRequest,
   type Payment, type InsertPayment,
@@ -93,7 +93,7 @@ export interface IStorage {
   getUserTickets(userId: string): Promise<SupportTicket[]>;
   getCommunityTickets(communityId: string): Promise<SupportTicket[]>;
   createTicket(ticket: InsertTicket): Promise<SupportTicket>;
-  updateTicket(id: string, updates: Partial<InsertTicket>): Promise<SupportTicket>;
+  updateTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket>;
   
   // FAQs
   getAllFAQs(): Promise<FAQ[]>;
@@ -130,6 +130,13 @@ export interface IStorage {
   getAllCommercialContacts(): Promise<CommercialContact[]>;
   createCommercialContact(contact: InsertCommercialContact): Promise<CommercialContact>;
   updateCommercialContactStatus(id: string, status: string): Promise<CommercialContact>;
+
+  // Ticket Responses
+  getTicketResponses(ticketId: string): Promise<TicketResponse[]>;
+  createTicketResponse(response: InsertTicketResponse): Promise<TicketResponse>;
+  assignTicket(ticketId: string, assignedTo: string): Promise<SupportTicket>;
+  getTicketWithDetails(ticketId: string): Promise<(SupportTicket & { responses: TicketResponse[]; user: User | null; community: Community | null; assignedUser: User | null }) | undefined>;
+  getAllTicketsWithDetails(): Promise<(SupportTicket & { userName: string; communityName: string; assignedUserName: string | null; responseCount: number })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -493,7 +500,7 @@ export class DatabaseStorage implements IStorage {
     return ticket;
   }
 
-  async updateTicket(id: string, updates: Partial<InsertTicket>): Promise<SupportTicket> {
+  async updateTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket> {
     const [ticket] = await db.update(supportTickets)
       .set({ ...updates, lastUpdate: new Date() })
       .where(eq(supportTickets.id, id))
@@ -1177,6 +1184,220 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  // =====================================================
+  // TICKET MANAGEMENT
+  // =====================================================
+
+  // Get ticket responses
+  async getTicketResponses(ticketId: string): Promise<TicketResponse[]> {
+    return await db.select().from(ticketResponses)
+      .where(eq(ticketResponses.ticketId, ticketId))
+      .orderBy(asc(ticketResponses.createdAt));
+  }
+
+  // Create ticket response
+  async createTicketResponse(response: InsertTicketResponse): Promise<TicketResponse> {
+    const [result] = await db.insert(ticketResponses).values(response).returning();
+    
+    // Update ticket lastUpdate timestamp
+    await db.update(supportTickets)
+      .set({ lastUpdate: new Date() })
+      .where(eq(supportTickets.id, response.ticketId));
+    
+    return result;
+  }
+
+  // Assign ticket to a platform user
+  async assignTicket(ticketId: string, assignedTo: string): Promise<SupportTicket> {
+    const [ticket] = await db.update(supportTickets)
+      .set({ 
+        assignedTo, 
+        assignedAt: new Date(),
+        status: 'in_progress',
+        lastUpdate: new Date()
+      })
+      .where(eq(supportTickets.id, ticketId))
+      .returning();
+    return ticket;
+  }
+
+  // Get ticket with all details (responses, user info, community info)
+  async getTicketWithDetails(ticketId: string): Promise<(SupportTicket & { 
+    responses: TicketResponse[]; 
+    user: User | null; 
+    community: Community | null; 
+    assignedUser: User | null 
+  }) | undefined> {
+    const [ticket] = await db.select().from(supportTickets)
+      .where(eq(supportTickets.id, ticketId));
+    
+    if (!ticket) return undefined;
+
+    const responses = await this.getTicketResponses(ticketId);
+    const user = ticket.userId ? await this.getUser(ticket.userId) : null;
+    const community = ticket.communityId ? await this.getCommunity(ticket.communityId) : null;
+    const assignedUser = ticket.assignedTo ? await this.getUser(ticket.assignedTo) : null;
+
+    return {
+      ...ticket,
+      responses,
+      user: user || null,
+      community: community || null,
+      assignedUser: assignedUser || null
+    };
+  }
+
+  // Get all tickets with summary info for listing
+  async getAllTicketsWithDetails(): Promise<(SupportTicket & { 
+    userName: string; 
+    communityName: string; 
+    assignedUserName: string | null; 
+    responseCount: number 
+  })[]> {
+    const allTickets = await db.select().from(supportTickets).orderBy(desc(supportTickets.createdAt));
+    const allUsers = await db.select().from(users);
+    const allCommunities = await this.getAllCommunities();
+    const allResponses = await db.select().from(ticketResponses);
+
+    const userMap = new Map(allUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`]));
+    const communityMap = new Map(allCommunities.map(c => [c.id, c.name]));
+
+    // Count responses per ticket
+    const responseCountMap = new Map<string, number>();
+    for (const response of allResponses) {
+      responseCountMap.set(response.ticketId, (responseCountMap.get(response.ticketId) || 0) + 1);
+    }
+
+    return allTickets.map(ticket => ({
+      ...ticket,
+      userName: userMap.get(ticket.userId) || 'Utilisateur inconnu',
+      communityName: communityMap.get(ticket.communityId) || 'Communauté inconnue',
+      assignedUserName: ticket.assignedTo ? (userMap.get(ticket.assignedTo) || null) : null,
+      responseCount: responseCountMap.get(ticket.id) || 0
+    }));
+  }
+
+  // =====================================================
+  // PAYMENT TRACKING & ANALYTICS
+  // =====================================================
+
+  // Get detailed payment analytics
+  async getPaymentAnalytics(): Promise<{
+    totalVolume: number;
+    totalVolumeThisMonth: number;
+    failedPayments: { count: number; amount: number };
+    pendingPayments: { count: number; amount: number };
+    completedPayments: { count: number; amount: number };
+    refundedPayments: { count: number; amount: number };
+    failureRate: number;
+    averagePaymentAmount: number;
+    paymentsByMethod: { method: string; count: number; amount: number }[];
+    monthlyForecast: { month: string; expectedRevenue: number }[];
+  }> {
+    const allPayments = await db.select().from(payments);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Group payments by status
+    const byStatus = {
+      pending: allPayments.filter(p => p.status === 'pending'),
+      completed: allPayments.filter(p => p.status === 'completed'),
+      failed: allPayments.filter(p => p.status === 'failed'),
+      refunded: allPayments.filter(p => p.status === 'refunded')
+    };
+
+    const sumAmount = (payments: Payment[]) => payments.reduce((sum, p) => sum + (p.amount || 0), 0) / 100;
+
+    // This month's completed payments
+    const completedThisMonth = byStatus.completed.filter(p => 
+      p.completedAt && new Date(p.completedAt) >= startOfMonth
+    );
+
+    // Group by payment method
+    const methodMap = new Map<string, { count: number; amount: number }>();
+    for (const payment of byStatus.completed) {
+      const method = payment.paymentMethod || 'Autre';
+      const current = methodMap.get(method) || { count: 0, amount: 0 };
+      methodMap.set(method, {
+        count: current.count + 1,
+        amount: current.amount + (payment.amount || 0) / 100
+      });
+    }
+
+    // Calculate failure rate
+    const totalProcessed = byStatus.completed.length + byStatus.failed.length;
+    const failureRate = totalProcessed > 0 ? (byStatus.failed.length / totalProcessed) * 100 : 0;
+
+    // Calculate average payment amount
+    const averagePaymentAmount = byStatus.completed.length > 0 
+      ? sumAmount(byStatus.completed) / byStatus.completed.length 
+      : 0;
+
+    // Monthly forecast (based on current MRR from active subscriptions)
+    const metrics = await this.getPlatformMetrics();
+    const monthlyForecast: { month: string; expectedRevenue: number }[] = [];
+    for (let i = 0; i < 6; i++) {
+      const futureDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const monthStr = futureDate.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+      monthlyForecast.push({
+        month: monthStr,
+        expectedRevenue: metrics.mrr
+      });
+    }
+
+    return {
+      totalVolume: sumAmount(byStatus.completed),
+      totalVolumeThisMonth: sumAmount(completedThisMonth),
+      failedPayments: { count: byStatus.failed.length, amount: sumAmount(byStatus.failed) },
+      pendingPayments: { count: byStatus.pending.length, amount: sumAmount(byStatus.pending) },
+      completedPayments: { count: byStatus.completed.length, amount: sumAmount(byStatus.completed) },
+      refundedPayments: { count: byStatus.refunded.length, amount: sumAmount(byStatus.refunded) },
+      failureRate: Math.round(failureRate * 100) / 100,
+      averagePaymentAmount: Math.round(averagePaymentAmount * 100) / 100,
+      paymentsByMethod: Array.from(methodMap.entries()).map(([method, data]) => ({
+        method,
+        count: data.count,
+        amount: data.amount
+      })),
+      monthlyForecast
+    };
+  }
+
+  // Get pending invoices (unpaid payment requests)
+  async getPendingInvoices(): Promise<(PaymentRequest & { communityName: string; memberName: string })[]> {
+    const pendingRequests = await db.select().from(paymentRequests)
+      .where(eq(paymentRequests.status, 'pending'))
+      .orderBy(desc(paymentRequests.createdAt));
+    
+    const allCommunities = await this.getAllCommunities();
+    const allMemberships = await db.select().from(userCommunityMemberships);
+    
+    const communityMap = new Map(allCommunities.map(c => [c.id, c.name]));
+    const membershipMap = new Map(allMemberships.map(m => [m.id, m.displayName || m.email || m.memberId]));
+
+    return pendingRequests.map(req => ({
+      ...req,
+      communityName: communityMap.get(req.communityId) || 'Communauté inconnue',
+      memberName: membershipMap.get(req.membershipId) || 'Membre inconnu'
+    }));
+  }
+
+  // Get recent failed payments with details
+  async getRecentFailedPayments(limit: number = 20): Promise<(Payment & { communityName: string })[]> {
+    const failedPayments = await db.select().from(payments)
+      .where(eq(payments.status, 'failed'))
+      .orderBy(desc(payments.createdAt))
+      .limit(limit);
+    
+    const allCommunities = await this.getAllCommunities();
+    const communityMap = new Map(allCommunities.map(c => [c.id, c.name]));
+
+    return failedPayments.map(p => ({
+      ...p,
+      communityName: communityMap.get(p.communityId) || 'Communauté inconnue'
+    }));
   }
 }
 
