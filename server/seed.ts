@@ -1,79 +1,127 @@
 import { db } from "./db";
-import { plans, communities, users, userCommunityMemberships, faqs, newsArticles, events } from "@shared/schema";
+import { plans, communities, users, userCommunityMemberships, faqs, newsArticles, events, PLAN_CODES } from "@shared/schema";
 import { sql } from "drizzle-orm";
 
 async function seed() {
   console.log("Seeding database...");
 
-  // Seed plans
+  // Seed plans with the new structure
   await db.insert(plans).values([
     {
-      id: "free",
-      name: "Free Starter",
-      maxMembers: 100,
+      id: "starter",
+      code: PLAN_CODES.STARTER_FREE,
+      name: "Starter",
+      description: "Idéal pour les petites communautés qui débutent",
+      maxMembers: 50,
       priceMonthly: 0,
       priceYearly: 0,
       features: [
-        "Up to 100 members",
-        "Basic member database",
-        "Digital membership cards",
-        "Community news feed",
-        "Email support"
+        "Jusqu'à 50 membres",
+        "Cartes de membre digitales",
+        "Fil d'actualités",
+        "Événements basiques",
+        "Support par email"
       ],
-      isPopular: false
+      isPopular: false,
+      isPublic: true,
+      isCustom: false,
+      isWhiteLabel: false,
+      sortOrder: 1
     },
     {
-      id: "growth",
-      name: "Growth",
-      maxMembers: 500,
-      priceMonthly: 4900,
-      priceYearly: 49000,
+      id: "standard",
+      code: PLAN_CODES.COMMUNAUTE_STANDARD,
+      name: "Communauté Plus",
+      description: "Pour les associations et clubs en croissance",
+      maxMembers: 1000,
+      priceMonthly: 990, // 9.90€
+      priceYearly: 9900, // 99€
       features: [
-        "Up to 500 members",
-        "Advanced member management",
-        "Digital membership cards with QR codes",
-        "News feed & event management",
-        "Member messaging system",
-        "Basic analytics",
-        "Priority email support"
+        "Jusqu'à 1 000 membres",
+        "Cartes de membre avec QR code",
+        "Gestion des cotisations",
+        "Événements et inscriptions",
+        "Messagerie membres-admins",
+        "Statistiques de base",
+        "Support prioritaire"
       ],
-      isPopular: true
+      isPopular: true,
+      isPublic: true,
+      isCustom: false,
+      isWhiteLabel: false,
+      sortOrder: 2
     },
     {
-      id: "scale",
-      name: "Scale",
-      maxMembers: 2000,
-      priceMonthly: 14900,
-      priceYearly: 149000,
+      id: "pro",
+      code: PLAN_CODES.COMMUNAUTE_PRO,
+      name: "Communauté Pro",
+      description: "Pour les grandes organisations avec des besoins avancés",
+      maxMembers: 5000,
+      priceMonthly: 2900, // 29€
+      priceYearly: 29000, // 290€
       features: [
-        "Up to 2,000 members",
-        "Multi-role admin management",
-        "Custom branding & theming",
-        "Advanced analytics & reporting",
-        "Automated contribution tracking",
-        "Section/regional management",
-        "API access",
-        "24/7 phone & email support"
+        "Jusqu'à 5 000 membres",
+        "Multi-administrateurs avec rôles",
+        "Sections/régions illimitées",
+        "Personnalisation complète",
+        "Analytiques avancées",
+        "Export de données",
+        "Intégrations API",
+        "Support 24/7"
       ],
-      isPopular: false
+      isPopular: false,
+      isPublic: true,
+      isCustom: false,
+      isWhiteLabel: false,
+      sortOrder: 3
     },
     {
       id: "enterprise",
-      name: "Enterprise",
-      maxMembers: 999999,
-      priceMonthly: 0,
-      priceYearly: 0,
+      code: PLAN_CODES.ENTREPRISE_CUSTOM,
+      name: "Grand Compte",
+      description: "Solution sur mesure pour les très grandes organisations",
+      maxMembers: null, // Unlimited
+      priceMonthly: null, // Custom pricing
+      priceYearly: null, // Custom pricing
       features: [
-        "Unlimited members",
-        "Full customization",
-        "Dedicated success manager",
-        "Custom integrations",
-        "Advanced security & compliance",
-        "Multi-language support",
-        "White-label options",
-        "SLA guarantee"
+        "Membres illimités",
+        "Configuration personnalisée",
+        "Manager de succès dédié",
+        "Intégrations sur mesure",
+        "SLA garanti",
+        "Formation des équipes",
+        "Sécurité renforcée",
+        "Support prioritaire 24/7"
       ],
-      isPopular: false
+      isPopular: false,
+      isPublic: true,
+      isCustom: true,
+      isWhiteLabel: false,
+      sortOrder: 4
+    },
+    {
+      id: "whitelabel",
+      code: PLAN_CODES.WHITE_LABEL,
+      name: "Koomy White Label",
+      description: "Votre propre plateforme à vos couleurs",
+      maxMembers: null, // Unlimited
+      priceMonthly: null, // Custom pricing
+      priceYearly: 490000, // À partir de 4900€/an
+      features: [
+        "Plateforme en marque blanche",
+        "Nom de domaine personnalisé",
+        "Branding complet",
+        "App mobile personnalisée",
+        "Membres illimités",
+        "Toutes les fonctionnalités Pro",
+        "Support dédié premium",
+        "Maintenance incluse"
+      ],
+      isPopular: false,
+      isPublic: true,
+      isCustom: false,
+      isWhiteLabel: true,
+      sortOrder: 5
     }
   ]).onConflictDoNothing();
 
@@ -117,7 +165,7 @@ async function seed() {
     }
   ]).onConflictDoNothing();
 
-  // Create sample community
+  // Create sample community with starter plan (auto-assigned to new communities)
   const [community] = await db.insert(communities).values({
     name: "UNSA - Union Nationale des Syndicats Autonomes",
     logo: "https://api.dicebear.com/7.x/shapes/svg?seed=unsa",
@@ -125,8 +173,9 @@ async function seed() {
     secondaryColor: "350 80% 55%",
     description: "National union organization for autonomous workers",
     memberCount: 0,
-    planId: "growth",
-    subscriptionStatus: "active"
+    planId: "standard", // Using standard plan for demo purposes
+    subscriptionStatus: "active",
+    billingStatus: "active"
   }).returning().onConflictDoNothing();
 
   if (community) {

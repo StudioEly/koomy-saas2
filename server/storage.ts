@@ -1,6 +1,6 @@
 import { 
   users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, faqs, messages,
-  membershipFees, paymentRequests, payments, accounts, commercialContacts,
+  membershipFees, paymentRequests, payments, accounts, commercialContacts, PLAN_CODES,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
@@ -9,10 +9,27 @@ import {
   type MembershipFee, type InsertMembershipFee, type PaymentRequest, type InsertPaymentRequest,
   type Payment, type InsertPayment,
   type Account, type InsertAccount,
-  type CommercialContact, type InsertCommercialContact
+  type CommercialContact, type InsertCommercialContact,
+  type PlanCode
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, isNull } from "drizzle-orm";
+import { eq, and, desc, isNull, asc, sql } from "drizzle-orm";
+
+// Custom error for member limit reached
+export class MemberLimitReachedError extends Error {
+  constructor(currentCount: number, maxMembers: number, planName: string) {
+    super(`Votre communauté a atteint la limite de ${maxMembers} membres pour le plan ${planName}. Merci de mettre à niveau votre abonnement.`);
+    this.name = "MemberLimitReachedError";
+  }
+}
+
+// Custom error for plan downgrade not allowed
+export class PlanDowngradeNotAllowedError extends Error {
+  constructor(currentCount: number, newMaxMembers: number, newPlanName: string) {
+    super(`Impossible de passer au plan ${newPlanName} car votre communauté compte ${currentCount} membres, ce qui dépasse la limite de ${newMaxMembers} membres du nouveau plan.`);
+    this.name = "PlanDowngradeNotAllowedError";
+  }
+}
 
 export interface IStorage {
   // Accounts (Public App Users)
@@ -36,8 +53,14 @@ export interface IStorage {
   
   // Plans
   getAllPlans(): Promise<Plan[]>;
+  getPublicPlans(): Promise<Plan[]>;
   getPlan(id: string): Promise<Plan | undefined>;
+  getPlanByCode(code: string): Promise<Plan | undefined>;
   createPlan(plan: InsertPlan): Promise<Plan>;
+  
+  // Plan Changes
+  changeCommunityPlan(communityId: string, newPlanId: string): Promise<Community>;
+  checkMemberQuota(communityId: string): Promise<{ canAdd: boolean; current: number; max: number | null; planName: string }>;
   
   // Memberships
   getUserMemberships(userId: string): Promise<UserCommunityMembership[]>;
@@ -181,7 +204,13 @@ export class DatabaseStorage implements IStorage {
 
   // Plans
   async getAllPlans(): Promise<Plan[]> {
-    return await db.select().from(plans);
+    return await db.select().from(plans).orderBy(asc(plans.sortOrder));
+  }
+
+  async getPublicPlans(): Promise<Plan[]> {
+    return await db.select().from(plans)
+      .where(eq(plans.isPublic, true))
+      .orderBy(asc(plans.sortOrder));
   }
 
   async getPlan(id: string): Promise<Plan | undefined> {
@@ -189,9 +218,63 @@ export class DatabaseStorage implements IStorage {
     return plan || undefined;
   }
 
+  async getPlanByCode(code: string): Promise<Plan | undefined> {
+    const [plan] = await db.select().from(plans).where(eq(plans.code, code));
+    return plan || undefined;
+  }
+
   async createPlan(insertPlan: InsertPlan): Promise<Plan> {
     const [plan] = await db.insert(plans).values(insertPlan as any).returning();
     return plan;
+  }
+
+  // Plan Changes
+  async changeCommunityPlan(communityId: string, newPlanId: string): Promise<Community> {
+    const community = await this.getCommunity(communityId);
+    if (!community) {
+      throw new Error("Communauté non trouvée");
+    }
+
+    const newPlan = await this.getPlan(newPlanId);
+    if (!newPlan) {
+      throw new Error("Plan non trouvé");
+    }
+
+    // Check if downgrade is possible (member count <= new plan max members)
+    if (newPlan.maxMembers !== null && community.memberCount > newPlan.maxMembers) {
+      throw new PlanDowngradeNotAllowedError(community.memberCount, newPlan.maxMembers, newPlan.name);
+    }
+
+    // Update the community's plan
+    const [updated] = await db.update(communities)
+      .set({ planId: newPlanId })
+      .where(eq(communities.id, communityId))
+      .returning();
+    
+    return updated;
+  }
+
+  async checkMemberQuota(communityId: string): Promise<{ canAdd: boolean; current: number; max: number | null; planName: string }> {
+    const community = await this.getCommunity(communityId);
+    if (!community) {
+      throw new Error("Communauté non trouvée");
+    }
+
+    const plan = await this.getPlan(community.planId);
+    if (!plan) {
+      throw new Error("Plan non trouvé");
+    }
+
+    const current = community.memberCount;
+    const max = plan.maxMembers;
+    const canAdd = max === null || current < max;
+
+    return {
+      canAdd,
+      current,
+      max,
+      planName: plan.name
+    };
   }
 
   // Memberships
@@ -225,7 +308,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMembership(insertMembership: InsertMembership): Promise<UserCommunityMembership> {
+    // Check member quota before creating
+    const quota = await this.checkMemberQuota(insertMembership.communityId);
+    if (!quota.canAdd) {
+      throw new MemberLimitReachedError(quota.current, quota.max!, quota.planName);
+    }
+
+    // Create the membership
     const [membership] = await db.insert(userCommunityMemberships).values(insertMembership).returning();
+    
+    // Update the community member count
+    await this.updateCommunityMemberCount(insertMembership.communityId, quota.current + 1);
+    
     return membership;
   }
 

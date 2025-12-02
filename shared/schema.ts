@@ -52,16 +52,36 @@ export const accounts = pgTable("accounts", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// Billing Status Enum
+export const billingStatusEnum = pgEnum("billing_status", ["trialing", "active", "past_due", "canceled", "unpaid"]);
+
 // Plans Table
 export const plans = pgTable("plans", {
   id: varchar("id", { length: 50 }).primaryKey(),
+  code: text("code").notNull().unique(),
   name: text("name").notNull(),
-  maxMembers: integer("max_members").notNull(),
-  priceMonthly: integer("price_monthly").notNull(), // in cents
-  priceYearly: integer("price_yearly").notNull(), // in cents
+  description: text("description"),
+  maxMembers: integer("max_members"), // null = unlimited
+  priceMonthly: integer("price_monthly"), // in cents, null for custom/enterprise
+  priceYearly: integer("price_yearly"), // in cents, null for custom/enterprise
   features: jsonb("features").$type<string[]>().notNull(),
-  isPopular: boolean("is_popular").default(false)
+  isPopular: boolean("is_popular").default(false),
+  isPublic: boolean("is_public").default(true),
+  isCustom: boolean("is_custom").default(false),
+  isWhiteLabel: boolean("is_white_label").default(false),
+  sortOrder: integer("sort_order").default(0)
 });
+
+// Plan codes constants
+export const PLAN_CODES = {
+  STARTER_FREE: "STARTER_FREE",
+  COMMUNAUTE_STANDARD: "COMMUNAUTE_STANDARD",
+  COMMUNAUTE_PRO: "COMMUNAUTE_PRO",
+  ENTREPRISE_CUSTOM: "ENTREPRISE_CUSTOM",
+  WHITE_LABEL: "WHITE_LABEL"
+} as const;
+
+export type PlanCode = typeof PLAN_CODES[keyof typeof PLAN_CODES];
 
 // Communities Table (Tenants)
 export const communities = pgTable("communities", {
@@ -98,9 +118,14 @@ export const communities = pgTable("communities", {
   billingPeriod: billingPeriodEnum("billing_period").default("yearly"),
   stripePriceId: text("stripe_price_id"),
   stripeProductId: text("stripe_product_id"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   memberCount: integer("member_count").default(0),
   planId: varchar("plan_id", { length: 50 }).references(() => plans.id).notNull(),
   subscriptionStatus: subscriptionStatusEnum("subscription_status").default("active"),
+  billingStatus: billingStatusEnum("billing_status").default("active"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  currentPeriodEnd: timestamp("current_period_end"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 

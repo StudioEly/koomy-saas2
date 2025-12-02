@@ -1,0 +1,320 @@
+Tu es l’assistant développeur chargé d’implémenter la logique business de l’application Koomy (gestion de communautés : syndicats, associations, clubs sportifs, etc.).
+Le code existe déjà (back office + app client + site public), tu dois analyser le repo et adapter tes choix à la stack actuelle (Node/Express, Laravel, Rails, Nest, etc.).
+
+🎯 Objectif global
+
+Ajouter une gestion de plans tarifaires (pricing) au niveau des communautés.
+
+Appliquer ces plans dans toute la logique métier :
+
+back office (admin Koomy + admins de communauté),
+
+API,
+
+app client,
+
+site public (page “Tarifs” / “Pricing”).
+
+Préparer l’intégration à Stripe (paiement carte bancaire) sans tout coder en dur côté Stripe (prévoir la structure et les hooks).
+
+1️⃣ Plans tarifaires à implémenter
+
+Créer un modèle / table plans (ou équivalent) avec au minimum :
+
+id
+
+code (string, unique):
+
+STARTER_FREE
+
+COMMUNAUTE_STANDARD
+
+COMMUNAUTE_PRO
+
+ENTREPRISE_CUSTOM
+
+WHITE_LABEL
+
+name (string, affichage)
+
+description (texte court)
+
+max_members (int ou null illimité)
+
+price_month_eur (decimal, nullable)
+
+price_year_eur (decimal, nullable)
+
+is_public (bool) – visible sur la page pricing ou non
+
+is_custom (bool) – pour les plans sur devis
+
+is_white_label (bool) – pour le plan marque blanche
+
+Prévoir un script de seed avec les valeurs suivantes :
+
+STARTER_FREE – “Starter”
+
+max_members = 50
+
+price_month_eur = 0
+
+price_year_eur = 0
+
+is_public = true
+
+COMMUNAUTE_STANDARD – “Communauté Plus”
+
+max_members = 1000
+
+price_month_eur = 9.90
+
+price_year_eur = 99
+
+is_public = true
+
+COMMUNAUTE_PRO – “Communauté Pro”
+
+max_members = 5000
+
+price_month_eur = 29
+
+price_year_eur = 290
+
+is_public = true
+
+ENTREPRISE_CUSTOM – “Grand Compte”
+
+max_members = null (illimité)
+
+price_month_eur = null
+
+price_year_eur = null
+
+is_public = true
+
+is_custom = true
+
+WHITE_LABEL – “Koomy White Label”
+
+max_members = null (illimité)
+
+price_month_eur = null
+
+price_year_eur = 4900 (prix indicatif min)
+
+is_public = true
+
+is_white_label = true
+
+2️⃣ Lier les plans aux communautés
+
+Identifier le modèle correspondant à une communauté (ex : Community, Organisation, etc.) et :
+
+Ajouter les champs suivants :
+
+plan_id (FK vers plans)
+
+member_count (int, mis à jour automatiquement)
+
+éventuellement billing_status (TRIALING, ACTIVE, PAST_DUE, CANCELED, etc.)
+
+éventuellement stripe_customer_id, stripe_subscription_id (nullable, pour la suite)
+
+Règle par défaut :
+
+Lors de la création d’une nouvelle communauté, affecter automatiquement le plan STARTER_FREE.
+
+3️⃣ Logique de quota de membres
+
+Partout où un membre est créé/ajouté à une communauté (modèle Member, UserCommunity, etc.) :
+
+Avant l’ajout :
+
+Récupérer la communauté et son plan.
+
+Compter le nombre de membres actifs (member_count ou COUNT() si tu préfères).
+
+Si plan.max_members n’est pas null et member_count >= plan.max_members, alors :
+
+Refuser la création du nouveau membre côté backend.
+
+Retourner une erreur structurée, par exemple :
+
+{
+  "error": "MEMBER_LIMIT_REACHED",
+  "message": "Votre communauté a atteint la limite de membres pour votre plan actuel. Merci de mettre à niveau votre abonnement."
+}
+
+
+Après création/suppression :
+
+Mettre à jour member_count de façon fiable (trigger DB, hook ORM ou service dédié).
+
+4️⃣ Intégration dans le back office
+
+Dans le back office, ajouter :
+
+Une page / section “Plans & facturation” pour chaque communauté :
+
+Afficher :
+
+Plan actuel (nom, limites, prix).
+
+Nombre de membres actuel vs. limite (ex : “430 / 1000”).
+
+Statut de facturation (si existant).
+
+Bouton “Mettre à niveau” ou “Changer de plan”.
+
+Un écran global (admin Koomy) :
+
+Liste de toutes les communautés avec :
+
+Nom
+
+Type (syndicat, association, club sportif, etc. si déjà présent)
+
+Plan actuel
+
+Nombre de membres
+
+Indicateur si proche de la limite (par ex. > 80%).
+
+Logique de changement de plan :
+
+Créer une action backend (route API) du type POST /communities/:id/change-plan :
+
+Paramètres : plan_code ou plan_id.
+
+Vérifier les droits (seul l’admin de la communauté ou l’admin global Koomy peut changer).
+
+Si passage d’un plan plus bas vers plus haut → autorisé.
+
+Si passage d’un plan plus haut vers un plan plus bas, vérifier que member_count <= new_plan.max_members.
+Sinon, retourner une erreur : impossible de downgrader tant que la communauté a trop de membres.
+
+5️⃣ Page publique “Tarifs / Pricing”
+
+Sur le site public Koomy, ajouter une page (front) dédiée aux tarifs, par exemple /pricing ou /tarifs :
+
+Afficher 5 cartes (ou sections) pour :
+
+Starter (gratuit, jusqu’à 50 membres)
+
+Communauté Plus (9,90 €/mois ou 99 €/an, jusqu’à 1000 membres)
+
+Communauté Pro (29 €/mois ou 290 €/an, jusqu’à 5000 membres)
+
+Grand Compte (sur devis)
+
+Marque Blanche (à partir de 4900 €/an)
+
+Pour chaque plan public & non custom, afficher :
+
+Nom
+
+Prix mensuel & annuel
+
+Limite de membres
+
+CTA :
+
+Si l’utilisateur n’est pas connecté : “Créer une communauté avec ce plan”
+
+Si connecté : “Choisir ce plan pour ma communauté”
+
+Pour les plans Grand Compte et White Label :
+
+Pas de souscription directe, mais un bouton “Demander un devis” (qui ouvre un formulaire simple de contact ou envoie un email à un contact admin défini dans la config).
+
+Important : adapter le code front à la stack existante (React, Next.js, Blade, etc.).
+Si possible, centraliser les définitions des plans dans l’API et récupérer la liste des plans via un endpoint GET /plans?public=true.
+
+6️⃣ API & app client
+
+Exposer la notion de plan dans l’API :
+
+Dans les réponses autour des communautés (GET /me/communities, GET /community/:id, etc.), inclure :
+
+plan : { code, name, max_members, price_month_eur, price_year_eur }
+
+member_count
+
+App client (mobile/web) :
+
+Lorsque l’utilisateur admin tente d’ajouter un membre et que la limite est atteinte, afficher :
+
+Un message clair expliquant :
+
+la limite du plan
+
+la possibilité de mettre à niveau
+
+Prévoir un écran “Mon plan” dans la partie Paramètres de la communauté.
+
+7️⃣ Préparation à Stripe (structure)
+
+Sans tout implémenter dans le détail, prévoir dans le code :
+
+Un mapping plan_code → stripe_price_id_month / stripe_price_id_year configurable via variables d’environnement (ex : STRIPE_PRICE_STANDARD_MONTH, etc.).
+
+Une route backend d’intention de souscription, par exemple :
+
+POST /billing/checkout-session
+
+Paramètres : community_id, plan_code, billing_cycle (month ou year)
+
+Créer une Session de paiement Stripe (si la lib Stripe est déjà présente) ou au minimum structurer la fonction à implémenter plus tard.
+
+Un champ billing_status mis à jour après succès du paiement (prévoir la structure pour une future implémentation des webhooks Stripe).
+
+Si Stripe n’est pas encore installé dans le projet, créé la structure (services, handlers) commentée ou avec TODO explicites.
+
+8️⃣ Sécurité & tests
+
+Ajouter des middlewares/guards pour vérifier :
+
+Que seuls les admins peuvent changer le plan de leur communauté.
+
+Que les limites de membres sont systématiquement vérifiées côté backend (ne pas se reposer uniquement sur le front).
+
+Ajouter quelques tests unitaires / d’intégration :
+
+Création de communauté → plan STARTER_FREE automatiquement assigné.
+
+Ajout de membres jusqu’à la limite → OK.
+
+Ajout de membres au-delà de la limite → rejeté.
+
+Downgrade vers un plan inférieur alors que member_count dépasse le max_members du nouveau plan → rejeté.
+
+9️⃣ Ce que tu dois faire concrètement dans le repo
+
+Analyser la stack existante (framework, ORM, structure du front).
+
+Créer :
+
+La migration / modèle plans.
+
+Le seed initial avec les 5 plans.
+
+Les champs supplémentaires sur le modèle de communauté.
+
+Ajouter :
+
+La logique de quota membres dans les services / controllers concernés.
+
+Les endpoints & services pour changer de plan.
+
+La page publique de pricing.
+
+L’affichage du plan actuel et de la consommation dans le back office et l’app client.
+
+Préparer :
+
+La structure de facturation Stripe (services, mapping plan_code → stripe_price_id, etc.).
+
+Ajouter quelques tests et commentaires TODO pour les parties à implémenter plus tard (webhooks Stripe, etc.).
+
+Merci d’appliquer ces changements de manière cohérente avec l’architecture existante et de garder le code propre, typé si possible (TypeScript, etc.), bien commenté, et prêt à évoluer.
