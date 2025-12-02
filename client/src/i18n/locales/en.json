@@ -290,5 +290,32 @@
   "common": {
     "or": "or",
     "required": "*"
+  },
+  "cookies": {
+    "title": "🍪 We respect your privacy",
+    "description": "This site uses cookies to enhance your experience. Some cookies are essential for the site to function, others help us understand how you use it.",
+    "customize": "Customize my choices",
+    "acceptAll": "Accept all",
+    "rejectAll": "Reject all",
+    "savePreferences": "Save my preferences",
+    "settingsTitle": "Cookie settings",
+    "moreInfo": "To learn more, see our",
+    "privacyPolicy": "privacy policy",
+    "necessary": {
+      "title": "Essential cookies",
+      "desc": "Required for the site to work. Cannot be disabled."
+    },
+    "analytics": {
+      "title": "Analytics cookies",
+      "desc": "Help us understand how you use the site to improve it."
+    },
+    "marketing": {
+      "title": "Marketing cookies",
+      "desc": "Used to display relevant ads and measure their effectiveness."
+    },
+    "functional": {
+      "title": "Functional cookies",
+      "desc": "Enable personalized features like language and preferences."
+    }
   }
 }

@@ -290,5 +290,32 @@
   "common": {
     "or": "ou",
     "required": "*"
+  },
+  "cookies": {
+    "title": "🍪 Nous respectons votre vie privée",
+    "description": "Ce site utilise des cookies pour améliorer votre expérience. Certains cookies sont essentiels au fonctionnement du site, d'autres nous aident à comprendre comment vous l'utilisez.",
+    "customize": "Personnaliser mes choix",
+    "acceptAll": "Tout accepter",
+    "rejectAll": "Tout refuser",
+    "savePreferences": "Enregistrer mes préférences",
+    "settingsTitle": "Paramètres des cookies",
+    "moreInfo": "Pour en savoir plus, consultez notre",
+    "privacyPolicy": "politique de confidentialité",
+    "necessary": {
+      "title": "Cookies essentiels",
+      "desc": "Nécessaires au fonctionnement du site. Ne peuvent pas être désactivés."
+    },
+    "analytics": {
+      "title": "Cookies analytiques",
+      "desc": "Nous aident à comprendre comment vous utilisez le site pour l'améliorer."
+    },
+    "marketing": {
+      "title": "Cookies marketing",
+      "desc": "Utilisés pour afficher des publicités pertinentes et mesurer leur efficacité."
+    },
+    "functional": {
+      "title": "Cookies fonctionnels",
+      "desc": "Permettent des fonctionnalités personnalisées comme la langue et les préférences."
+    }
   }
 }
