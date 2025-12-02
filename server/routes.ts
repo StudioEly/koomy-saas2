@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { storage } from "./storage";
+import { storage, MemberLimitReachedError, PlanDowngradeNotAllowedError } from "./storage";
 import {
   insertUserSchema, insertCommunitySchema, insertMembershipSchema,
   insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
@@ -464,11 +464,69 @@ export async function registerRoutes(
   // Plans Routes
   app.get("/api/plans", async (req, res) => {
     try {
-      const plans = await storage.getAllPlans();
+      const publicOnly = req.query.public === "true";
+      const plans = publicOnly 
+        ? await storage.getPublicPlans() 
+        : await storage.getAllPlans();
       return res.json(plans);
     } catch (error) {
       console.error("Get plans error:", error);
       return res.status(500).json({ error: "Failed to fetch plans" });
+    }
+  });
+
+  app.get("/api/plans/:id", async (req, res) => {
+    try {
+      const plan = await storage.getPlan(req.params.id);
+      if (!plan) {
+        return res.status(404).json({ error: "Plan non trouvé" });
+      }
+      return res.json(plan);
+    } catch (error) {
+      console.error("Get plan error:", error);
+      return res.status(500).json({ error: "Failed to fetch plan" });
+    }
+  });
+
+  app.get("/api/plans/code/:code", async (req, res) => {
+    try {
+      const plan = await storage.getPlanByCode(req.params.code);
+      if (!plan) {
+        return res.status(404).json({ error: "Plan non trouvé" });
+      }
+      return res.json(plan);
+    } catch (error) {
+      console.error("Get plan by code error:", error);
+      return res.status(500).json({ error: "Failed to fetch plan" });
+    }
+  });
+
+  // Community Plan Management
+  app.get("/api/communities/:id/quota", async (req, res) => {
+    try {
+      const quota = await storage.checkMemberQuota(req.params.id);
+      return res.json(quota);
+    } catch (error) {
+      console.error("Check member quota error:", error);
+      return res.status(500).json({ error: "Failed to check member quota" });
+    }
+  });
+
+  app.patch("/api/communities/:id/plan", async (req, res) => {
+    try {
+      const { planId } = req.body;
+      if (!planId) {
+        return res.status(400).json({ error: "planId est requis" });
+      }
+      
+      const community = await storage.changeCommunityPlan(req.params.id, planId);
+      return res.json(community);
+    } catch (error: any) {
+      if (error.name === "PlanDowngradeNotAllowedError") {
+        return res.status(400).json({ error: error.message });
+      }
+      console.error("Change community plan error:", error);
+      return res.status(500).json({ error: "Failed to change community plan" });
     }
   });
 
@@ -556,13 +614,16 @@ export async function registerRoutes(
         email: validated.email || null
       });
       
-      const memberships = await storage.getCommunityMemberships(validated.communityId);
-      await storage.updateCommunityMemberCount(validated.communityId, memberships.length);
-      
       return res.status(201).json(membership);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      if (error instanceof MemberLimitReachedError) {
+        return res.status(403).json({ 
+          error: error.message,
+          code: "MEMBER_LIMIT_REACHED"
+        });
       }
       console.error("Create membership error:", error);
       return res.status(500).json({ error: "Failed to create membership" });
