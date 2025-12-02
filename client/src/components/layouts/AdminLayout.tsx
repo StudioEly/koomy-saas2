@@ -79,16 +79,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {navItems.map((item) => {
             const isActive = location === item.path;
             return (
-              <Link key={item.path} href={item.path}>
-                <a className={cn(
+              <Link 
+                key={item.path} 
+                href={item.path}
+                className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive 
                     ? "bg-sidebar-accent text-sidebar-accent-foreground" 
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-white"
-                )}>
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                </a>
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.label}
               </Link>
             );
           })}
