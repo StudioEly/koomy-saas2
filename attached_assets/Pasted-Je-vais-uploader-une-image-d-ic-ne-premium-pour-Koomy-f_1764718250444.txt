@@ -1,0 +1,77 @@
+Je vais uploader une image d’icône premium pour Koomy (format 512×512).
+
+Je veux que tu l’intègres dans le projet de la manière suivante :
+
+🎨 1. FAVICON (toutes les pages)
+
+Place l’image dans un dossier approprié (par exemple :
+public/icons/koomy-icon-512.png)
+
+Ajoute automatiquement toutes les balises favicon dans le <head> de toutes les pages ou du layout global (selon la structure du projet).
+
+Les balises à ajouter :
+
+<link rel="icon" type="image/png" href="/icons/koomy-icon-512.png" />
+<link rel="shortcut icon" type="image/png" href="/icons/koomy-icon-512.png" />
+
+
+Assure-toi que la favicon Replit est complètement supprimée.
+
+📱 2. ICÔNE POUR AJOUT À L’ÉCRAN D’ACCUEIL (PWA)
+
+Je veux que l’app user (app.koomy.app) affiche cette même icône quand un utilisateur fait
+➡ « Ajouter à l’écran d’accueil » sur iOS ou Android.
+
+Pour cela :
+
+Crée (ou mets à jour) le fichier manifest.json dans le dossier public (généralement /public/manifest.json).
+
+Assure-toi que le manifest est bien lié dans le <head> :
+
+<link rel="manifest" href="/manifest.json" />
+
+
+Mets à jour le contenu du manifest pour utiliser l’icône que je vais uploader :
+
+{
+  "name": "Koomy",
+  "short_name": "Koomy",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f3df4",
+  "icons": [
+    {
+      "src": "/icons/koomy-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/koomy-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+
+
+Génère automatiquement les tailles nécessaires :
+
+512×512
+
+192×192
+
+Et ajoute-les dans /public/icons.
+
+Vérifie que la PWA fonctionne pour afficher l’icône sur l’écran d’accueil (supprime l’ancienne icône Replit).
+
+🛠️ 3. IMPORTANT : Ce changement ne doit PAS affecter les autres plateformes (admin, backoffice, owner)
+
+➡ Pour l’instant, mets l’icône uniquement pour l’app user (app.koomy.app).
+➡ Plus tard, je t’enverrai une autre icône pour l’app admin.
+
+✅ 4. Une fois terminé
+
+Fais un commit clair :
+
+feat: add Koomy favicon + PWA home-screen icon for user app
