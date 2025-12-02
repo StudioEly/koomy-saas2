@@ -22,6 +22,55 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+// Host-based routing middleware for Koomy subdomains
+// Rewrites URLs internally based on hostname without redirecting
+app.use((req, res, next) => {
+  const host = req.hostname;
+  const path = req.path;
+  
+  // Don't rewrite API routes - they should work as-is
+  if (path.startsWith('/api')) {
+    return next();
+  }
+  
+  // Don't rewrite if already on the correct path prefix
+  if (host === 'app.koomy.app') {
+    if (!path.startsWith('/app')) {
+      if (path === '/') {
+        req.url = '/app/login';
+      } else {
+        req.url = '/app' + req.url;
+      }
+    }
+  } else if (host === 'app-pro.koomy.app') {
+    if (!path.startsWith('/app/admin')) {
+      if (path === '/') {
+        req.url = '/app/admin/login';
+      } else {
+        req.url = '/app/admin' + req.url;
+      }
+    }
+  } else if (host === 'backoffice.koomy.app') {
+    if (!path.startsWith('/admin')) {
+      if (path === '/') {
+        req.url = '/admin/login';
+      } else {
+        req.url = '/admin' + req.url;
+      }
+    }
+  } else if (host === 'lorpesikoomyadmin.koomy.app') {
+    if (!path.startsWith('/platform')) {
+      if (path === '/') {
+        req.url = '/platform/login';
+      } else {
+        req.url = '/platform' + req.url;
+      }
+    }
+  }
+  
+  next();
+});
+
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",

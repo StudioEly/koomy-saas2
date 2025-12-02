@@ -1,0 +1,141 @@
+Je veux corriger le comportement de mon application Koomy déployée sur Replit pour 4 sous-domaines.
+
+Contexte
+
+Le site public koomy.app est hébergé sur Vercel → tu n’as rien à faire pour ce domaine.
+
+En revanche, 4 sous-domaines pointent maintenant vers Replit, sur ce projet :
+
+app.koomy.app → application utilisateur
+
+app-pro.koomy.app → application admin “pro”
+
+backoffice.koomy.app → backoffice admin de club
+
+lorpesikoomyadmin.koomy.app → plateforme SaaS owner
+
+Dans ce projet Replit, j’ai :
+
+un hub à la racine / (que je ne veux plus montrer aux utilisateurs),
+
+des sous-sections :
+
+/app avec page de login /app/login
+
+/app/admin avec page de login /app/admin/login
+
+/admin avec page de login /admin/login
+
+/platform avec page de login /platform/login
+
+un backend Express (API) déjà en place.
+
+Actuellement, quand je visite un de ces sous-domaines, j’arrive sur le hub (route /) au lieu de la bonne section.
+
+Objectif
+
+Je veux que le serveur Express route en fonction du host (domaine), de façon interne, sans redirection visible :
+
+Si le host est app.koomy.app :
+
+/ doit servir la même chose que /app/login
+
+toute autre route (/xxx) doit être traitée comme /app/xxx
+
+Si le host est app-pro.koomy.app :
+
+/ doit servir la même chose que /app/admin/login
+
+toute autre route (/xxx) doit être traitée comme /app/admin/xxx
+
+Si le host est backoffice.koomy.app :
+
+/ doit servir la même chose que /admin/login
+
+toute autre route (/xxx) doit être traitée comme /admin/xxx
+
+Si le host est lorpesikoomyadmin.koomy.app :
+
+/ doit servir la même chose que /platform/login
+
+toute autre route (/xxx) doit être traitée comme /platform/xxx
+
+Je veux que tout ça se fasse par réécriture interne (modification de req.url ou req.path dans un middleware Express), sans res.redirect, de façon à ce que l’utilisateur voie toujours :
+
+https://app.koomy.app/...
+
+https://app-pro.koomy.app/...
+
+https://backoffice.koomy.app/...
+
+https://lorpesikoomyadmin.koomy.app/...
+
+Ce que tu dois faire dans le code
+
+Localise le point d’entrée du serveur Express (probablement server.js, index.js ou similaire).
+
+Ajoute un middleware global avant la configuration des routes statiques / React (avant app.use(express.static(...)) ou équivalent) qui :
+
+lit req.hostname ou req.headers.host,
+
+selon le host, réécrit req.url conformément aux règles ci-dessus,
+
+n’appelle pas res.redirect, mais seulement next().
+
+Exemple de logique à adapter :
+
+app.use((req, res, next) => {
+  const host = req.hostname;
+
+  if (host === 'app.koomy.app') {
+    if (req.path === '/') {
+      req.url = '/app/login';
+    } else {
+      req.url = '/app' + req.url;
+    }
+  } else if (host === 'app-pro.koomy.app') {
+    if (req.path === '/') {
+      req.url = '/app/admin/login';
+    } else {
+      req.url = '/app/admin' + req.url;
+    }
+  } else if (host === 'backoffice.koomy.app') {
+    if (req.path === '/') {
+      req.url = '/admin/login';
+    } else {
+      req.url = '/admin' + req.url;
+    }
+  } else if (host === 'lorpesikoomyadmin.koomy.app') {
+    if (req.path === '/') {
+      req.url = '/platform/login';
+    } else {
+      req.url = '/platform' + req.url;
+    }
+  }
+
+  next();
+});
+
+
+Merci d’ajuster cette logique si la structure exacte des routes est légèrement différente.
+
+Vérifie ensuite que :
+
+https://app.koomy.app affiche bien le login user (/app/login)
+
+https://app-pro.koomy.app affiche le login admin pro (/app/admin/login)
+
+https://backoffice.koomy.app affiche le login backoffice (/admin/login)
+
+https://lorpesikoomyadmin.koomy.app affiche le login SaaS owner (/platform/login)
+
+les routes API (ex : /api/admin/login) continuent de fonctionner normalement.
+
+Fais un commit Git avec un message du type :
+"Add host-based routing middleware for Koomy subdomains"
+
+Rappel
+
+Ne touche pas à koomy.app dans ce projet : il est géré par Vercel sur un autre déploiement.
+
+Le but est uniquement de faire en sorte que les sous-domaines qui arrivent sur Replit ne montrent plus le hub, mais la bonne section, tout en gardant les redirections invisibles pour l’utilisateur.
