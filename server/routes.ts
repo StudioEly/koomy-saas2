@@ -1207,6 +1207,69 @@ export async function registerRoutes(
     }
   });
 
+  // =====================================================
+  // PLATFORM ADMIN: FULL ACCESS MANAGEMENT
+  // =====================================================
+
+  // Grant full access to a community (platform super admin only)
+  app.post("/api/platform/communities/:id/full-access", async (req, res) => {
+    try {
+      const { grantedBy, reason, expiresAt } = req.body;
+
+      if (!grantedBy || !reason) {
+        return res.status(400).json({ error: "grantedBy and reason are required" });
+      }
+
+      // Parse expiresAt if provided (can be null for permanent access)
+      const expiresAtDate = expiresAt ? new Date(expiresAt) : null;
+
+      const community = await storage.grantFullAccess(
+        req.params.id,
+        grantedBy,
+        reason,
+        expiresAtDate
+      );
+
+      return res.json({ 
+        success: true, 
+        community,
+        message: expiresAtDate 
+          ? `Accès complet accordé jusqu'au ${expiresAtDate.toLocaleDateString('fr-FR')}`
+          : "Accès complet permanent accordé"
+      });
+    } catch (error: any) {
+      console.error("Grant full access error:", error);
+      return res.status(500).json({ error: error.message || "Failed to grant full access" });
+    }
+  });
+
+  // Revoke full access from a community (platform super admin only)
+  app.delete("/api/platform/communities/:id/full-access", async (req, res) => {
+    try {
+      const community = await storage.revokeFullAccess(req.params.id);
+
+      return res.json({ 
+        success: true, 
+        community,
+        message: "Accès complet révoqué"
+      });
+    } catch (error: any) {
+      console.error("Revoke full access error:", error);
+      return res.status(500).json({ error: error.message || "Failed to revoke full access" });
+    }
+  });
+
+  // Get all communities with full access (platform super admin only)
+  app.get("/api/platform/full-access-communities", async (req, res) => {
+    try {
+      const communities = await storage.getCommunitiesWithFullAccess();
+      return res.json(communities);
+    } catch (error: any) {
+      console.error("Get full access communities error:", error);
+      return res.status(500).json({ error: "Failed to get communities with full access" });
+    }
+  });
+
   // ChatGPT-powered Chat for Public Website
   const openai = new OpenAI({
     apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
