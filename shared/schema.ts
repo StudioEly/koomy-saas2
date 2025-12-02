@@ -126,6 +126,11 @@ export const communities = pgTable("communities", {
   billingStatus: billingStatusEnum("billing_status").default("active"),
   trialEndsAt: timestamp("trial_ends_at"),
   currentPeriodEnd: timestamp("current_period_end"),
+  // Full access override (granted by platform super admin)
+  fullAccessGrantedAt: timestamp("full_access_granted_at"),
+  fullAccessExpiresAt: timestamp("full_access_expires_at"), // null = permanent
+  fullAccessReason: text("full_access_reason"),
+  fullAccessGrantedBy: varchar("full_access_granted_by", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
