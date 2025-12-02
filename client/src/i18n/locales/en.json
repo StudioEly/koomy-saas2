@@ -6,7 +6,25 @@
     "contact": "Contact",
     "demo": "Request a Demo",
     "login": "Log in",
-    "signup": "Sign up"
+    "signup": "Sign up",
+    "faq": "FAQ"
+  },
+  "login": {
+    "title": "Log in to Koomy",
+    "subtitle": "Access your admin or member space",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "submit": "Log in",
+    "loading": "Logging in...",
+    "demo": "Demo:",
+    "demoHint": "admin@unsa.org (Admin) / member@unsa.org (Member)",
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create an account",
+    "success": "Login successful!",
+    "error": "Login error",
+    "createClub": "Create my club"
   },
   "home": {
     "hero": {

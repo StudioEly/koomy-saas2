@@ -6,7 +6,25 @@
     "contact": "Contact",
     "demo": "Demander une démo",
     "login": "Se connecter",
-    "signup": "Créer un compte"
+    "signup": "Créer un compte",
+    "faq": "FAQ"
+  },
+  "login": {
+    "title": "Connexion à Koomy",
+    "subtitle": "Accédez à votre espace administrateur ou membre",
+    "email": "Email",
+    "emailPlaceholder": "votre@email.com",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "submit": "Se connecter",
+    "loading": "Connexion...",
+    "demo": "Demo:",
+    "demoHint": "admin@unsa.org (Admin) / member@unsa.org (Membre)",
+    "noAccount": "Pas encore inscrit ?",
+    "createAccount": "Créer un compte",
+    "success": "Connexion réussie!",
+    "error": "Erreur de connexion",
+    "createClub": "Créer mon club"
   },
   "home": {
     "hero": {

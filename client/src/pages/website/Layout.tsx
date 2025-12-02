@@ -31,7 +31,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
   const navItems = [
     { label: t('nav.features'), path: "/website" },
     { label: t('nav.pricing'), path: "/website/pricing" },
-    { label: "FAQ", path: "/website/faq" },
+    { label: t('nav.faq'), path: "/website/faq" },
     { label: t('nav.contact'), path: "/website/contact" },
   ];
 
@@ -49,7 +49,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
       setIsLoginOpen(false);
       setEmail("");
       setPassword("");
-      toast.success("Connexion réussie!");
+      toast.success(t('login.success'));
       
       // Check if user is admin of any community
       const adminMembership = result.memberships.find(m => m.role === "admin");
@@ -59,7 +59,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
         setLocation("/app/hub");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erreur de connexion");
+      toast.error(error instanceof Error ? error.message : t('login.error'));
     }
   };
 
@@ -110,7 +110,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
             </Button>
             <Link href="/website/signup">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200">
-                {t('nav.signup')}
+                {t('login.createClub')}
               </Button>
             </Link>
           </div>
@@ -168,18 +168,18 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
                 K
               </div>
             </div>
-            <DialogTitle className="text-center text-2xl">Connexion à Koomy</DialogTitle>
+            <DialogTitle className="text-center text-2xl">{t('login.title')}</DialogTitle>
             <p className="text-center text-slate-500 text-sm mt-2">
-              Accédez à votre espace administrateur ou membre
+              {t('login.subtitle')}
             </p>
           </DialogHeader>
           
           <form onSubmit={handleLogin} className="space-y-5 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Email</label>
+              <label className="text-sm font-medium text-slate-700">{t('login.email')}</label>
               <Input 
                 type="email" 
-                placeholder="votre@email.com" 
+                placeholder={t('login.emailPlaceholder')} 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-11"
@@ -189,7 +189,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Mot de passe</label>
+              <label className="text-sm font-medium text-slate-700">{t('login.password')}</label>
               <div className="relative">
                 <Input 
                   type={showPassword ? "text" : "password"} 
@@ -209,7 +209,7 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
               </div>
               <div className="flex justify-end">
                 <a href="#" className="text-xs font-medium text-blue-600 hover:underline">
-                  Mot de passe oublié ?
+                  {t('login.forgotPassword')}
                 </a>
               </div>
             </div>
@@ -220,29 +220,29 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
               disabled={loginMutation.isPending}
               data-testid="modal-button-login"
             >
-              {loginMutation.isPending ? "Connexion..." : (
+              {loginMutation.isPending ? t('login.loading') : (
                 <span className="flex items-center gap-2">
-                  Se connecter <ArrowRight size={18} />
+                  {t('login.submit')} <ArrowRight size={18} />
                 </span>
               )}
             </Button>
 
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-center">
               <p className="text-xs text-blue-700">
-                <strong>Demo:</strong> admin@unsa.org (Admin) / member@unsa.org (Membre)
+                <strong>{t('login.demo')}</strong> {t('login.demoHint')}
               </p>
             </div>
           </form>
 
           <div className="border-t border-slate-100 pt-4 text-center">
             <p className="text-sm text-slate-500">
-              Pas encore inscrit ?{" "}
+              {t('login.noAccount')}{" "}
               <Link 
                 href="/website/signup"
                 className="text-blue-600 font-medium hover:underline"
                 onClick={() => setIsLoginOpen(false)}
               >
-                Créer un compte
+                {t('login.createAccount')}
               </Link>
             </p>
           </div>
