@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
+import MobileContainer from "@/components/MobileContainer";
 
 // Mobile Pages
 import MobileLogin from "@/pages/mobile/Login";
@@ -27,6 +28,15 @@ import MobileAdminHome from "@/pages/mobile/admin/Home";
 import MobileAdminScanner from "@/pages/mobile/admin/Scanner";
 import MobileAdminMessages from "@/pages/mobile/admin/Messages";
 import MobileSupport from "@/pages/mobile/Support";
+
+// Wrapper for mobile pages to force mobile layout
+const withMobileContainer = (Component: React.ComponentType<any>) => {
+  return (props: any) => (
+    <MobileContainer>
+      <Component {...props} />
+    </MobileContainer>
+  );
+};
 
 // Admin Pages (Web)
 import AdminLogin from "@/pages/admin/Login";
@@ -69,10 +79,10 @@ function DomainAwareRoot() {
     return <WebsiteHome />;
   }
   if (hostname === "app.koomy.app") {
-    return <MobileLogin />;
+    return <MobileContainer><MobileLogin /></MobileContainer>;
   }
   if (hostname === "app-pro.koomy.app") {
-    return <MobileAdminLogin />;
+    return <MobileContainer><MobileAdminLogin /></MobileContainer>;
   }
   if (hostname === "backoffice.koomy.app") {
     return <AdminLogin />;
@@ -116,29 +126,29 @@ function Router() {
         }}
       </Route>
       
-      {/* Mobile Routes */}
-      <Route path="/app/login" component={MobileLogin} />
-      <Route path="/app/hub" component={CommunityHub} />
-      <Route path="/app/add-card" component={AddCard} />
+      {/* Mobile Routes - wrapped in MobileContainer for phone-sized display */}
+      <Route path="/app/login" component={withMobileContainer(MobileLogin)} />
+      <Route path="/app/hub" component={withMobileContainer(CommunityHub)} />
+      <Route path="/app/add-card" component={withMobileContainer(AddCard)} />
       
       {/* Dynamic Community Routes */}
-      <Route path="/app/:communityId/home" component={MobileHome} />
-      <Route path="/app/:communityId/card" component={MobileCard} />
-      <Route path="/app/:communityId/news" component={MobileNews} />
-      <Route path="/app/:communityId/news/:articleId" component={MobileNewsDetail} />
-      <Route path="/app/:communityId/events" component={MobileEvents} />
-      <Route path="/app/:communityId/events/:eventId" component={MobileEventDetail} />
-      <Route path="/app/:communityId/messages" component={MobileMessages} />
-      <Route path="/app/:communityId/profile" component={MobileProfile} />
-      <Route path="/app/:communityId/payment" component={MobilePayment} />
-      <Route path="/app/:communityId/support" component={MobileSupport} />
+      <Route path="/app/:communityId/home" component={withMobileContainer(MobileHome)} />
+      <Route path="/app/:communityId/card" component={withMobileContainer(MobileCard)} />
+      <Route path="/app/:communityId/news" component={withMobileContainer(MobileNews)} />
+      <Route path="/app/:communityId/news/:articleId" component={withMobileContainer(MobileNewsDetail)} />
+      <Route path="/app/:communityId/events" component={withMobileContainer(MobileEvents)} />
+      <Route path="/app/:communityId/events/:eventId" component={withMobileContainer(MobileEventDetail)} />
+      <Route path="/app/:communityId/messages" component={withMobileContainer(MobileMessages)} />
+      <Route path="/app/:communityId/profile" component={withMobileContainer(MobileProfile)} />
+      <Route path="/app/:communityId/payment" component={withMobileContainer(MobilePayment)} />
+      <Route path="/app/:communityId/support" component={withMobileContainer(MobileSupport)} />
 
-      {/* Mobile Admin Routes */}
-      <Route path="/app/admin/login" component={MobileAdminLogin} />
-      <Route path="/app/admin/select-community" component={MobileAdminSelectCommunity} />
-      <Route path="/app/:communityId/admin" component={MobileAdminHome} />
-      <Route path="/app/:communityId/admin/scanner" component={MobileAdminScanner} />
-      <Route path="/app/:communityId/admin/messages" component={MobileAdminMessages} />
+      {/* Mobile Admin Routes - wrapped in MobileContainer for phone-sized display */}
+      <Route path="/app/admin/login" component={withMobileContainer(MobileAdminLogin)} />
+      <Route path="/app/admin/select-community" component={withMobileContainer(MobileAdminSelectCommunity)} />
+      <Route path="/app/:communityId/admin" component={withMobileContainer(MobileAdminHome)} />
+      <Route path="/app/:communityId/admin/scanner" component={withMobileContainer(MobileAdminScanner)} />
+      <Route path="/app/:communityId/admin/messages" component={withMobileContainer(MobileAdminMessages)} />
 
       {/* Admin Routes (Web) */}
       <Route path="/admin/login" component={AdminLogin} />
