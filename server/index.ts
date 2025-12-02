@@ -28,10 +28,13 @@ app.use((req, res, next) => {
   const host = req.hostname;
   const path = req.path;
   
-  // Don't rewrite API routes - they should work as-is
-  if (path.startsWith('/api')) {
+  // Don't rewrite API routes or static assets - they should work as-is
+  if (path.startsWith('/api') || path.startsWith('/assets') || path.includes('.')) {
     return next();
   }
+  
+  // Log for debugging
+  log(`Host: ${host}, Path: ${path}`, 'subdomain-router');
   
   // Don't rewrite if already on the correct path prefix
   if (host === 'app.koomy.app') {
@@ -41,6 +44,7 @@ app.use((req, res, next) => {
       } else {
         req.url = '/app' + req.url;
       }
+      log(`Rewritten to: ${req.url}`, 'subdomain-router');
     }
   } else if (host === 'app-pro.koomy.app') {
     if (!path.startsWith('/app/admin')) {
@@ -49,6 +53,7 @@ app.use((req, res, next) => {
       } else {
         req.url = '/app/admin' + req.url;
       }
+      log(`Rewritten to: ${req.url}`, 'subdomain-router');
     }
   } else if (host === 'backoffice.koomy.app') {
     if (!path.startsWith('/admin')) {
@@ -57,6 +62,7 @@ app.use((req, res, next) => {
       } else {
         req.url = '/admin' + req.url;
       }
+      log(`Rewritten to: ${req.url}`, 'subdomain-router');
     }
   } else if (host === 'lorpesikoomyadmin.koomy.app') {
     if (!path.startsWith('/platform')) {
@@ -65,6 +71,7 @@ app.use((req, res, next) => {
       } else {
         req.url = '/platform' + req.url;
       }
+      log(`Rewritten to: ${req.url}`, 'subdomain-router');
     }
   }
   
