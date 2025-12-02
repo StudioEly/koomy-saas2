@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "blog": "Blog",
+    "contact": "Contact",
+    "demo": "Demander une démo",
+    "login": "Se connecter",
+    "signup": "Créer un compte"
+  },
+  "home": {
+    "hero": {
+      "title": "Gérez votre communauté",
+      "titleHighlight": "simplement.",
+      "subtitle": "Koomy est la solution SaaS complète pour les associations, syndicats et clubs. Digitalisez vos adhésions, communiquez efficacement et fidélisez vos membres.",
+      "cta": "Commencer gratuitement",
+      "ctaSecondary": "Télécharger l'app",
+      "noCard": "Pas de carte requise",
+      "easyCancel": "Annulation facile"
+    },
+    "stats": {
+      "newMembers": "Nouveaux Membres",
+      "thisWeek": "+124 cette semaine"
+    },
+    "features": {
+      "title": "Tout ce dont vous avez besoin",
+      "subtitle": "Une suite d'outils puissants pour les administrateurs et une expérience mobile fluide pour vos membres.",
+      "mobile": {
+        "title": "App Mobile Membres",
+        "desc": "Carte d'adhérent digitale, actualités, messagerie et événements dans la poche de vos membres."
+      },
+      "dashboard": {
+        "title": "Dashboard Admin",
+        "desc": "Gestion centralisée des cotisations, de la base de données et communication multi-canal."
+      },
+      "tools": {
+        "title": "Outils Délégués",
+        "desc": "App dédiée pour les admins de terrain avec scanner QR code pour le contrôle d'accès."
+      }
+    },
+    "mobile": {
+      "title": "Vos membres sont mobiles.",
+      "titleHighlight": "Votre communauté aussi.",
+      "subtitle": "Offrez à vos adhérents une expérience moderne. Plus de cartes plastiques perdues, plus d'emails non lus. Tout se passe sur leur smartphone.",
+      "appStore": "Télécharger sur l'",
+      "playStore": "Disponible sur"
+    },
+    "cta": {
+      "title": "Prêt à moderniser votre structure ?",
+      "subtitle": "Rejoignez plus de 500 communautés qui utilisent Koomy au quotidien. Essai gratuit de 14 jours, sans engagement.",
+      "button": "Créer mon compte Admin",
+      "alreadyMember": "Déjà membre ?",
+      "downloadApp": "Télécharger l'app",
+      "adminLogin": "Connexion Admin"
+    }
+  },
+  "pricing": {
+    "title": "Tarification simple et transparente",
+    "subtitle": "Choisissez le forfait adapté à la taille de votre communauté. Sans engagement, évoluez à tout moment.",
+    "perMonth": "/mois",
+    "perYear": "/an",
+    "members": "membres",
+    "unlimited": "illimité",
+    "popular": "Populaire",
+    "features": {
+      "mobileApp": "Application mobile membres",
+      "adminDashboard": "Dashboard administrateur",
+      "memberCards": "Cartes d'adhérent digitales",
+      "messaging": "Messagerie intégrée",
+      "events": "Gestion événements",
+      "payments": "Paiements en ligne",
+      "support": "Support prioritaire",
+      "api": "Accès API",
+      "whiteLabel": "Marque blanche",
+      "dedicated": "Accompagnement dédié"
+    },
+    "cta": {
+      "free": "Commencer gratuitement",
+      "start": "Démarrer",
+      "contact": "Nous contacter"
+    }
+  },
+  "footer": {
+    "description": "La solution tout-en-un pour les associations, syndicats et clubs qui souhaitent moderniser leur gestion et engager leurs membres.",
+    "product": "Produit",
+    "resources": "Ressources",
+    "legal": "Légal",
+    "followUs": "Suivez-nous",
+    "features": "Fonctionnalités",
+    "pricing": "Tarifs",
+    "demo": "Demander une démo",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "support": "Support",
+    "terms": "CGU",
+    "privacy": "Confidentialité",
+    "cookies": "Cookies",
+    "allRights": "Tous droits réservés."
+  },
+  "common": {
+    "or": "ou"
+  }
+}

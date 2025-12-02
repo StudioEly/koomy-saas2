@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "contact": "Contact",
+    "demo": "Request a Demo",
+    "login": "Log in",
+    "signup": "Sign up"
+  },
+  "home": {
+    "hero": {
+      "title": "Manage your community",
+      "titleHighlight": "effortlessly.",
+      "subtitle": "Koomy is the complete SaaS solution for associations, unions, and clubs. Digitize memberships, communicate effectively, and engage your members.",
+      "cta": "Start for free",
+      "ctaSecondary": "Download the app",
+      "noCard": "No credit card required",
+      "easyCancel": "Cancel anytime"
+    },
+    "stats": {
+      "newMembers": "New Members",
+      "thisWeek": "+124 this week"
+    },
+    "features": {
+      "title": "Everything you need",
+      "subtitle": "A powerful suite of tools for administrators and a seamless mobile experience for your members.",
+      "mobile": {
+        "title": "Member Mobile App",
+        "desc": "Digital membership card, news, messaging, and events right in your members' pockets."
+      },
+      "dashboard": {
+        "title": "Admin Dashboard",
+        "desc": "Centralized management of dues, database, and multi-channel communication."
+      },
+      "tools": {
+        "title": "Delegate Tools",
+        "desc": "Dedicated app for field admins with QR code scanner for access control."
+      }
+    },
+    "mobile": {
+      "title": "Your members are mobile.",
+      "titleHighlight": "So is your community.",
+      "subtitle": "Give your members a modern experience. No more lost plastic cards, no more unread emails. Everything happens on their smartphone.",
+      "appStore": "Download on the",
+      "playStore": "Get it on"
+    },
+    "cta": {
+      "title": "Ready to modernize your organization?",
+      "subtitle": "Join over 500 communities using Koomy daily. 14-day free trial, no commitment.",
+      "button": "Create my Admin account",
+      "alreadyMember": "Already a member?",
+      "downloadApp": "Download the app",
+      "adminLogin": "Admin Login"
+    }
+  },
+  "pricing": {
+    "title": "Simple and transparent pricing",
+    "subtitle": "Choose the plan that fits your community size. No commitment, upgrade anytime.",
+    "perMonth": "/month",
+    "perYear": "/year",
+    "members": "members",
+    "unlimited": "unlimited",
+    "popular": "Popular",
+    "features": {
+      "mobileApp": "Member mobile app",
+      "adminDashboard": "Admin dashboard",
+      "memberCards": "Digital membership cards",
+      "messaging": "Built-in messaging",
+      "events": "Event management",
+      "payments": "Online payments",
+      "support": "Priority support",
+      "api": "API access",
+      "whiteLabel": "White label",
+      "dedicated": "Dedicated support"
+    },
+    "cta": {
+      "free": "Start for free",
+      "start": "Get started",
+      "contact": "Contact us"
+    }
+  },
+  "footer": {
+    "description": "The all-in-one solution for associations, unions, and clubs looking to modernize their management and engage their members.",
+    "product": "Product",
+    "resources": "Resources",
+    "legal": "Legal",
+    "followUs": "Follow us",
+    "features": "Features",
+    "pricing": "Pricing",
+    "demo": "Request a Demo",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "support": "Support",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "cookies": "Cookies",
+    "allRights": "All rights reserved."
+  },
+  "common": {
+    "or": "or"
+  }
+}
