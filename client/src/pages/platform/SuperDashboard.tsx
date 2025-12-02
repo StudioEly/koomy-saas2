@@ -531,6 +531,9 @@ export default function SuperAdminDashboard() {
             <TabsTrigger value="overview" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-4">
               <BarChart3 className="mr-2 h-4 w-4" /> Tableau de Bord
             </TabsTrigger>
+            <TabsTrigger value="finances" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-4">
+              <Wallet className="mr-2 h-4 w-4" /> Finances
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-4">
               <Activity className="mr-2 h-4 w-4" /> Analytics
             </TabsTrigger>
@@ -687,6 +690,213 @@ export default function SuperAdminDashboard() {
                     </div>
                   </CardContent>
                 </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* FINANCES TAB */}
+          <TabsContent value="finances">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Détails Financiers</h1>
+                <p className="text-gray-500">Analyse détaillée des revenus et paiements de la plateforme</p>
+              </div>
+            </div>
+
+            {metricsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+              </div>
+            ) : (
+              <>
+                {/* Secondary Financial KPIs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                  <Card className="shadow-sm">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Nombre de Paiements</p>
+                        <div className="p-2 bg-indigo-100 rounded-lg"><CreditCard className="h-4 w-4 text-indigo-600" /></div>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900">{formatNumber(metrics?.paymentsCount || 0)}</div>
+                      <p className="text-xs text-gray-500 mt-2">dont {formatNumber(metrics?.paymentsCountThisMonth || 0)} ce mois</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="shadow-sm">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Total Membres</p>
+                        <div className="p-2 bg-cyan-100 rounded-lg"><Users className="h-4 w-4 text-cyan-600" /></div>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-900">{formatNumber(metrics?.totalMembers || 0)}</div>
+                      <p className="text-xs text-gray-500 mt-2">sur l'ensemble des communautés</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="shadow-sm">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Nouveaux Clients</p>
+                        <div className="p-2 bg-emerald-100 rounded-lg"><ArrowUpRight className="h-4 w-4 text-emerald-600" /></div>
+                      </div>
+                      <div className="text-3xl font-bold text-emerald-600">+{metrics?.newClientsThisMonth || 0}</div>
+                      <p className="text-xs text-gray-500 mt-2">ce mois-ci</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="shadow-sm">
+                    <CardContent className="pt-6">
+                      <div className="flex justify-between items-start mb-2">
+                        <p className="text-sm font-medium text-gray-500">Clients Perdus</p>
+                        <div className="p-2 bg-red-100 rounded-lg"><ArrowDownRight className="h-4 w-4 text-red-600" /></div>
+                      </div>
+                      <div className="text-3xl font-bold text-red-600">-{metrics?.churnedClientsThisMonth || 0}</div>
+                      <p className="text-xs text-gray-500 mt-2">ce mois-ci (churn)</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Revenue Breakdown by Plan */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5 text-blue-500" />Répartition des Revenus par Plan</CardTitle>
+                    <CardDescription>Détail du MRR par formule d'abonnement</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Plan</TableHead>
+                          <TableHead className="text-center">Clients</TableHead>
+                          <TableHead className="text-right">MRR</TableHead>
+                          <TableHead className="text-right">% du Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {metrics?.revenueByPlan.map((plan) => {
+                          const percentage = metrics.mrr > 0 ? (plan.mrr / metrics.mrr) * 100 : 0;
+                          return (
+                            <TableRow key={plan.planId}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PLAN_COLORS[plan.planCode] || '#6b7280' }} />
+                                  <span className="font-medium">{plan.planName}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline">{plan.count}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-bold text-green-600">{formatCurrency(plan.mrr)}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Progress value={percentage} className="w-16 h-2" />
+                                  <span className="text-sm text-gray-500 w-12 text-right">{percentage.toFixed(1)}%</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        <TableRow className="bg-gray-50 font-bold">
+                          <TableCell>TOTAL</TableCell>
+                          <TableCell className="text-center">{metrics?.activeClients || 0}</TableCell>
+                          <TableCell className="text-right text-green-700">{formatCurrency(metrics?.mrr || 0)}</TableCell>
+                          <TableCell className="text-right">100%</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                {/* Revenue Evolution Chart */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-blue-500" />Évolution Mensuelle des Revenus</CardTitle>
+                      <CardDescription>Historique des 12 derniers mois</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={revenueChartData}>
+                            <defs>
+                              <linearGradient id="colorRevenueFinance" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                            <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `${value}€`} />
+                            <Tooltip formatter={(value: number) => [formatCurrency(value), 'Revenus']} />
+                            <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenueFinance)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-purple-500" />Nombre de Paiements Mensuels</CardTitle>
+                      <CardDescription>Volume de transactions par mois</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={revenueChartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                            <YAxis tick={{ fontSize: 12 }} />
+                            <Tooltip formatter={(value: number) => [value, 'Paiements']} />
+                            <Bar dataKey="payments" name="Paiements" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Financial Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-white/20 rounded-lg"><Euro className="h-6 w-6" /></div>
+                        <div>
+                          <p className="text-sm text-blue-100">Revenu Mensuel Récurrent</p>
+                          <p className="text-2xl font-bold">{formatCurrency(metrics?.mrr || 0)}</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-blue-200">Base pour les projections annuelles</div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-white/20 rounded-lg"><Banknote className="h-6 w-6" /></div>
+                        <div>
+                          <p className="text-sm text-purple-100">Revenu Annuel Récurrent</p>
+                          <p className="text-2xl font-bold">{formatCurrency(metrics?.arr || 0)}</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-purple-200">MRR × 12 mois</div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-white/20 rounded-lg"><PiggyBank className="h-6 w-6" /></div>
+                        <div>
+                          <p className="text-sm text-emerald-100">Volume Total Collecté</p>
+                          <p className="text-2xl font-bold">{formatCurrency(metrics?.volumeCollected || 0)}</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-emerald-200">Depuis le lancement</div>
+                    </CardContent>
+                  </Card>
+                </div>
               </>
             )}
           </TabsContent>
