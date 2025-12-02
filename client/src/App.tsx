@@ -62,11 +62,33 @@ import WebsitePrivacy from "@/pages/website/Privacy";
 import WebsiteSupport from "@/pages/website/Support";
 import WebsiteBlog from "@/pages/website/Blog";
 
+function DomainAwareRoot() {
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  
+  if (hostname === "koomy.app") {
+    return <WebsiteHome />;
+  }
+  if (hostname === "app.koomy.app") {
+    return <MobileLogin />;
+  }
+  if (hostname === "app-pro.koomy.app") {
+    return <MobileAdminLogin />;
+  }
+  if (hostname === "backoffice.koomy.app") {
+    return <AdminLogin />;
+  }
+  if (hostname === "lorpesikoomyadmin.koomy.app") {
+    return <PlatformLogin />;
+  }
+  
+  return <Landing />;
+}
+
 function Router() {
   return (
     <Switch>
-      {/* Landing / Default */}
-      <Route path="/" component={Landing} />
+      {/* Landing / Default - Domain aware routing */}
+      <Route path="/" component={DomainAwareRoot} />
       
       {/* Commercial Website */}
       <Route path="/website" component={WebsiteHome} />

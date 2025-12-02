@@ -1,0 +1,126 @@
+Corriger le routing Vercel pour que koomy.app affiche /website au lieu du hub
+
+Je vais te décrire précisément la situation, et je veux que tu la DIAGNOSTIQUES puis que tu la CORRIGES proprement dans le code.
+
+🎯 Objectif
+
+Mon projet est déployé sur Vercel sous l’URL :
+https://koomy-saas-git-main-rites-projects-0af03fac.vercel.app
+
+J’ai acheté le domaine koomy.app (chez OVH) et je l’ai relié à ce projet Vercel.
+
+Quand j’ouvre https://koomy.app dans un navigateur, j’arrive sur le hub (l’écran racine du projet).
+
+Ce que je veux :
+👉 Quand on va sur https://koomy.app, ça doit afficher la page qui est actuellement servie par l’URL :
+https://koomy-saas-git-main-rites-projects-0af03fac.vercel.app/website
+sans changer l’URL dans le navigateur (l’utilisateur doit voir koomy.app, pas /website ni le lien Vercel).
+
+📂 Structure actuelle (important)
+
+Tout est dans UN seul projet Vercel.
+
+Le hub est à la racine (/).
+
+Le site public est servi sur la route : /website.
+
+D’autres plateformes sont plus tard sur /app, /admin, /platform, etc.
+Mais pour l’instant, concentre-toi uniquement sur le routing de koomy.app vers /website.
+
+🧪 Ce qu’on a déjà essayé
+
+Nous avons créé un fichier vercel.json avec des règles de rewrites basées sur l’host koomy.app, du type :
+
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        { "type": "host", "value": "koomy.app" }
+      ],
+      "destination": "/website"
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        { "type": "host", "value": "koomy.app" }
+      ],
+      "destination": "/website/:path*"
+    }
+  ]
+}
+
+
+Le fichier est à la racine du projet.
+
+Le déploiement se fait bien, mais quand on va sur koomy.app, on tombe toujours sur le hub (la page / du projet), pas sur /website.
+
+👉 Conclusion : soit Vercel ignore ce vercel.json pour ce framework, soit la config est surchargée ailleurs (next.config.js, vite.config, express, etc.), soit le fichier n’est pas pris en compte au bon endroit.
+
+✅ Ce que je veux que tu fasses
+
+Analyser le projet :
+
+Regarde package.json pour identifier le framework (Next.js ? React SPA ? Vite ? Express ? Autre ?).
+
+Vérifie l’existence de :
+
+next.config.js ou next.config.mjs ou next.config.ts
+
+middleware.js / middleware.ts
+
+vercel.json
+
+Vérifie si le framework utilisé utilise vraiment vercel.json ou si les rewrites doivent être définies dans la config du framework (par exemple next.config.js).
+
+Choisir la bonne approche de routing selon le framework :
+
+Si c’est un projet Next.js :
+
+Soit ajouter une config async rewrites() dans next.config.js/mjs qui route le host koomy.app vers /website.
+
+Soit créer un middleware.ts / middleware.js qui lit request.headers.host et réécrit / en /website quand le host est koomy.app.
+
+Si c’est un autre framework (Vite, CRA, Express, etc.) :
+
+Assure-toi que vercel.json est bien pris en compte et que la syntaxe est correcte pour ce type de projet.
+
+Ou adapte le routing là où c’est pertinent (serveur, adapter, etc.).
+
+Implémenter la redirection/réécriture correcte :
+
+Objectif :
+
+requête : host = koomy.app, path = / → servir /website
+
+requête : host = koomy.app, path = /xxx → servir /website/xxx
+
+Sans changer l’URL visible par l’utilisateur.
+
+Et sans casser les autres routes existantes.
+
+Laisser de côté pour l’instant les autres sous-domaines
+(app.koomy.app, backoffice.koomy.app, etc.).
+On se concentre UNIQUEMENT sur ce comportement :
+
+koomy.app affiche /website.
+
+Vérifier ton travail :
+
+Explique-moi dans un commentaire ce que tu as modifié (fichier, type de config).
+
+Montre le code final ajouté/modifié (next.config, middleware, vercel.json, etc.).
+
+Fais un commit Git avec un message clair, par exemple :
+"Fix domain routing: koomy.app now serves /website"
+
+🔐 Important
+
+On ne doit jamais exposer l’URL Vercel aux utilisateurs finaux.
+
+L’utilisateur final doit toujours voir https://koomy.app pour le site public.
+
+Merci de procéder comme un développeur full-stack expérimenté :
+➡ commence par diagnostiquer,
+➡ explique ta logique,
+➡ puis corrige proprement.
