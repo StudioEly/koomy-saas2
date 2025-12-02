@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { MOCK_COMMUNITIES, MOCK_PLANS, Plan } from "@/lib/mockData";
+import { MOCK_PLANS, Plan } from "@/lib/mockData";
 import { MOCK_TICKETS } from "@/lib/mockSupportData";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,18 +10,165 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Users, Settings, MessageSquare, CheckCircle, Clock, AlertCircle, TrendingUp, Shield, CreditCard, BarChart3, LogOut } from "lucide-react";
+import { Plus, Users, Settings, MessageSquare, CheckCircle, Clock, AlertCircle, TrendingUp, Shield, CreditCard, BarChart3, LogOut, Gift, X, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+type Community = {
+  id: string;
+  name: string;
+  logo: string | null;
+  memberCount: number | null;
+  planId: string;
+  fullAccessGrantedAt: string | null;
+  fullAccessExpiresAt: string | null;
+  fullAccessReason: string | null;
+  fullAccessGrantedBy: string | null;
+};
 
 export default function SuperAdminDashboard() {
   const [_, setLocation] = useLocation();
   const { user, logout, isPlatformAdmin, authReady } = useAuth();
-  const [communities, setCommunities] = useState(MOCK_COMMUNITIES);
+  const queryClient = useQueryClient();
   const [tickets] = useState(MOCK_TICKETS);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [newClientName, setNewClientName] = useState("");
+  
+  // Full access modal state
+  const [fullAccessModalOpen, setFullAccessModalOpen] = useState(false);
+  const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
+  const [fullAccessReason, setFullAccessReason] = useState("");
+  const [fullAccessDuration, setFullAccessDuration] = useState<string>("permanent");
+  const [customDays, setCustomDays] = useState("30");
+
+  // Fetch communities from API
+  const { data: communities = [], isLoading: communitiesLoading } = useQuery<Community[]>({
+    queryKey: ["communities"],
+    queryFn: async () => {
+      const response = await fetch("/api/communities");
+      if (!response.ok) throw new Error("Failed to fetch communities");
+      return response.json();
+    }
+  });
+
+  // Grant full access mutation
+  const grantFullAccessMutation = useMutation({
+    mutationFn: async ({ communityId, reason, expiresAt }: { communityId: string; reason: string; expiresAt: string | null }) => {
+      const response = await fetch(`/api/platform/communities/${communityId}/full-access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grantedBy: user?.id,
+          reason,
+          expiresAt
+        })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to grant full access");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+      toast({
+        title: "Accès complet accordé",
+        description: data.message
+      });
+      setFullAccessModalOpen(false);
+      resetFullAccessForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Revoke full access mutation
+  const revokeFullAccessMutation = useMutation({
+    mutationFn: async (communityId: string) => {
+      const response = await fetch(`/api/platform/communities/${communityId}/full-access?userId=${user?.id}`, {
+        method: "DELETE"
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to revoke full access");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+      toast({
+        title: "Accès complet révoqué",
+        description: data.message
+      });
+      setFullAccessModalOpen(false);
+      resetFullAccessForm();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const resetFullAccessForm = () => {
+    setSelectedCommunity(null);
+    setFullAccessReason("");
+    setFullAccessDuration("permanent");
+    setCustomDays("30");
+  };
+
+  const hasActiveFullAccess = (community: Community): boolean => {
+    if (!community.fullAccessGrantedAt) return false;
+    if (!community.fullAccessExpiresAt) return true; // Permanent
+    return new Date() < new Date(community.fullAccessExpiresAt);
+  };
+
+  const handleGrantFullAccess = () => {
+    if (!selectedCommunity || !fullAccessReason.trim()) return;
+
+    let expiresAt: string | null = null;
+    if (fullAccessDuration !== "permanent") {
+      const days = fullAccessDuration === "custom" ? parseInt(customDays) : parseInt(fullAccessDuration);
+      const expireDate = new Date();
+      expireDate.setDate(expireDate.getDate() + days);
+      expiresAt = expireDate.toISOString();
+    }
+
+    grantFullAccessMutation.mutate({
+      communityId: selectedCommunity.id,
+      reason: fullAccessReason,
+      expiresAt
+    });
+  };
+
+  const handleRevokeFullAccess = () => {
+    if (!selectedCommunity) return;
+    revokeFullAccessMutation.mutate(selectedCommunity.id);
+  };
+
+  const openFullAccessModal = (community: Community) => {
+    // Reset form state first to prevent data leakage between communities
+    setFullAccessReason("");
+    setFullAccessDuration("permanent");
+    setCustomDays("30");
+    
+    // Set the selected community
+    setSelectedCommunity(community);
+    
+    // If community has active access, show the reason (read-only display)
+    // Note: We don't pre-fill the form - the existing access info is displayed in a separate section
+    setFullAccessModalOpen(true);
+  };
 
   useEffect(() => {
     if (authReady && !isPlatformAdmin) {
@@ -248,20 +395,39 @@ export default function SuperAdminDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {communities.map((comm) => (
+                    {communitiesLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : communities.map((comm) => (
                       <TableRow key={comm.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <img src={comm.logo} className="h-10 w-10 rounded-lg object-contain bg-gray-50 p-1 border" />
+                            {comm.logo ? (
+                              <img src={comm.logo} className="h-10 w-10 rounded-lg object-contain bg-gray-50 p-1 border" />
+                            ) : (
+                              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">
+                                {comm.name.charAt(0)}
+                              </div>
+                            )}
                             <div>
-                              <div className="font-bold">{comm.name}</div>
-                              <div className="text-xs text-gray-500">{comm.id}</div>
+                              <div className="font-bold flex items-center gap-2">
+                                {comm.name}
+                                {hasActiveFullAccess(comm) && (
+                                  <Badge className="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-[9px] px-1.5 py-0 gap-0.5 border-0">
+                                    <Sparkles size={10} /> VIP
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500">{comm.id.slice(0, 8)}...</div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-gray-600">
-                            <Users size={14} /> {comm.memberCount}
+                            <Users size={14} /> {comm.memberCount ?? 0}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -274,6 +440,16 @@ export default function SuperAdminDashboard() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              variant={hasActiveFullAccess(comm) ? "default" : "outline"}
+                              size="sm"
+                              className={`h-8 text-xs ${hasActiveFullAccess(comm) ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white border-0' : ''}`}
+                              onClick={() => openFullAccessModal(comm)}
+                              data-testid={`button-full-access-${comm.id}`}
+                            >
+                              <Gift className="mr-1 h-3 w-3" />
+                              {hasActiveFullAccess(comm) ? 'VIP' : 'Offrir'}
+                            </Button>
                             <Dialog>
                               <DialogTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-8 text-xs">
@@ -444,6 +620,139 @@ export default function SuperAdminDashboard() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Full Access Modal */}
+      <Dialog open={fullAccessModalOpen} onOpenChange={(open) => {
+        setFullAccessModalOpen(open);
+        if (!open) resetFullAccessForm();
+      }}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-amber-500" />
+              {selectedCommunity && hasActiveFullAccess(selectedCommunity) 
+                ? "Gérer l'accès VIP" 
+                : "Offrir un accès complet gratuit"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCommunity?.name} - {selectedCommunity && hasActiveFullAccess(selectedCommunity) 
+                ? "Cette communauté bénéficie actuellement d'un accès VIP."
+                : "Accordez un accès illimité sans limite de membres."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCommunity && hasActiveFullAccess(selectedCommunity) ? (
+            <div className="py-4 space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-amber-800">Accès VIP actif</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      <strong>Raison:</strong> {selectedCommunity.fullAccessReason}
+                    </p>
+                    <p className="text-sm text-amber-700">
+                      <strong>Expire:</strong> {selectedCommunity.fullAccessExpiresAt 
+                        ? new Date(selectedCommunity.fullAccessExpiresAt).toLocaleDateString('fr-FR')
+                        : "Permanent"}
+                    </p>
+                    <p className="text-sm text-amber-700">
+                      <strong>Accordé le:</strong> {selectedCommunity.fullAccessGrantedAt 
+                        ? new Date(selectedCommunity.fullAccessGrantedAt).toLocaleDateString('fr-FR')
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reason">Raison de l'offre</Label>
+                <Textarea
+                  id="reason"
+                  placeholder="Ex: Partenariat, Beta testeur, Client VIP, Essai gratuit..."
+                  value={fullAccessReason}
+                  onChange={(e) => setFullAccessReason(e.target.value)}
+                  className="min-h-[80px]"
+                  data-testid="input-full-access-reason"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Durée</Label>
+                <Select value={fullAccessDuration} onValueChange={setFullAccessDuration}>
+                  <SelectTrigger data-testid="select-full-access-duration">
+                    <SelectValue placeholder="Sélectionner une durée" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="permanent">Permanent (illimité)</SelectItem>
+                    <SelectItem value="30">30 jours</SelectItem>
+                    <SelectItem value="60">60 jours</SelectItem>
+                    <SelectItem value="90">90 jours (3 mois)</SelectItem>
+                    <SelectItem value="180">180 jours (6 mois)</SelectItem>
+                    <SelectItem value="365">365 jours (1 an)</SelectItem>
+                    <SelectItem value="custom">Personnalisé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {fullAccessDuration === "custom" && (
+                <div className="space-y-2">
+                  <Label htmlFor="customDays">Nombre de jours</Label>
+                  <Input
+                    id="customDays"
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={customDays}
+                    onChange={(e) => setCustomDays(e.target.value)}
+                    data-testid="input-custom-days"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {selectedCommunity && hasActiveFullAccess(selectedCommunity) ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setFullAccessModalOpen(false)}
+                >
+                  Fermer
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleRevokeFullAccess}
+                  disabled={revokeFullAccessMutation.isPending}
+                  data-testid="button-revoke-full-access"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  {revokeFullAccessMutation.isPending ? "Révocation..." : "Révoquer l'accès"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setFullAccessModalOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white"
+                  onClick={handleGrantFullAccess}
+                  disabled={!fullAccessReason.trim() || grantFullAccessMutation.isPending}
+                  data-testid="button-grant-full-access"
+                >
+                  <Gift className="mr-2 h-4 w-4" />
+                  {grantFullAccessMutation.isPending ? "En cours..." : "Accorder l'accès"}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

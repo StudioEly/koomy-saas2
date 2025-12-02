@@ -120,6 +120,17 @@ Preferred communication style: Simple, everyday language.
 - `PATCH /api/communities/:id/plan` - Change community plan (with validation)
 - Stripe routes prepared: `/api/billing/status`, `/api/billing/checkout`, `/api/billing/portal`, `/api/webhooks/stripe`
 
+**Full Access VIP System (Platform Admin Only):**
+- Allows SaaS owner to grant free unlimited access to specific communities
+- Communities table extended with: `fullAccessGrantedAt`, `fullAccessExpiresAt`, `fullAccessReason`, `fullAccessGrantedBy`
+- Storage: `hasActiveFullAccess()`, `grantFullAccess()`, `revokeFullAccess()`, `getCommunitiesWithFullAccess()`
+- Member quota bypass: `checkMemberQuota()` returns canAdd=true when fullAccess is active
+- API routes (require platform_super_admin verification):
+  - `POST /api/platform/communities/:id/full-access` - Grant access (body: grantedBy, reason, expiresAt)
+  - `DELETE /api/platform/communities/:id/full-access?userId=` - Revoke access
+  - `GET /api/platform/full-access-communities?userId=` - List communities with active access
+- UI: Platform SuperDashboard shows VIP badge and "Offrir" button with modal for granting/revoking access
+
 **Authentication Model (Three-Tier System):**
 - `accounts` table: Public Koomy mobile app users (email/password with bcrypt)
 - `users` table: Back-office administrators with `globalRole` for platform admins

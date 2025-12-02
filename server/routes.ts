@@ -1211,13 +1211,34 @@ export async function registerRoutes(
   // PLATFORM ADMIN: FULL ACCESS MANAGEMENT
   // =====================================================
 
+  // Helper function to verify platform super admin
+  const verifyPlatformAdmin = async (userId: string | undefined): Promise<{ valid: boolean; user?: any; error?: string }> => {
+    if (!userId) {
+      return { valid: false, error: "userId is required for platform admin operations" };
+    }
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return { valid: false, error: "User not found" };
+    }
+    if (user.globalRole !== 'platform_super_admin') {
+      return { valid: false, error: "Accès non autorisé - Réservé aux super administrateurs plateforme" };
+    }
+    return { valid: true, user };
+  };
+
   // Grant full access to a community (platform super admin only)
   app.post("/api/platform/communities/:id/full-access", async (req, res) => {
     try {
       const { grantedBy, reason, expiresAt } = req.body;
 
-      if (!grantedBy || !reason) {
-        return res.status(400).json({ error: "grantedBy and reason are required" });
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(grantedBy);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      if (!reason) {
+        return res.status(400).json({ error: "reason is required" });
       }
 
       // Parse expiresAt if provided (can be null for permanent access)
@@ -1246,6 +1267,15 @@ export async function registerRoutes(
   // Revoke full access from a community (platform super admin only)
   app.delete("/api/platform/communities/:id/full-access", async (req, res) => {
     try {
+      // Get userId from query params or body
+      const userId = req.query.userId as string || req.body?.userId;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
       const community = await storage.revokeFullAccess(req.params.id);
 
       return res.json({ 
@@ -1262,6 +1292,14 @@ export async function registerRoutes(
   // Get all communities with full access (platform super admin only)
   app.get("/api/platform/full-access-communities", async (req, res) => {
     try {
+      const userId = req.query.userId as string;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
       const communities = await storage.getCommunitiesWithFullAccess();
       return res.json(communities);
     } catch (error: any) {
