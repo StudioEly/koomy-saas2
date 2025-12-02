@@ -1310,5 +1310,126 @@ Règles de conversation:
     }
   });
 
+  // =====================================================
+  // STRIPE BILLING ROUTES (Prepared for integration)
+  // =====================================================
+
+  app.get("/api/billing/status", async (req, res) => {
+    try {
+      const { isStripeConfigured } = await import("./stripe");
+      return res.json({ 
+        configured: isStripeConfigured(),
+        message: isStripeConfigured() 
+          ? "Stripe is configured and ready" 
+          : "Stripe is not configured. Please set STRIPE_SECRET_KEY."
+      });
+    } catch (error) {
+      console.error("Billing status error:", error);
+      return res.status(500).json({ error: "Failed to check billing status" });
+    }
+  });
+
+  app.post("/api/billing/checkout", async (req, res) => {
+    try {
+      const { createCheckoutSession, isStripeConfigured } = await import("./stripe");
+      
+      if (!isStripeConfigured()) {
+        return res.status(503).json({ 
+          error: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur." 
+        });
+      }
+
+      const { communityId, planId, userId, isYearly } = req.body;
+
+      if (!communityId || !planId || !userId) {
+        return res.status(400).json({ error: "communityId, planId, and userId are required" });
+      }
+
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : "http://localhost:5000";
+
+      const result = await createCheckoutSession({
+        communityId,
+        planId,
+        userId,
+        successUrl: `${baseUrl}/admin/billing?success=true`,
+        cancelUrl: `${baseUrl}/admin/billing?canceled=true`,
+        isYearly: isYearly ?? true
+      });
+
+      if (!result) {
+        return res.status(500).json({ error: "Failed to create checkout session" });
+      }
+
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Checkout session error:", error);
+      return res.status(500).json({ error: error.message || "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/billing/portal", async (req, res) => {
+    try {
+      const { createCustomerPortalSession, isStripeConfigured } = await import("./stripe");
+      
+      if (!isStripeConfigured()) {
+        return res.status(503).json({ 
+          error: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur." 
+        });
+      }
+
+      const { communityId } = req.body;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+        : "http://localhost:5000";
+
+      const url = await createCustomerPortalSession({
+        communityId,
+        returnUrl: `${baseUrl}/admin/billing`
+      });
+
+      if (!url) {
+        return res.status(500).json({ error: "Failed to create portal session" });
+      }
+
+      return res.json({ url });
+    } catch (error: any) {
+      console.error("Customer portal error:", error);
+      return res.status(500).json({ error: error.message || "Failed to create portal session" });
+    }
+  });
+
+  app.post("/api/webhooks/stripe", async (req, res) => {
+    try {
+      const { handleWebhookEvent, isStripeConfigured } = await import("./stripe");
+      
+      if (!isStripeConfigured()) {
+        return res.status(503).json({ error: "Stripe not configured" });
+      }
+
+      const signature = req.headers["stripe-signature"] as string;
+      if (!signature) {
+        return res.status(400).json({ error: "Missing stripe-signature header" });
+      }
+
+      const result = await handleWebhookEvent(req.body, signature);
+
+      if (!result.received) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      return res.json({ received: true, type: result.type });
+    } catch (error: any) {
+      console.error("Webhook error:", error);
+      return res.status(500).json({ error: error.message || "Webhook processing failed" });
+    }
+  });
+
   return httpServer;
 }

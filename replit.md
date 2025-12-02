@@ -105,6 +105,21 @@ Preferred communication style: Simple, everyday language.
 - **Community features:** `sections`, `newsArticles`, `events`, `messages`, `supportTickets`, `faqs`
 - **Financial:** `membershipFees`, `paymentRequests`, `payments`
 
+**Subscription Plans System:**
+- 5 canonical plans with `code` identifiers: STARTER_FREE (50 members), COMMUNAUTE_STANDARD (1000 members, €9.90/month), COMMUNAUTE_PRO (5000 members, €29/month), ENTREPRISE_CUSTOM (unlimited, custom pricing), WHITE_LABEL (unlimited, €4900/year)
+- Plans table extended with: `code`, `description`, `isPublic`, `isCustom`, `isWhiteLabel`, `sortOrder`
+- Communities table extended with: `billingStatus`, `trialEndsAt`, `stripeCustomerId`, `stripeSubscriptionId`
+- Member quota enforcement: `storage.createMembership()` checks plan limits before creating new members
+- Plan change validation: `storage.changeCommunityPlan()` prevents downgrade when member count exceeds new plan limit
+
+**Billing Routes:**
+- `GET /api/plans` - List all plans (query `?public=true` for public plans only)
+- `GET /api/plans/:id` - Get plan by ID
+- `GET /api/plans/code/:code` - Get plan by code
+- `GET /api/communities/:id/quota` - Check member quota for community
+- `PATCH /api/communities/:id/plan` - Change community plan (with validation)
+- Stripe routes prepared: `/api/billing/status`, `/api/billing/checkout`, `/api/billing/portal`, `/api/webhooks/stripe`
+
 **Authentication Model (Three-Tier System):**
 - `accounts` table: Public Koomy mobile app users (email/password with bcrypt)
 - `users` table: Back-office administrators with `globalRole` for platform admins
