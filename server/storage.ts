@@ -1,6 +1,6 @@
 import { 
   users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, ticketResponses, faqs, messages,
-  membershipFees, paymentRequests, payments, accounts, commercialContacts, emailTemplates, emailLogs, PLAN_CODES,
+  membershipFees, paymentRequests, payments, accounts, commercialContacts, emailTemplates, emailLogs, transactions, PLAN_CODES,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
@@ -11,6 +11,7 @@ import {
   type Account, type InsertAccount,
   type CommercialContact, type InsertCommercialContact,
   type EmailTemplate, type InsertEmailTemplate, type EmailLog, type InsertEmailLog,
+  type Transaction, type InsertTransaction,
   type PlanCode
 } from "@shared/schema";
 import { db } from "./db";
@@ -148,6 +149,14 @@ export interface IStorage {
   // Email Logs
   getEmailLogs(limit: number, offset: number): Promise<EmailLog[]>;
   createEmailLog(log: InsertEmailLog): Promise<EmailLog>;
+  
+  // Transactions
+  getTransaction(id: string): Promise<Transaction | undefined>;
+  getTransactionByPaymentIntentId(stripePaymentIntentId: string): Promise<Transaction | undefined>;
+  getCommunityTransactions(communityId: string): Promise<Transaction[]>;
+  getMembershipTransactions(membershipId: string): Promise<Transaction[]>;
+  insertTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1444,6 +1453,43 @@ export class DatabaseStorage implements IStorage {
   async createEmailLog(log: InsertEmailLog): Promise<EmailLog> {
     const [emailLog] = await db.insert(emailLogs).values(log).returning();
     return emailLog;
+  }
+  
+  // Transactions
+  async getTransaction(id: string): Promise<Transaction | undefined> {
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction || undefined;
+  }
+  
+  async getTransactionByPaymentIntentId(stripePaymentIntentId: string): Promise<Transaction | undefined> {
+    const [transaction] = await db.select().from(transactions)
+      .where(eq(transactions.stripePaymentIntentId, stripePaymentIntentId));
+    return transaction || undefined;
+  }
+  
+  async getCommunityTransactions(communityId: string): Promise<Transaction[]> {
+    return await db.select().from(transactions)
+      .where(eq(transactions.communityId, communityId))
+      .orderBy(desc(transactions.createdAt));
+  }
+  
+  async getMembershipTransactions(membershipId: string): Promise<Transaction[]> {
+    return await db.select().from(transactions)
+      .where(eq(transactions.membershipId, membershipId))
+      .orderBy(desc(transactions.createdAt));
+  }
+  
+  async insertTransaction(transaction: InsertTransaction): Promise<Transaction> {
+    const [newTransaction] = await db.insert(transactions).values(transaction).returning();
+    return newTransaction;
+  }
+  
+  async updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction> {
+    const [updated] = await db.update(transactions)
+      .set(updates)
+      .where(eq(transactions.id, id))
+      .returning();
+    return updated;
   }
 }
 
