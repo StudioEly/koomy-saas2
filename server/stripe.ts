@@ -1,25 +1,102 @@
 import Stripe from "stripe";
 import { storage } from "./storage";
+import { 
+  getUncachableStripeClient, 
+  getPriceId, 
+  getPlanCode,
+  type BillingPlan, 
+  type BillingPeriod 
+} from "./stripeClient";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripeClientCached: Stripe | null = null;
 
-let stripeClient: Stripe | null = null;
-
-export function getStripeClient(): Stripe | null {
-  if (!stripeSecretKey) {
-    console.warn("Stripe not configured: STRIPE_SECRET_KEY is missing");
-    return null;
+export async function getStripeClient(): Promise<Stripe> {
+  if (!stripeClientCached) {
+    stripeClientCached = await getUncachableStripeClient();
   }
-  
-  if (!stripeClient) {
-    stripeClient = new Stripe(stripeSecretKey);
-  }
-  
-  return stripeClient;
+  return stripeClientCached;
 }
 
 export function isStripeConfigured(): boolean {
-  return !!stripeSecretKey;
+  return true;
+}
+
+export interface CreateKoomySubscriptionSessionParams {
+  communityId: string;
+  billingPlan: BillingPlan;
+  billingPeriod: BillingPeriod;
+}
+
+export interface CreateKoomySubscriptionSessionResult {
+  sessionId: string;
+  sessionUrl: string;
+}
+
+export async function createKoomySubscriptionSession(
+  params: CreateKoomySubscriptionSessionParams
+): Promise<CreateKoomySubscriptionSessionResult> {
+  const { communityId, billingPlan, billingPeriod } = params;
+  
+  const priceId = getPriceId(billingPlan, billingPeriod);
+  if (!priceId) {
+    throw new Error(`Price not configured for ${billingPlan} ${billingPeriod}. Please set STRIPE_PRICE_${billingPlan.toUpperCase()}_${billingPeriod.toUpperCase()} environment variable.`);
+  }
+
+  const community = await storage.getCommunity(communityId);
+  if (!community) {
+    throw new Error("Community not found");
+  }
+
+  const planCode = getPlanCode(billingPlan);
+  const plan = await storage.getPlanByCode(planCode);
+  if (!plan) {
+    throw new Error(`Plan with code ${planCode} not found`);
+  }
+
+  const stripe = await getStripeClient();
+
+  let customerId = community.stripeCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: community.contactEmail || undefined,
+      name: community.name,
+      metadata: { communityId },
+    });
+    customerId = customer.id;
+    
+    await storage.updateCommunity(communityId, {
+      stripeCustomerId: customerId,
+    });
+  }
+
+  const successUrl = `https://lorpesikoomyadmin.koomy.app/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `https://lorpesikoomyadmin.koomy.app/subscription/cancel`;
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    customer: customerId,
+    line_items: [{ price: priceId, quantity: 1 }],
+    subscription_data: {
+      trial_period_days: 14,
+      metadata: {
+        communityId,
+        planId: plan.id,
+        billingPeriod,
+      },
+    },
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      communityId,
+      planId: plan.id,
+      billingPeriod,
+    },
+  });
+
+  return {
+    sessionId: session.id,
+    sessionUrl: session.url!,
+  };
 }
 
 export interface CreateCheckoutSessionParams {
@@ -39,11 +116,7 @@ export interface CreateCheckoutSessionResult {
 export async function createCheckoutSession(
   params: CreateCheckoutSessionParams
 ): Promise<CreateCheckoutSessionResult | null> {
-  const stripe = getStripeClient();
-  if (!stripe) {
-    console.error("Stripe is not configured");
-    return null;
-  }
+  const stripe = await getStripeClient();
 
   const { communityId, planId, userId, successUrl, cancelUrl, isYearly = true } = params;
 
@@ -123,11 +196,7 @@ export interface CreateCustomerPortalParams {
 export async function createCustomerPortalSession(
   params: CreateCustomerPortalParams
 ): Promise<string | null> {
-  const stripe = getStripeClient();
-  if (!stripe) {
-    console.error("Stripe is not configured");
-    return null;
-  }
+  const stripe = await getStripeClient();
 
   const { communityId, returnUrl } = params;
 
@@ -154,13 +223,10 @@ export async function createCustomerPortalSession(
 }
 
 export async function handleWebhookEvent(
-  payload: Buffer,
+  payload: Buffer | string,
   signature: string
 ): Promise<{ received: boolean; type?: string; error?: string }> {
-  const stripe = getStripeClient();
-  if (!stripe) {
-    return { received: false, error: "Stripe not configured" };
-  }
+  const stripe = await getStripeClient();
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
@@ -170,7 +236,8 @@ export async function handleWebhookEvent(
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    const payloadString = typeof payload === 'string' ? payload : payload.toString();
+    event = stripe.webhooks.constructEvent(payloadString, signature, webhookSecret);
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     return { received: false, error: `Webhook Error: ${err.message}` };
@@ -181,6 +248,12 @@ export async function handleWebhookEvent(
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         await handleCheckoutCompleted(session);
+        break;
+      }
+
+      case "customer.subscription.created": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionCreated(subscription);
         break;
       }
 
@@ -220,22 +293,47 @@ export async function handleWebhookEvent(
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  const { communityId, planId } = session.metadata || {};
+  const { communityId, planId, billingPeriod } = session.metadata || {};
   
-  if (!communityId || !planId) {
-    console.error("Missing metadata in checkout session");
+  if (!communityId) {
+    console.error("Missing communityId in checkout session metadata");
     return;
   }
 
-  await storage.updateCommunity(communityId, {
+  const updateData: any = {
     stripeCustomerId: session.customer as string,
     stripeSubscriptionId: session.subscription as string,
-    planId,
-    subscriptionStatus: "active",
-    billingStatus: "active",
+  };
+  
+  if (planId) {
+    updateData.planId = planId;
+  }
+  
+  if (billingPeriod && (billingPeriod === 'monthly' || billingPeriod === 'yearly')) {
+    updateData.billingPeriod = billingPeriod;
+  }
+
+  await storage.updateCommunity(communityId, updateData);
+
+  console.log(`Checkout completed for community ${communityId} - customer: ${session.customer}, subscription: ${session.subscription}`);
+}
+
+async function handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
+  const communityId = subscription.metadata?.communityId;
+  if (!communityId) {
+    console.error("Missing communityId in subscription metadata");
+    return;
+  }
+
+  const subscriptionStatus = mapStripeStatusToSubscriptionStatus(subscription.status);
+  const currentPeriodEnd = (subscription as any).current_period_end;
+
+  await storage.updateCommunity(communityId, {
+    subscriptionStatus,
+    currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : undefined,
   });
 
-  console.log(`Community ${communityId} upgraded to plan ${planId}`);
+  console.log(`Subscription created for community ${communityId}: ${subscription.status} -> ${subscriptionStatus}`);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
@@ -245,38 +343,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
     return;
   }
 
-  const status = subscription.status;
-  let subscriptionStatus: "active" | "past_due" | "canceled" = "active";
-  let billingStatus: "trialing" | "active" | "past_due" | "canceled" | "unpaid" = "active";
-
-  switch (status) {
-    case "active":
-      subscriptionStatus = "active";
-      billingStatus = "active";
-      break;
-    case "trialing":
-      subscriptionStatus = "active";
-      billingStatus = "trialing";
-      break;
-    case "past_due":
-      subscriptionStatus = "past_due";
-      billingStatus = "past_due";
-      break;
-    case "canceled":
-    case "unpaid":
-      subscriptionStatus = "canceled";
-      billingStatus = status === "unpaid" ? "unpaid" : "canceled";
-      break;
-  }
-
+  const subscriptionStatus = mapStripeStatusToSubscriptionStatus(subscription.status);
   const currentPeriodEnd = (subscription as any).current_period_end;
+
   await storage.updateCommunity(communityId, {
     subscriptionStatus,
-    billingStatus,
     currentPeriodEnd: currentPeriodEnd ? new Date(currentPeriodEnd * 1000) : undefined,
   });
 
-  console.log(`Subscription updated for community ${communityId}: ${status}`);
+  console.log(`Subscription updated for community ${communityId}: ${subscription.status} -> ${subscriptionStatus}`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
@@ -292,10 +367,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     stripeSubscriptionId: null,
     planId: freePlan?.id || "free",
     subscriptionStatus: "canceled",
-    billingStatus: "canceled",
   });
 
-  console.log(`Subscription deleted for community ${communityId}`);
+  console.log(`Subscription deleted for community ${communityId} - reverted to free plan`);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
@@ -309,15 +383,40 @@ async function handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const subscriptionId = (invoice as any).subscription as string;
   if (!subscriptionId) return;
 
-  console.log(`Payment failed for subscription ${subscriptionId}`);
+  const stripe = await getStripeClient();
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const communityId = subscription.metadata?.communityId;
+
+  if (communityId) {
+    await storage.updateCommunity(communityId, {
+      subscriptionStatus: "past_due",
+    });
+    console.log(`Payment failed for community ${communityId} - status set to past_due`);
+  } else {
+    console.log(`Payment failed for subscription ${subscriptionId} - no communityId found`);
+  }
+}
+
+function mapStripeStatusToSubscriptionStatus(stripeStatus: string): "active" | "past_due" | "canceled" {
+  switch (stripeStatus) {
+    case "trialing":
+    case "active":
+      return "active";
+    case "past_due":
+      return "past_due";
+    case "canceled":
+    case "unpaid":
+    case "incomplete":
+    case "incomplete_expired":
+    case "paused":
+      return "canceled";
+    default:
+      return "active";
+  }
 }
 
 export async function cancelSubscription(communityId: string): Promise<boolean> {
-  const stripe = getStripeClient();
-  if (!stripe) {
-    console.error("Stripe is not configured");
-    return false;
-  }
+  const stripe = await getStripeClient();
 
   const community = await storage.getCommunity(communityId);
   if (!community || !community.stripeSubscriptionId) {
