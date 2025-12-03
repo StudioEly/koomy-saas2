@@ -2217,7 +2217,42 @@ Règles de conversation:
   });
 
   // =====================================================
-  // STRIPE BILLING ROUTES (Prepared for integration)
+  // STRIPE BILLING ROUTES - PHASE 2A: Koomy Subscriptions
+  // =====================================================
+
+  app.post("/api/payments/create-koomy-subscription-session", async (req, res) => {
+    try {
+      const { communityId, billingPlan, billingPeriod } = req.body;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      if (!billingPlan || !["plus", "pro"].includes(billingPlan)) {
+        return res.status(400).json({ error: "billingPlan must be 'plus' or 'pro'" });
+      }
+
+      if (!billingPeriod || !["monthly", "yearly"].includes(billingPeriod)) {
+        return res.status(400).json({ error: "billingPeriod must be 'monthly' or 'yearly'" });
+      }
+
+      const { createKoomySubscriptionSession } = await import("./stripe");
+
+      const result = await createKoomySubscriptionSession({
+        communityId,
+        billingPlan: billingPlan as "plus" | "pro",
+        billingPeriod: billingPeriod as "monthly" | "yearly",
+      });
+
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Create Koomy subscription session error:", error);
+      return res.status(500).json({ error: error.message || "Failed to create subscription session" });
+    }
+  });
+
+  // =====================================================
+  // STRIPE BILLING ROUTES (Legacy - Prepared for integration)
   // =====================================================
 
   app.get("/api/billing/status", async (req, res) => {
