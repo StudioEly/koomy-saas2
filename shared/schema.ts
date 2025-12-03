@@ -17,6 +17,18 @@ export const paymentRequestStatusEnum = pgEnum("payment_request_status", ["pendi
 export const userGlobalRoleEnum = pgEnum("user_global_role", ["platform_super_admin", "platform_support", "platform_commercial"]);
 export const billingPeriodEnum = pgEnum("billing_period", ["one_time", "monthly", "yearly"]);
 
+// Email Type Enum
+export const emailTypeEnum = pgEnum("email_type", [
+  "welcome_community_admin",
+  "invite_delegate",
+  "invite_member",
+  "reset_password",
+  "verify_email",
+  "new_event",
+  "new_collection",
+  "message_to_admin"
+]);
+
 // Community Types
 export const COMMUNITY_TYPES = [
   { value: "sports_club", label: "Club sportif" },
@@ -316,6 +328,25 @@ export const commercialContacts = pgTable("commercial_contacts", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+// Email Templates (managed by SaaS Owner)
+export const emailTemplates = pgTable("email_templates", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  type: emailTypeEnum("type").notNull().unique(),
+  subject: text("subject").notNull(),
+  html: text("html").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Email Logs (for debugging and tracking)
+export const emailLogs = pgTable("email_logs", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  to: text("to").notNull(),
+  type: emailTypeEnum("type").notNull(),
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  success: boolean("success").notNull(),
+  errorMessage: text("error_message")
+});
+
 // Relations
 export const accountsRelations = relations(accounts, ({ many }) => ({
   memberships: many(userCommunityMemberships)
@@ -363,6 +394,8 @@ export const insertMembershipFeeSchema = createInsertSchema(membershipFees).omit
 export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({ id: true, createdAt: true, paidAt: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, completedAt: true });
 export const insertCommercialContactSchema = createInsertSchema(commercialContacts).omit({ id: true, createdAt: true, status: true });
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, updatedAt: true });
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, sentAt: true });
 
 // Select Types
 export type Plan = typeof plans.$inferSelect;
@@ -381,6 +414,8 @@ export type MembershipFee = typeof membershipFees.$inferSelect;
 export type PaymentRequest = typeof paymentRequests.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type CommercialContact = typeof commercialContacts.$inferSelect;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type EmailLog = typeof emailLogs.$inferSelect;
 
 // Insert Types
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
@@ -399,6 +434,8 @@ export type InsertMembershipFee = z.infer<typeof insertMembershipFeeSchema>;
 export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type InsertCommercialContact = z.infer<typeof insertCommercialContactSchema>;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
 
 // Delegate Permissions Type
 export interface DelegatePermissions {
