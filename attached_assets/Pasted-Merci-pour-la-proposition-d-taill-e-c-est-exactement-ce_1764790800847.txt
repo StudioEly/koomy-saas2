@@ -1,0 +1,143 @@
+Merci pour la proposition détaillée, c’est exactement ce que je voulais 🙌
+Je valide la Phase 2A avec les ajustements suivants :
+
+1️⃣ Route /api/payments/create-koomy-subscription-session → OK ✅
+
+La structure de la route me convient.
+
+Les types CreateSubscriptionSessionRequest / Response sont OK.
+
+La logique de sélection du priceId via billingPlan + billingPeriod est bonne.
+
+🔧 Ajustements demandés :
+
+Ne pas utiliser req.protocol + req.get("host") pour les URLs de redirection.
+On ne veut jamais exposer les URLs Replit.
+Merci de mettre des URLs fixes basées sur nos domaines :
+
+const successUrl = `https://lorpesikoomyadmin.koomy.app/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
+const cancelUrl  = `https://lorpesikoomyadmin.koomy.app/subscription/cancel`;
+
+
+(Tu peux adapter le chemin, mais garde bien le domaine lorpesikoomyadmin.koomy.app et pas l’URL Replit.)
+
+Pour planCode = "COMMUNAUTE_STANDARD" | "COMMUNAUTE_PRO" :
+vérifie que ça correspond bien aux codes existants dans la table plans.
+Si les codes actuels sont différents, merci d’utiliser les vrais codes déjà présents.
+
+2️⃣ Champs mis à jour dans communities → petite correction
+
+Tu proposes d’ajouter / mettre à jour :
+
+subscriptionStatus
+billingStatus
+currentPeriodEnd
+trialEndsAt
+billingPeriod
+planId
+
+
+✅ Attention :
+
+subscriptionStatus, billingPeriod, currentPeriodEnd, planId existent déjà — OK.
+
+🔴 billingStatus n’existe pas dans le schéma (et on ne l’a pas ajouté en Phase 1).
+
+🔴 trialEndsAt n’existe pas non plus (on ne l’a pas ajouté non plus).
+
+👉 Donc :
+
+Ne crée pas de champ billingStatus pour l’instant.
+Contente-toi d’utiliser l’subscriptionStatus existant avec un mapping simple entre Stripe et notre enum.
+
+Par exemple :
+
+// Stripe → our subscriptionStatusEnum (active, past_due, canceled)
+trialing → "active"
+active   → "active"
+past_due → "past_due"
+canceled → "canceled"
+unpaid   → "canceled"
+
+
+Tu peux continuer à mettre à jour currentPeriodEnd comme tu le proposes.
+
+Pour le trial 14 jours : on le gère côté Stripe, mais pour l’instant on ne stocke pas trialEndsAt dans la DB (on pourra ajouter un champ dédié plus tard si nécessaire).
+
+3️⃣ Webhooks → globalement OK ✅
+
+Les événements gérés me conviennent :
+
+checkout.session.completed
+
+customer.subscription.created
+
+customer.subscription.updated
+
+invoice.payment_failed
+
+customer.subscription.deleted
+
+🔧 Ajustement :
+
+Dans handleCheckoutCompleted, ne force pas subscriptionStatus: "active" si Stripe renvoie trialing.
+On préfère laisser customer.subscription.updated gérer l’état final :
+
+tu peux te contenter de stocker :
+
+stripeCustomerId
+
+stripeSubscriptionId
+
+planId
+
+billingPeriod
+
+Et laisser handleSubscriptionUpdated mettre à jour :
+
+subscriptionStatus
+
+currentPeriodEnd.
+
+4️⃣ Stripe Client via Replit → OK ✅
+
+Ta logique getStripeClient() avec le connecteur Replit me va.
+Je fournirai les variables d’environnement suivantes :
+
+STRIPE_PRICE_PLUS_MONTHLY
+
+STRIPE_PRICE_PLUS_YEARLY
+
+STRIPE_PRICE_PRO_MONTHLY
+
+STRIPE_PRICE_PRO_YEARLY
+
+STRIPE_WEBHOOK_SECRET (pour la validation de la signature webhook)
+
+5️⃣ Réponses à tes questions
+
+La structure de la route vous convient-elle ?
+✅ Oui, avec les ajustements d’URL ci-dessus.
+
+Les champs mis à jour dans communities sont-ils corrects ?
+✅ Oui, sauf billingStatus et trialEndsAt que nous ne stockons pas pour l’instant (pas de colonnes).
+On reste sur subscriptionStatus, billingPeriod, currentPeriodEnd, planId.
+
+Les webhooks couvrent-ils tous les cas ?
+✅ Oui, c’est suffisant pour la V1.
+
+Faut-il créer les produits/prix Stripe maintenant ou avez-vous déjà les price IDs ?
+✅ Les produits/prix Stripe existent déjà, j’utiliserai les Price IDs pour remplir les variables d’environnement.
+
+🟢 Conclusion
+
+✅ Tu peux implémenter la Phase 2A maintenant,
+en prenant en compte :
+
+la suppression de billingStatus / trialEndsAt dans les updates,
+
+le mapping Stripe → subscriptionStatus,
+
+les success/cancel URLs basées sur nos domaines Koomy (pas Replit).
+
+Ensuite, on validera ensemble cette phase avant de passer à la Phase 2B (Stripe Connect + cotisations + collectes
