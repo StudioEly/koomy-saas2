@@ -1,0 +1,98 @@
+Validation Phase 2B.3 – Collectes / Fundraising
+
+Merci pour le plan détaillé, c’est exactement la logique que je veux.
+Je valide la Phase 2B.3 avec les précisions suivantes :
+
+1️⃣ Routes → OK ✅
+
+Les signatures proposées me conviennent :
+
+POST /api/collections
+
+POST /api/payments/create-collection-session
+
+GET /api/collections/:communityId
+
+✅ À garder important :
+
+Pour POST /api/collections, la vérification userId admin/délégué avec canManageCollections = true est indispensable.
+
+Si possible, utilise l’utilisateur authentifié via la logique d’auth existante plutôt que de faire entièrement confiance au userId passé dans le body.
+
+2️⃣ Calcul de commission → OK ✅
+
+Le calcul :
+
+const feePercent = collection.platformFeePercent ?? community.platformFeePercent ?? 2;
+const applicationFeeAmount = Math.round(amount * feePercent / 100);
+
+
+me va très bien.
+
+3️⃣ Webhook payment_intent.succeeded → une correction importante
+
+La logique globale est bonne (créer transaction + mettre à jour la collecte + fermer si objectif atteint).
+
+Mais attention : dans ton pseudo-code tu utilises applicationFeeAmount dans le webhook alors qu’il n’existe pas dans ce contexte.
+
+➡️ Merci de récupérer la commission Koomy directement depuis le PaymentIntent :
+
+soit en lisant paymentIntent.application_fee_amount (si présent),
+
+soit en stockant le fee dans metadata au moment de la création de la session.
+
+Par exemple dans le webhook :
+
+const amountTotal = paymentIntent.amount;
+const feeKoomy = paymentIntent.application_fee_amount || 0;
+const amountToCommunity = amountTotal - feeKoomy;
+
+
+Et ensuite :
+
+await storage.insertTransaction({
+  communityId,
+  collectionId,
+  membershipId,
+  type: "collection",
+  amountTotalCents: amountTotal,
+  amountFeeKoomyCents: feeKoomy,
+  amountToCommunity,
+  currency: paymentIntent.currency?.toUpperCase() || "EUR",
+  stripePaymentIntentId: paymentIntent.id,
+  status: "succeeded",
+  metadata: { communityId, collectionId, membershipId }
+});
+
+
+⚠️ Donc merci de ne pas utiliser une variable applicationFeeAmount non définie dans le webhook, mais bien la valeur remontée par Stripe.
+
+4️⃣ Mise à jour de la collecte → OK ✅
+
+La logique suivante me va :
+
+updateCollectionAmounts(collectionId, amountCents) :
+
+incrémente collectedAmountCents de amountCents
+
+incrémente participantsCount de 1
+
+Si targetAmountCents est défini et que collectedAmountCents >= targetAmountCents
+→ passer la collecte en status = "closed" et remplir closedAt.
+
+✅ Oui, je veux que tu fermes automatiquement la collecte quand l’objectif est atteint.
+
+5️⃣ GET /api/collections/:communityId → OK ✅
+
+Retourner uniquement les collectes status = "open" pour l’app membre.
+
+Le calcul percentComplete côté backend ((collected / target) * 100) est parfait.
+
+🟢 Conclusion
+
+✅ Les signatures de routes me conviennent.
+✅ Le calcul de commission avec priorité collection.platformFeePercent → community.platformFeePercent → 2% est validé.
+✅ Oui, il faut fermer automatiquement la collecte quand l’objectif est atteint.
+
+Tu peux implémenter la Phase 2B.3 maintenant,
+en corrigeant le webhook pour utiliser paymentIntent.application_fee_amount (ou un équivalent) à la place d’une variable locale.
