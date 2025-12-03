@@ -495,7 +495,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     stripeTransferId: null,
     stripeApplicationFeeId: null,
     status: "succeeded",
-    metadata: { communityId, membershipId },
+    metadata: { communityId, membershipId } as Record<string, any>,
   });
 
   const now = new Date();
@@ -506,7 +506,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     membershipPaidAt: now,
     membershipValidUntil: validUntil,
     membershipAmountPaid: amountTotal,
-    contributionStatus: "paid",
+    contributionStatus: "up_to_date",
   });
 
   console.log(`Membership payment processed for ${membershipId} in community ${communityId} - amount: ${amountTotal} cents, valid until: ${validUntil.toISOString()}`);
