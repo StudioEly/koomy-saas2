@@ -22,7 +22,7 @@ export default function MobileAdminLogin() {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${API_URL}/api/auth/admin/login`, {
+      const response = await fetch(`${API_URL}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
