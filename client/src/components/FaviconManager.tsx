@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 const FAVICON_KOOMY = "/favicon-koomy.png";
-const FAVICON_APP_PRO = "/icons/koomy-icon-512.png";
+const FAVICON_PRO = "/favicon-pro.png";
 
 export default function FaviconManager() {
   const [location] = useLocation();
@@ -10,18 +10,17 @@ export default function FaviconManager() {
   useEffect(() => {
     const hostname = typeof window !== "undefined" ? window.location.hostname : "";
     
-    let faviconUrl = FAVICON_APP_PRO;
-    let appleIconUrl = FAVICON_APP_PRO;
+    let faviconUrl = FAVICON_KOOMY;
     
     if (
-      hostname === "koomy.app" ||
-      hostname === "app.koomy.app" ||
-      location.startsWith("/website") ||
-      location.startsWith("/app/") ||
-      location === "/app"
+      hostname === "app-pro.koomy.app" ||
+      hostname === "backoffice.koomy.app" ||
+      hostname === "lorpesikoomyadmin.koomy.app" ||
+      location.startsWith("/app-pro") ||
+      location.startsWith("/admin") ||
+      location.startsWith("/platform")
     ) {
-      faviconUrl = FAVICON_KOOMY;
-      appleIconUrl = FAVICON_KOOMY;
+      faviconUrl = FAVICON_PRO;
     }
 
     const existingFavicon = document.querySelector('link[rel="icon"]');
@@ -31,7 +30,7 @@ export default function FaviconManager() {
       existingFavicon.setAttribute("href", faviconUrl);
     }
     if (existingAppleIcon) {
-      existingAppleIcon.setAttribute("href", appleIconUrl);
+      existingAppleIcon.setAttribute("href", faviconUrl);
     }
   }, [location]);
 
