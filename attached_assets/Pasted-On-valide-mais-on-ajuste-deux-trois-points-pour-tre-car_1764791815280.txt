@@ -1,0 +1,91 @@
+On valide, mais on ajuste deux-trois points pour être carré tout de suite (surtout la sécurité).
+
+Voici ce que tu peux lui répondre, à copier-coller :
+
+✅ Validation Phase 2B.1 – avec ajustements
+
+Merci, la proposition pour Stripe Connect Express me convient globalement.
+Je valide la Phase 2B.1 avec les précisions / ajustements suivants :
+
+1️⃣ Route /api/payments/connect-community → OK, mais sécurisée
+
+La signature et le retour :
+
+{ communityId: string } -> { onboardingUrl: string; accountId: string }
+
+
+me conviennent.
+
+➡️ Important : merci d’implémenter dès maintenant la vérification que l’utilisateur est bien admin de la communauté, en utilisant la logique d’auth/roles déjà existante (pas de TODO laissé en place).
+
+Si l’utilisateur n’a pas les droits admin sur communityId :
+
+retourner 403 { error: "Forbidden" }.
+
+2️⃣ stripeConnect.ts → OK avec un ajustement mineur
+
+Le fichier me va bien. Deux remarques :
+
+Type de compte : non_profit
+
+business_type: 'non_profit'
+
+
+✅ On garde cette valeur par défaut, car la majorité de nos communautés sont des clubs / assos / syndicats.
+Si Stripe a besoin d’un autre type pour certains cas, on adaptera plus tard.
+
+Tu utilises getUncachableStripeClient() :
+
+OK si c’est cohérent avec ce que tu as déjà mis dans stripeClient.ts.
+
+Si tu as aussi une fonction getStripeClient(), merci de garder la même logique partout pour éviter les incohérences (mais tu peux décider de tout passer sur la version “uncachable” si c’est le choix retenu).
+
+3️⃣ Mise à jour de stripeConnectAccountId → OK
+
+Le flux :
+
+si stripeConnectAccountId est null → création de compte Express
+
+stockage de account.id dans stripeConnectAccountId
+
+génération de l’onboardingUrl
+
+➡️ C’est exactement ce qu’il faut.
+
+4️⃣ Préparation des webhooks Connect → OK pour la suite
+
+Tu as prévu :
+
+account.updated → mettre paymentsEnabled = true quand :
+
+charges_enabled = true
+
+et payouts_enabled = true
+
+➡️ C’est exactement ce que je veux faire dans la sous-phase suivante.
+Ne l’implémente pas encore si tu veux rester strict sur 2B.1, mais garde bien cette logique.
+
+✅ Réponses à tes questions
+
+La structure vous convient-elle ?
+✅ Oui.
+
+Le type de compte non_profit est-il correct pour les communautés ?
+✅ Oui, on part là-dessus pour l’instant (clubs, assos, syndicats).
+
+Dois-je ajouter la vérification d'auth admin dans cette phase ou plus tard ?
+🔴 Maintenant.
+On ne veut jamais exposer une route Stripe sensible sans contrôle d’admin.
+
+🟢 Conclusion
+
+✅ Tu peux implémenter la Phase 2B.1 maintenant,
+en intégrant :
+
+la vérification d’admin sur la route /api/payments/connect-community,
+
+la logique de création/récupération du compte Express,
+
+la génération de l’onboardingUrl avec les URLs fixes que tu as proposées.
+
+Une fois ça fait, on passera à 2B.2 : paiement des cotisations (membership).
