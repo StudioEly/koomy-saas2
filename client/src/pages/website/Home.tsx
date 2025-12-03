@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle, Smartphone, Users, Shield, LayoutDashboard } f
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import communityCollage from "@assets/Multicolor Vivid Summer Photo Collage A4 Document (1)_1764652857180.png";
+import PWAInstallCard from "@/components/PWAInstallCard";
 
 export default function WebsiteHome() {
   const { t } = useTranslation();
@@ -108,43 +109,19 @@ export default function WebsiteHome() {
       {/* App Download Section */}
       <section className="py-24 bg-slate-900 text-white overflow-hidden">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            <div className="lg:w-1/2 space-y-8">
-              <h2 className="text-3xl lg:text-4xl font-bold leading-tight">
-                {t('home.mobile.title')}<br />
-                <span className="text-blue-400">{t('home.mobile.titleHighlight')}</span>
-              </h2>
-              <p className="text-slate-300 text-lg">
-                {t('home.mobile.subtitle')}
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <button className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold flex items-center gap-3 hover:bg-slate-100 transition-colors">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg" alt="Apple" className="w-6 h-6 invert" />
-                  <div>
-                    <div className="text-[10px] uppercase leading-none">{t('home.mobile.appStore')}</div>
-                    <div className="text-base leading-none mt-0.5">App Store</div>
-                  </div>
-                </button>
-                <button className="bg-transparent border border-slate-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-3 hover:bg-slate-800 transition-colors">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Android_robot.svg" alt="Android" className="w-6 h-6" />
-                  <div>
-                    <div className="text-[10px] uppercase leading-none">{t('home.mobile.playStore')}</div>
-                    <div className="text-base leading-none mt-0.5">Google Play</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-            <div className="lg:w-1/2 flex justify-center lg:justify-end">
-               {/* Mockup of phone */}
-               <div className="relative w-[280px] h-[560px] bg-slate-800 rounded-[3rem] border-8 border-slate-700 shadow-2xl overflow-hidden">
-                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-700 rounded-b-2xl z-20"></div>
-                 <img 
-                   src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80" 
-                   alt="App Interface" 
-                   className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-500"
-                 />
-               </div>
-            </div>
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold leading-tight mb-4">
+              {t('home.mobile.title')}<br />
+              <span className="text-blue-400">{t('home.mobile.titleHighlight')}</span>
+            </h2>
+            <p className="text-slate-300 text-lg">
+              {t('pwa.subtitle', 'Installez nos applications sur votre téléphone en un clic. Pas besoin de store.')}
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <PWAInstallCard variant="member" />
+            <PWAInstallCard variant="pro" />
           </div>
         </div>
       </section>
