@@ -1,0 +1,88 @@
+Tu peux commencer la Phase 2, mais je veux que tu la découpes en sous-phases bien distinctes :
+
+🟦 Phase 2A – Stripe Billing (abonnement Koomy uniquement)
+
+Objectif :
+Mettre en place l’abonnement Koomy pour les communautés (plans Plus / Pro, mensuel / annuel, avec 14 jours d’essai).
+
+Merci de :
+
+Créer / compléter server/stripeClient.ts
+
+initialisation propre du client Stripe
+
+lecture des variables d’environnement suivantes :
+
+STRIPE_SECRET_KEY
+
+STRIPE_PRICE_PLUS_MONTHLY
+
+STRIPE_PRICE_PLUS_YEARLY
+
+STRIPE_PRICE_PRO_MONTHLY
+
+STRIPE_PRICE_PRO_YEARLY
+
+STRIPE_WEBHOOK_SECRET
+
+Créer une route backend :
+POST /api/payments/create-koomy-subscription-session
+
+Entrée : communityId, billingPlan ("plus" | "pro"), billingPeriod ("monthly" | "yearly")
+
+Création/récupération du customer Stripe
+
+Sélection du bon price_id
+
+Création d’une session Checkout en mode subscription avec trial_period_days: 14
+
+Retourner session.url
+
+Mettre à jour la table communities à partir des webhooks Stripe :
+
+subscriptionStatus
+
+billingPeriod
+
+currentPeriodEnd
+
+planId (lien avec la table plans déjà existante)
+
+Créer le handler de webhooks Stripe dans server/webhookHandlers.ts et le brancher dans server/index.ts :
+
+Gérer au minimum :
+
+checkout.session.completed
+
+customer.subscription.created
+
+customer.subscription.updated
+
+invoice.payment_failed
+
+customer.subscription.deleted
+
+Avant d’implémenter, merci de :
+
+me montrer les signatures des routes,
+
+les structures d’objets que tu comptes écrire en DB,
+
+et les extraits de code principaux.
+
+👉 Dans cette Phase 2A, ne touche PAS encore à Stripe Connect, ni aux cotisations, ni aux collectes.
+On veut d’abord un flux propre pour l’abonnement Koomy.
+
+🟩 Phase 2B – Stripe Connect + paiements membres (à faire après validation de 2A)
+
+Une fois la Phase 2A terminée et validée, on passera ensuite :
+
+à server/stripeConnect.ts (création des comptes Express pour les communautés),
+
+aux routes create-membership-session,
+
+puis aux collectes et aux entrées dans transactions.
+
+Mais pas tout de suite : on valide d’abord 2A.
+
+Tu peux donc commencer par la Phase 2A (Stripe Billing) comme décrit ci-dessus, et me présenter le plan / code pour validation avant d’aller plus loin.
