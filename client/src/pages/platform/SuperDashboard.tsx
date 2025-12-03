@@ -18,7 +18,7 @@ import {
   TrendingUp, TrendingDown, Shield, CreditCard, BarChart3, LogOut, Gift, X, Sparkles,
   DollarSign, PiggyBank, Activity, Wallet, ArrowUpRight, ArrowDownRight,
   Building2, Calendar, Euro, Banknote, ChartPie, Target, AlertTriangle, MapPin,
-  UserPlus, Crown, Headphones, Briefcase, UserCog
+  UserPlus, Crown, Headphones, Briefcase, UserCog, Mail, FileText, Send, Eye, RefreshCw
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -139,6 +139,25 @@ type TicketWithDetails = PlatformTicket & {
   assignedUser: { id: string; firstName: string; lastName: string } | null;
 };
 
+type EmailTemplate = {
+  id: string;
+  type: string;
+  subject: string;
+  html: string;
+  updatedAt: string;
+  label: string;
+  variables: string[];
+};
+
+type EmailLog = {
+  id: string;
+  to: string;
+  type: string;
+  sentAt: string;
+  success: boolean;
+  errorMessage: string | null;
+};
+
 type PaymentAnalytics = {
   totalVolume: number;
   totalVolumeThisMonth: number;
@@ -214,6 +233,13 @@ export default function SuperAdminDashboard() {
   const [newUserFirstName, setNewUserFirstName] = useState("");
   const [newUserLastName, setNewUserLastName] = useState("");
   const [newUserRole, setNewUserRole] = useState("");
+  
+  // Email template state
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [editingSubject, setEditingSubject] = useState("");
+  const [editingHtml, setEditingHtml] = useState("");
+  const [testEmail, setTestEmail] = useState("");
+  const [showTestModal, setShowTestModal] = useState(false);
 
   // Fetch communities from API
   const { data: communities = [], isLoading: communitiesLoading } = useQuery<Community[]>({
@@ -351,6 +377,26 @@ export default function SuperAdminDashboard() {
     },
     enabled: !!user?.id
   });
+  
+  // Email templates
+  const { data: emailTemplates = [], refetch: refetchTemplates } = useQuery<EmailTemplate[]>({
+    queryKey: ["email-templates"],
+    queryFn: async () => {
+      const response = await fetch("/api/owner/email-templates");
+      if (!response.ok) throw new Error("Failed to fetch email templates");
+      return response.json();
+    }
+  });
+  
+  // Email logs
+  const { data: emailLogs = [] } = useQuery<EmailLog[]>({
+    queryKey: ["email-logs"],
+    queryFn: async () => {
+      const response = await fetch("/api/owner/email-logs?limit=50");
+      if (!response.ok) throw new Error("Failed to fetch email logs");
+      return response.json();
+    }
+  });
 
   // Grant full access mutation
   const grantFullAccessMutation = useMutation({
@@ -458,6 +504,54 @@ export default function SuperAdminDashboard() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["platform-users"] });
       toast({ title: "Utilisateur retiré", description: data.message });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    }
+  });
+
+  // Email template mutations
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ type, subject, html }: { type: string; subject: string; html: string }) => {
+      const response = await fetch(`/api/owner/email-templates/${type}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, html })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update template");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-templates"] });
+      toast({ title: "Template mis à jour", description: "Les modifications ont été enregistrées." });
+      setSelectedTemplate(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const testEmailMutation = useMutation({
+    mutationFn: async ({ type, email, variables }: { type: string; email: string; variables: Record<string, string> }) => {
+      const response = await fetch("/api/owner/email-templates/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, email, variables })
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to send test email");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: "Email envoyé", description: data.message });
+      setShowTestModal(false);
+      setTestEmail("");
+      queryClient.invalidateQueries({ queryKey: ["email-logs"] });
     },
     onError: (error: Error) => {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -703,6 +797,9 @@ export default function SuperAdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="support" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-4">
               <MessageSquare className="mr-2 h-4 w-4" /> Support
+            </TabsTrigger>
+            <TabsTrigger value="emails" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-4">
+              <Mail className="mr-2 h-4 w-4" /> Templates Email
             </TabsTrigger>
           </TabsList>
 
@@ -1716,8 +1813,266 @@ export default function SuperAdminDashboard() {
               </Card>
             )}
           </TabsContent>
+
+          {/* EMAIL TEMPLATES TAB */}
+          <TabsContent value="emails">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Templates Email</h1>
+                <p className="text-gray-500">Personnalisez les emails envoyés par Koomy.</p>
+              </div>
+              <Button variant="outline" onClick={() => refetchTemplates()} className="gap-2">
+                <RefreshCw size={16} /> Actualiser
+              </Button>
+            </div>
+
+            {/* Warning Banner */}
+            <Card className="mb-6 border-amber-200 bg-amber-50">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-amber-800">Attention</p>
+                    <p className="text-sm text-amber-700">Les emails modifiés affectent toutes les communautés utilisant Koomy.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Templates List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    Liste des Templates ({emailTemplates.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y">
+                    {emailTemplates.map((template) => (
+                      <div 
+                        key={template.id} 
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${selectedTemplate?.id === template.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
+                        onClick={() => {
+                          setSelectedTemplate(template);
+                          setEditingSubject(template.subject);
+                          setEditingHtml(template.html);
+                        }}
+                        data-testid={`template-item-${template.type}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-gray-900">{template.label}</div>
+                            <div className="text-xs text-gray-500 mt-1">{template.type}</div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {template.variables.length} variables
+                            </Badge>
+                            <span className="text-xs text-gray-400">
+                              {new Date(template.updatedAt).toLocaleDateString('fr-FR')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Template Editor */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-purple-500" />
+                    {selectedTemplate ? 'Modifier le Template' : 'Sélectionnez un Template'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {selectedTemplate ? (
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Type</Label>
+                        <Input value={selectedTemplate.label} disabled className="bg-gray-50" />
+                      </div>
+                      
+                      <div>
+                        <Label>Variables disponibles</Label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedTemplate.variables.map((v) => (
+                            <Badge key={v} variant="outline" className="font-mono text-xs bg-purple-50 text-purple-700 border-purple-200">
+                              {`{{${v}}}`}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label>Objet de l'email</Label>
+                        <Input 
+                          value={editingSubject} 
+                          onChange={(e) => setEditingSubject(e.target.value)}
+                          placeholder="Objet de l'email"
+                          data-testid="input-template-subject"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Contenu HTML</Label>
+                        <Textarea 
+                          value={editingHtml} 
+                          onChange={(e) => setEditingHtml(e.target.value)}
+                          className="font-mono text-xs min-h-[200px]"
+                          placeholder="Contenu HTML de l'email"
+                          data-testid="textarea-template-html"
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          className="flex-1"
+                          onClick={() => updateTemplateMutation.mutate({ 
+                            type: selectedTemplate.type, 
+                            subject: editingSubject, 
+                            html: editingHtml 
+                          })}
+                          disabled={updateTemplateMutation.isPending}
+                          data-testid="button-save-template"
+                        >
+                          {updateTemplateMutation.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          className="gap-2"
+                          onClick={() => setShowTestModal(true)}
+                          data-testid="button-test-template"
+                        >
+                          <Send size={16} /> Tester
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => setSelectedTemplate(null)}
+                        >
+                          Annuler
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-gray-500">
+                      <Mail className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>Sélectionnez un template dans la liste pour le modifier</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Email Logs Section */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-green-500" />
+                  Historique des Envois ({emailLogs.length} derniers)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {emailLogs.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Mail className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p>Aucun email envoyé pour le moment</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Destinataire</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Erreur</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {emailLogs.slice(0, 20).map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="font-mono text-sm">{log.to}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">{log.type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {log.success ? (
+                              <Badge className="bg-green-100 text-green-700 border-0">
+                                <CheckCircle size={12} className="mr-1" /> Envoyé
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">
+                                <X size={12} className="mr-1" /> Échec
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500">
+                            {new Date(log.sentAt).toLocaleString('fr-FR')}
+                          </TableCell>
+                          <TableCell className="text-sm text-red-500">
+                            {log.errorMessage || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
+
+      {/* Test Email Modal */}
+      <Dialog open={showTestModal} onOpenChange={setShowTestModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Envoyer un email de test</DialogTitle>
+            <DialogDescription>
+              L'email sera envoyé avec des variables de démonstration.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label>Email de destination</Label>
+              <Input 
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                placeholder="votre@email.com"
+                data-testid="input-test-email"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTestModal(false)}>Annuler</Button>
+            <Button 
+              onClick={() => {
+                if (selectedTemplate && testEmail) {
+                  const testVariables: Record<string, string> = {};
+                  selectedTemplate.variables.forEach(v => {
+                    testVariables[v] = `[TEST_${v.toUpperCase()}]`;
+                  });
+                  testEmailMutation.mutate({ 
+                    type: selectedTemplate.type, 
+                    email: testEmail, 
+                    variables: testVariables 
+                  });
+                }
+              }}
+              disabled={!testEmail || testEmailMutation.isPending}
+              data-testid="button-confirm-test-email"
+            >
+              {testEmailMutation.isPending ? 'Envoi...' : 'Envoyer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Ticket Details Modal */}
       <Dialog open={ticketModalOpen} onOpenChange={setTicketModalOpen}>
