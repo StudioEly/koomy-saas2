@@ -690,6 +690,24 @@ export async function registerRoutes(
       const newCode = generateClaimCode();
       const updated = await storage.updateMembership(req.params.id, { claimCode: newCode });
       
+      // Send email with new code if member has an email
+      if (membership.email) {
+        const community = await storage.getCommunity(membership.communityId);
+        try {
+          await sendSystemEmail(EMAIL_TYPES.INVITE_MEMBER, membership.email, {
+            name: membership.displayName || "Membre",
+            communityName: community?.name || "Votre communauté",
+            codeMembre: newCode,
+            activationUrl: process.env.REPLIT_DEV_DOMAIN 
+              ? `https://${process.env.REPLIT_DEV_DOMAIN}/app/claim`
+              : "/app/claim"
+          });
+          console.log(`[Email] New invite code sent to ${membership.email}`);
+        } catch (emailError) {
+          console.error(`[Email] Failed to send new invite code:`, emailError);
+        }
+      }
+      
       return res.json(updated);
     } catch (error) {
       console.error("Regenerate claim code error:", error);
