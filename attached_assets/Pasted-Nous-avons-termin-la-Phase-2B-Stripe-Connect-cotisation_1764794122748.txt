@@ -1,0 +1,185 @@
+Nous avons terminé la Phase 2B (Stripe Connect + cotisations + collectes) côté backend.
+Maintenant, je veux ajouter l’interface “Finances & Collectes” pour les administrateurs de communauté, à la fois :
+
+dans le backoffice web (/admin)
+
+et dans l’app Pro (/app/admin)
+
+L’objectif : permettre à un admin de communauté de piloter facilement :
+
+son statut de paiements,
+
+sa cotisation annuelle,
+
+ses collectes,
+
+et de voir un historique simplifié des transactions.
+
+1️⃣ Endpoints backend déjà disponibles
+
+Tu dois réutiliser les routes déjà implémentées :
+
+POST /api/payments/connect-community
+
+POST /api/payments/create-membership-session
+
+POST /api/collections
+
+GET /api/collections/:communityId
+
+POST /api/payments/create-collection-session
+
+GET /api/communities/:id/payments ou équivalent (transactions, si tu l’as ajouté)
+
+plus les endpoints existants pour récupérer la communauté et les memberships.
+
+Si certaines routes helpers manquent pour la liste des transactions ou les infos de communauté, propose-les avant de les créer.
+
+2️⃣ Backoffice Web – Page “Finances & Collectes”
+
+Dans le backoffice admin (interface web d’un gestionnaire de communauté), créer une page par communauté du type :
+
+/admin/communities/:communityId/finances
+
+Cette page doit contenir 4 blocs :
+
+A. Résumé Financier
+
+Afficher :
+
+Plan Koomy : Free / Plus / Pro
+
+Statut paiements en ligne :
+
+Stripe Connect : ✅ activé / ⚠️ en attente
+
+paymentsEnabled (oui/non)
+
+Cotisation actuelle : montant annuel en €
+
+Nombre de membres “à jour” (si info dispo)
+
+B. Paiement en ligne & Cotisation
+
+Champ editable : cotisation annuelle (en €) → lié à membershipAmountCents
+
+Toggle / switch :
+
+“Activer le paiement en ligne des cotisations”
+
+Ce toggle ne peut être activé que si Stripe Connect est configuré (stripeConnectAccountId + paymentsEnabled = true)
+
+Bouton “Configurer / Reprendre l’onboarding Stripe”
+
+Appelle POST /api/payments/connect-community
+
+Redirige l’admin vers l’URL d’onboarding retournée.
+
+C. Collectes (Fundraising)
+
+Bouton “Créer une collecte” → ouvre un formulaire :
+
+titre (obligatoire)
+
+description (optionnelle)
+
+montant par participant (en €)
+
+checkbox : “Permettre un montant libre”
+
+objectif (optionnel)
+
+deadline (optionnelle, date)
+
+→ soumet vers POST /api/collections.
+
+Liste des collectes de la communauté (via GET /api/collections/:communityId ou équivalent “all” si tu l’ajoutes) :
+
+Titre
+
+Statut (open / closed / canceled)
+
+Montant collecté / objectif
+
+Nombre de participants
+
+Pour les “open” :
+
+bouton “Clore la collecte” → utilise closeCollection() côté storage via un endpoint simple (à créer si nécessaire, par ex : POST /api/collections/:id/close).
+
+D. Historique des transactions
+
+Tableau simple basé sur la table transactions :
+
+date
+
+type : subscription / membership / collection
+
+membre (si disponible)
+
+montant total
+
+commission Koomy
+
+montant reversé à la communauté
+
+Si aucun endpoint dédié n’existe encore, tu peux ajouter :
+
+GET /api/communities/:id/transactions pour retourner les transactions de la communauté.
+
+3️⃣ App Pro – Version simplifiée de la même page
+
+Dans l’app Pro (/app/admin), ajouter un écran “Finances” pour une communauté :
+
+Même sections, mais en version mobile / simplifiée :
+
+Résumé financier
+
+Bouton “Activer ou vérifier Stripe Connect”
+
+Affichage de la cotisation + bouton “Modifier”
+
+Liste des collectes open avec :
+
+titre
+
+montant / objectif
+
+bouton “Voir détails” ou “Partager le lien de participation” (si possible, tu peux exposer l’URL de l’app membre ou juste l’ID pour que le front la construise).
+
+Tu peux réutiliser les mêmes endpoints que pour le backoffice.
+
+4️⃣ Contraintes UX
+
+Aucune URL Replit ou Vercel ne doit apparaître.
+Utiliser uniquement les domaines Koomy :
+
+koomy.app (site public)
+
+backoffice.koomy.app (backoffice)
+
+app.koomy.app (app membre)
+
+app-pro.koomy.app (si utilisé pour l’app Pro)
+
+L’UI doit être cohérente avec le design actuel de Koomy (mêmes couleurs, boutons, fonts).
+
+5️⃣ Ce que j’attends de toi
+
+Me proposer la structure des nouvelles pages (backoffice + app pro) :
+
+routes front,
+
+composants principaux,
+
+endpoints appelés.
+
+Puis implémenter progressivement :
+
+backoffice d’abord,
+
+app pro ensuite,
+
+tout en restant strictement aligné sur les APIs déjà en place.
+
+Tu peux commencer par la page “Finances & Collectes” du backoffice, puis me montrer un récapitulatif avant de dupliquer / adapter pour l’app Pro.
