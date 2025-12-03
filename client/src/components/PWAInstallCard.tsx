@@ -19,20 +19,14 @@ export default function PWAInstallCard({ variant }: PWAInstallCardProps) {
         description: t('pwa.member.description', 'Accédez à votre espace membre en 1 clic depuis votre téléphone.'),
         icon: "/icons/iconeapppublic.png",
         url: "/app",
-        bgColor: "bg-sky-50",
-        borderColor: "border-sky-200",
-        buttonColor: "bg-sky-500 hover:bg-sky-600",
-        textColor: "text-sky-900"
+        buttonColor: "bg-sky-500 hover:bg-sky-600"
       }
     : {
         title: t('pwa.pro.title', 'Koomy - Pro'),
         description: t('pwa.pro.description', 'Gérez votre communauté et vos adhésions depuis votre mobile.'),
         icon: "/icons/icone-appPro-koomy.png",
         url: "/app-pro",
-        bgColor: "bg-blue-900/10",
-        borderColor: "border-blue-800/30",
-        buttonColor: "bg-blue-700 hover:bg-blue-800",
-        textColor: "text-blue-900"
+        buttonColor: "bg-blue-700 hover:bg-blue-800"
       };
 
   const handleInstall = async () => {
@@ -50,13 +44,13 @@ export default function PWAInstallCard({ variant }: PWAInstallCardProps) {
 
   return (
     <>
-      <div className={`relative rounded-2xl p-6 ${config.bgColor} border ${config.borderColor} transition-all hover:shadow-lg`}>
+      <div className="relative rounded-2xl p-6 bg-white shadow-xl border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-1">
         <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md flex-shrink-0">
+          <div className="w-16 h-16 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-slate-50">
             <img src={config.icon} alt={config.title} className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className={`text-lg font-bold ${config.textColor}`}>{config.title}</h3>
+            <h3 className="text-lg font-bold text-slate-900">{config.title}</h3>
             <p className="text-sm text-slate-600 mt-1 leading-relaxed">{config.description}</p>
           </div>
         </div>
