@@ -1,0 +1,189 @@
+OK pour la PHASE 2B.3 – Collectes / Fundraising
+
+Nous pouvons passer à la Phase 2B.3.
+L’objectif est de permettre à une communauté de créer des collectes ponctuelles, et aux membres de payer leur contribution via Stripe Checkout, avec :
+
+reversement automatique au compte Connect de la communauté,
+
+commission Koomy appliquée (2% ou platformFeePercent),
+
+enregistrement dans la table transactions,
+
+mise à jour des montants collectés.
+
+🟦 Phase 2B.3 – Détails de la fonctionnalité
+1️⃣ Route API : création d’une collecte
+
+Créer la route :
+
+POST /api/collections
+
+
+Entrée :
+
+{
+  communityId: string,
+  title: string,
+  description?: string,
+  amountCents: number,
+  allowCustomAmount?: boolean,
+  targetAmountCents?: number,
+  deadline?: string | null
+}
+
+
+Contraintes :
+
+L’utilisateur doit être admin ou délégué avec droit de créer des collectes.
+
+La communauté doit avoir :
+
+stripeConnectAccountId
+
+paymentsEnabled = true
+
+Stockage :
+
+entrée dans la table collections
+
+Retour :
+
+{
+  collectionId: string
+}
+
+2️⃣ Route API : paiement d’une collecte
+
+Créer la route :
+
+POST /api/payments/create-collection-session
+
+
+Entrée :
+
+{
+  communityId: string,
+  collectionId: string,
+  memberId?: string,
+  amountCents?: number  // requis si allowCustomAmount = true
+}
+
+
+Logique :
+
+Vérifier que la collecte existe et appartient à cette communauté.
+
+Vérifier que la collecte est open.
+
+Vérifier amountCents si allowCustomAmount = true.
+
+Calcul commission Koomy :
+
+feePercent = collection.platformFeePercent ?? community.platformFeePercent ?? 2;
+applicationFeeAmount = Math.round(amount * feePercent / 100);
+
+
+Créer une session Stripe Checkout :
+
+mode: "payment",
+payment_intent_data: {
+  application_fee_amount,
+  transfer_data: {
+    destination: community.stripeConnectAccountId
+  },
+  metadata: {
+    type: "collection",
+    communityId,
+    collectionId,
+    memberId,
+  }
+},
+metadata: {
+  type: "collection",
+  communityId,
+  collectionId,
+  memberId,
+}
+
+
+success_url = https://app.koomy.app/payment/success?session_id={CHECKOUT_SESSION_ID}
+cancel_url = https://app.koomy.app/payment/cancel
+
+Retour :
+
+{
+  sessionId: string,
+  sessionUrl: string
+}
+
+3️⃣ Webhook : payment_intent.succeeded pour "collection"
+
+Modifier le webhook existant :
+
+Quand paymentIntent.metadata.type === "collection" :
+
+Créer une transaction :
+
+type = "collection"
+communityId
+collectionId
+memberId
+amountTotalCents
+amountFeeKoomyCents
+amountToCommunity
+stripePaymentIntentId
+status = "succeeded"
+
+
+Mettre à jour la table collections :
+
+collectedAmountCents += amountTotalCents
+
+participantsCount += 1
+
+(optionnel MVP) Si targetAmountCents atteint :
+
+passer la collecte en status = "closed".
+
+4️⃣ Route API : récupérer les collectes pour app membre
+
+Créer :
+
+GET /api/collections/:communityId
+
+
+Retour :
+
+collectes open
+
+avec :
+
+montant,
+
+% atteint,
+
+deadline,
+
+allowCustomAmount
+
+pour affichage dans l'app membre.
+
+5️⃣ Que je veux avant implémentation
+
+Comme pour les autres phases, merci de :
+
+Me montrer les signatures exactes des routes (POST /api/collections, POST /api/payments/create-collection-session).
+
+Le plan de mise à jour DB pour :
+
+collections
+
+transactions
+
+Le code principal prévu pour le webhook.
+
+Les validations ajoutées (admin, communauté active, paiements activés, etc.)
+
+Ensuite seulement, tu pourras implémenter la Phase 2B.3.
+
+Tu peux commencer.
