@@ -25,10 +25,16 @@ import MobilePayment from "@/pages/mobile/Payment";
 
 // Mobile Admin Pages
 import MobileAdminLogin from "@/pages/mobile/admin/Login";
+import MobileAdminRegister from "@/pages/mobile/admin/Register";
 import MobileAdminSelectCommunity from "@/pages/mobile/admin/SelectCommunity";
 import MobileAdminHome from "@/pages/mobile/admin/Home";
 import MobileAdminScanner from "@/pages/mobile/admin/Scanner";
 import MobileAdminMessages from "@/pages/mobile/admin/Messages";
+import MobileAdminArticles from "@/pages/mobile/admin/Articles";
+import MobileAdminEvents from "@/pages/mobile/admin/Events";
+import MobileAdminCollections from "@/pages/mobile/admin/Collections";
+import MobileAdminMembers from "@/pages/mobile/admin/Members";
+import MobileAdminSettings from "@/pages/mobile/admin/Settings";
 import MobileSupport from "@/pages/mobile/Support";
 
 // Wrapper for mobile pages to force mobile layout
@@ -147,10 +153,16 @@ function Router() {
 
       {/* Mobile Admin Routes - wrapped in MobileContainer for phone-sized display */}
       <Route path="/app/admin/login" component={withMobileContainer(MobileAdminLogin)} />
+      <Route path="/app/admin/register" component={withMobileContainer(MobileAdminRegister)} />
       <Route path="/app/admin/select-community" component={withMobileContainer(MobileAdminSelectCommunity)} />
       <Route path="/app/:communityId/admin" component={withMobileContainer(MobileAdminHome)} />
       <Route path="/app/:communityId/admin/scanner" component={withMobileContainer(MobileAdminScanner)} />
       <Route path="/app/:communityId/admin/messages" component={withMobileContainer(MobileAdminMessages)} />
+      <Route path="/app/:communityId/admin/articles" component={withMobileContainer(MobileAdminArticles)} />
+      <Route path="/app/:communityId/admin/events" component={withMobileContainer(MobileAdminEvents)} />
+      <Route path="/app/:communityId/admin/collections" component={withMobileContainer(MobileAdminCollections)} />
+      <Route path="/app/:communityId/admin/members" component={withMobileContainer(MobileAdminMembers)} />
+      <Route path="/app/:communityId/admin/settings" component={withMobileContainer(MobileAdminSettings)} />
 
       {/* Admin Routes (Web) */}
       <Route path="/admin/login" component={AdminLogin} />

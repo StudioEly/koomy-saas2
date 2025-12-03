@@ -1058,6 +1058,40 @@ export async function registerRoutes(
     }
   });
 
+  // Delegates Routes
+  app.post("/api/communities/:communityId/delegates", async (req, res) => {
+    try {
+      const { email, displayName, role } = req.body;
+      const communityId = req.params.communityId;
+      
+      if (!email || !displayName) {
+        return res.status(400).json({ error: "Email et nom sont requis" });
+      }
+      
+      const memberId = `DEL-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      const delegate = await storage.createMembership({
+        communityId,
+        memberId,
+        displayName,
+        email,
+        role: role || "delegate",
+        status: "active",
+        canManageArticles: true,
+        canManageEvents: true,
+        canManageCollections: true,
+        canManageMessages: true,
+        canManageMembers: false,
+        canScanPresence: true
+      });
+      
+      return res.status(201).json(delegate);
+    } catch (error) {
+      console.error("Create delegate error:", error);
+      return res.status(500).json({ error: "Échec de la création du délégué" });
+    }
+  });
+
   // Membership Fees Routes
   app.get("/api/communities/:communityId/fees", async (req, res) => {
     try {
@@ -1066,6 +1100,23 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get fees error:", error);
       return res.status(500).json({ error: "Failed to fetch fees" });
+    }
+  });
+
+  app.post("/api/communities/:communityId/fees", async (req, res) => {
+    try {
+      const validated = insertMembershipFeeSchema.parse({
+        ...req.body,
+        communityId: req.params.communityId
+      });
+      const fee = await storage.createFee(validated);
+      return res.status(201).json(fee);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: fromZodError(error).toString() });
+      }
+      console.error("Create fee error:", error);
+      return res.status(500).json({ error: "Failed to create fee" });
     }
   });
 
@@ -1090,6 +1141,16 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Update fee error:", error);
       return res.status(500).json({ error: "Failed to update fee" });
+    }
+  });
+
+  app.delete("/api/communities/:communityId/fees/:id", async (req, res) => {
+    try {
+      await storage.deleteFee(req.params.id);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Delete fee error:", error);
+      return res.status(500).json({ error: "Failed to delete fee" });
     }
   });
 

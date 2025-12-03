@@ -108,10 +108,10 @@ export default function MobileAdminLogin() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-300">Email professionnel</label>
+              <label className="text-sm font-semibold text-gray-300">Email</label>
               <Input 
                 type="email" 
-                placeholder="admin@organisation.com" 
+                placeholder="email@exemple.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-12 rounded-xl bg-white/10 border-white/20 focus:border-purple-400 focus:ring-purple-400/20 text-white placeholder:text-gray-400"
@@ -168,17 +168,14 @@ export default function MobileAdminLogin() {
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-500 text-xs mb-3">
-            Pas encore administrateur ?
-          </p>
-          <Button 
-            variant="outline" 
-            className="h-11 px-6 rounded-xl border-2 border-gray-600 text-gray-300 hover:bg-white/5 hover:border-gray-500 font-semibold transition-all"
-            onClick={() => setLocation("/app/login")}
-            data-testid="button-member-login"
+          <button 
+            type="button"
+            onClick={() => setLocation("/app/admin/register")}
+            className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
+            data-testid="link-admin-signup"
           >
-            Accéder à l'espace membre
-          </Button>
+            Pas encore administrateur ? <span className="underline">Créez votre espace Koomy</span>
+          </button>
         </div>
 
         <p className="text-gray-600 text-[10px] text-center mt-auto pt-6">

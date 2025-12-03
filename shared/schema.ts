@@ -157,14 +157,21 @@ export const userCommunityMemberships = pgTable("user_community_memberships", {
   claimCode: text("claim_code").unique(), // code to link card to account (e.g., XXXX-XXXX)
   displayName: text("display_name"), // name shown on membership card
   email: text("email"), // email set by admin when creating member
-  role: text("role").notNull(), // "member" | "admin"
+  role: text("role").notNull(), // "member" | "admin" | "delegate"
   adminRole: adminRoleEnum("admin_role"), // if role is "admin"
   status: memberStatusEnum("status").default("active"),
   section: text("section"),
   joinDate: timestamp("join_date").defaultNow().notNull(),
   contributionStatus: contributionStatusEnum("contribution_status").default("pending"),
   nextDueDate: timestamp("next_due_date"),
-  claimedAt: timestamp("claimed_at") // when the card was linked to an account
+  claimedAt: timestamp("claimed_at"), // when the card was linked to an account
+  // Delegate permissions (for role = "delegate" or "admin")
+  canManageArticles: boolean("can_manage_articles").default(true),
+  canManageEvents: boolean("can_manage_events").default(true),
+  canManageCollections: boolean("can_manage_collections").default(true),
+  canManageMessages: boolean("can_manage_messages").default(true),
+  canManageMembers: boolean("can_manage_members").default(true),
+  canScanPresence: boolean("can_scan_presence").default(true)
 });
 
 // Sections Table (for organizations with regional/local divisions)
@@ -391,3 +398,25 @@ export type InsertMembershipFee = z.infer<typeof insertMembershipFeeSchema>;
 export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type InsertCommercialContact = z.infer<typeof insertCommercialContactSchema>;
+
+// Delegate Permissions Type
+export interface DelegatePermissions {
+  canManageArticles: boolean;
+  canManageEvents: boolean;
+  canManageCollections: boolean;
+  canManageMessages: boolean;
+  canManageMembers: boolean;
+  canScanPresence: boolean;
+}
+
+// Helper to extract permissions from membership
+export function extractPermissions(membership: UserCommunityMembership): DelegatePermissions {
+  return {
+    canManageArticles: membership.canManageArticles ?? true,
+    canManageEvents: membership.canManageEvents ?? true,
+    canManageCollections: membership.canManageCollections ?? true,
+    canManageMessages: membership.canManageMessages ?? true,
+    canManageMembers: membership.canManageMembers ?? true,
+    canScanPresence: membership.canScanPresence ?? true
+  };
+}

@@ -111,6 +111,7 @@ export interface IStorage {
   getFee(id: string): Promise<MembershipFee | undefined>;
   createFee(fee: InsertMembershipFee): Promise<MembershipFee>;
   updateFee(id: string, updates: Partial<InsertMembershipFee>): Promise<MembershipFee>;
+  deleteFee(id: string): Promise<void>;
   
   // Payment Requests
   getMemberPaymentRequests(membershipId: string): Promise<PaymentRequest[]>;
@@ -570,6 +571,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(membershipFees.id, id))
       .returning();
     return fee;
+  }
+
+  async deleteFee(id: string): Promise<void> {
+    await db.delete(membershipFees).where(eq(membershipFees.id, id));
   }
 
   // Payment Requests
