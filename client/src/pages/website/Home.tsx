@@ -107,14 +107,19 @@ export default function WebsiteHome() {
       </section>
 
       {/* App Download Section */}
-      <section className="py-24 bg-slate-900 text-white overflow-hidden">
-        <div className="container mx-auto px-4 md:px-6">
+      <section className="py-24 relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${communityCollage})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/85 via-blue-800/80 to-purple-900/85" />
+        <div className="container mx-auto px-4 md:px-6 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold leading-tight mb-4">
+            <h2 className="text-3xl lg:text-4xl font-bold leading-tight mb-4 text-white drop-shadow-lg">
               {t('home.mobile.title')}<br />
-              <span className="text-blue-400">{t('home.mobile.titleHighlight')}</span>
+              <span className="text-blue-300">{t('home.mobile.titleHighlight')}</span>
             </h2>
-            <p className="text-slate-300 text-lg">
+            <p className="text-blue-100 text-lg drop-shadow">
               {t('pwa.subtitle', 'Installez nos applications sur votre téléphone en un clic. Pas besoin de store.')}
             </p>
           </div>
