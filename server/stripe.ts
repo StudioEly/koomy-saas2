@@ -448,15 +448,38 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   const metadata = paymentIntent.metadata || {};
   const type = metadata.type;
   
-  if (type !== "membership") {
-    console.log(`Payment intent ${paymentIntent.id} is not a membership payment, ignoring`);
+  // Check for duplicate processing
+  const existingTransaction = await storage.getTransactionByPaymentIntentId(paymentIntent.id);
+  if (existingTransaction) {
+    console.log(`Transaction already exists for payment intent ${paymentIntent.id}, skipping`);
     return;
   }
 
+  // Get common values from Stripe
+  const amountTotal = paymentIntent.amount;
+  const feeKoomy = (paymentIntent as any).application_fee_amount || 0;
+  const amountToCommunity = amountTotal - feeKoomy;
+  
+  if (type === "membership") {
+    await handleMembershipPayment(paymentIntent, amountTotal, feeKoomy, amountToCommunity);
+  } else if (type === "collection") {
+    await handleCollectionPayment(paymentIntent, amountTotal, feeKoomy, amountToCommunity);
+  } else {
+    console.log(`Payment intent ${paymentIntent.id} has unknown type "${type}", ignoring`);
+  }
+}
+
+async function handleMembershipPayment(
+  paymentIntent: Stripe.PaymentIntent,
+  amountTotal: number,
+  feeKoomy: number,
+  amountToCommunity: number
+): Promise<void> {
+  const metadata = paymentIntent.metadata || {};
   const { communityId, membershipId } = metadata;
   
   if (!communityId || !membershipId) {
-    console.error(`Missing communityId or membershipId in payment intent ${paymentIntent.id} metadata`);
+    console.error(`Missing communityId or membershipId in membership payment intent ${paymentIntent.id} metadata`);
     return;
   }
 
@@ -472,16 +495,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     return;
   }
 
-  const existingTransaction = await storage.getTransactionByPaymentIntentId(paymentIntent.id);
-  if (existingTransaction) {
-    console.log(`Transaction already exists for payment intent ${paymentIntent.id}, skipping`);
-    return;
-  }
-
-  const amountTotal = paymentIntent.amount;
-  const feeKoomy = (paymentIntent as any).application_fee_amount || 0;
-  const amountToCommunity = amountTotal - feeKoomy;
-
+  // Create transaction
   await storage.insertTransaction({
     communityId,
     membershipId,
@@ -498,6 +512,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     metadata: { communityId, membershipId } as Record<string, any>,
   });
 
+  // Update membership validity
   const now = new Date();
   const validUntil = new Date(now);
   validUntil.setFullYear(validUntil.getFullYear() + 1);
@@ -510,6 +525,63 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   });
 
   console.log(`Membership payment processed for ${membershipId} in community ${communityId} - amount: ${amountTotal} cents, valid until: ${validUntil.toISOString()}`);
+}
+
+async function handleCollectionPayment(
+  paymentIntent: Stripe.PaymentIntent,
+  amountTotal: number,
+  feeKoomy: number,
+  amountToCommunity: number
+): Promise<void> {
+  const metadata = paymentIntent.metadata || {};
+  const { communityId, collectionId, membershipId } = metadata;
+  
+  if (!communityId || !collectionId) {
+    console.error(`Missing communityId or collectionId in collection payment intent ${paymentIntent.id} metadata`);
+    return;
+  }
+
+  const community = await storage.getCommunity(communityId);
+  if (!community) {
+    console.error(`Community ${communityId} not found for payment intent ${paymentIntent.id}`);
+    return;
+  }
+
+  const collection = await storage.getCollection(collectionId);
+  if (!collection) {
+    console.error(`Collection ${collectionId} not found for payment intent ${paymentIntent.id}`);
+    return;
+  }
+
+  // Create transaction
+  await storage.insertTransaction({
+    communityId,
+    collectionId,
+    membershipId: membershipId || null,
+    type: "collection",
+    amountTotalCents: amountTotal,
+    amountFeeKoomyCents: feeKoomy,
+    amountToCommunity,
+    currency: paymentIntent.currency?.toUpperCase() || "EUR",
+    stripePaymentIntentId: paymentIntent.id,
+    stripeChargeId: typeof paymentIntent.latest_charge === 'string' ? paymentIntent.latest_charge : null,
+    stripeTransferId: null,
+    stripeApplicationFeeId: null,
+    status: "succeeded",
+    metadata: { communityId, collectionId, membershipId } as Record<string, any>,
+  });
+
+  // Update collection amounts
+  const updatedCollection = await storage.updateCollectionAmounts(collectionId, amountTotal);
+
+  console.log(`Collection payment processed for ${collectionId} in community ${communityId} - amount: ${amountTotal} cents, total collected: ${updatedCollection.collectedAmountCents} cents`);
+
+  // Auto-close collection if target reached
+  if (updatedCollection.targetAmountCents && 
+      (updatedCollection.collectedAmountCents ?? 0) >= updatedCollection.targetAmountCents) {
+    await storage.closeCollection(collectionId);
+    console.log(`Collection ${collectionId} auto-closed - target of ${updatedCollection.targetAmountCents} cents reached`);
+  }
 }
 
 async function handleAccountUpdated(account: Stripe.Account): Promise<void> {

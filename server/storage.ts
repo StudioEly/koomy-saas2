@@ -1,6 +1,6 @@
 import { 
   users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, ticketResponses, faqs, messages,
-  membershipFees, paymentRequests, payments, accounts, commercialContacts, emailTemplates, emailLogs, transactions, PLAN_CODES,
+  membershipFees, paymentRequests, payments, accounts, commercialContacts, emailTemplates, emailLogs, transactions, collections, PLAN_CODES,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
@@ -12,6 +12,7 @@ import {
   type CommercialContact, type InsertCommercialContact,
   type EmailTemplate, type InsertEmailTemplate, type EmailLog, type InsertEmailLog,
   type Transaction, type InsertTransaction,
+  type Collection, type InsertCollection,
   type PlanCode
 } from "@shared/schema";
 import { db } from "./db";
@@ -157,6 +158,15 @@ export interface IStorage {
   getMembershipTransactions(membershipId: string): Promise<Transaction[]>;
   insertTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: string, updates: Partial<InsertTransaction>): Promise<Transaction>;
+  
+  // Collections (Fundraising)
+  createCollection(collection: InsertCollection): Promise<Collection>;
+  getCollection(id: string): Promise<Collection | undefined>;
+  getCommunityCollections(communityId: string): Promise<Collection[]>;
+  getOpenCollections(communityId: string): Promise<Collection[]>;
+  updateCollection(id: string, updates: Partial<InsertCollection>): Promise<Collection>;
+  updateCollectionAmounts(id: string, amountCents: number): Promise<Collection>;
+  closeCollection(id: string): Promise<Collection>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1488,6 +1498,62 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(transactions)
       .set(updates)
       .where(eq(transactions.id, id))
+      .returning();
+    return updated;
+  }
+  
+  // Collections (Fundraising)
+  async createCollection(collection: InsertCollection): Promise<Collection> {
+    const [newCollection] = await db.insert(collections).values(collection).returning();
+    return newCollection;
+  }
+  
+  async getCollection(id: string): Promise<Collection | undefined> {
+    const [collection] = await db.select().from(collections).where(eq(collections.id, id));
+    return collection || undefined;
+  }
+  
+  async getCommunityCollections(communityId: string): Promise<Collection[]> {
+    return await db.select().from(collections)
+      .where(eq(collections.communityId, communityId))
+      .orderBy(desc(collections.createdAt));
+  }
+  
+  async getOpenCollections(communityId: string): Promise<Collection[]> {
+    return await db.select().from(collections)
+      .where(and(
+        eq(collections.communityId, communityId),
+        eq(collections.status, "open")
+      ))
+      .orderBy(desc(collections.createdAt));
+  }
+  
+  async updateCollection(id: string, updates: Partial<InsertCollection>): Promise<Collection> {
+    const [updated] = await db.update(collections)
+      .set(updates)
+      .where(eq(collections.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async updateCollectionAmounts(id: string, amountCents: number): Promise<Collection> {
+    const [updated] = await db.update(collections)
+      .set({
+        collectedAmountCents: sql`COALESCE(${collections.collectedAmountCents}, 0) + ${amountCents}`,
+        participantsCount: sql`COALESCE(${collections.participantsCount}, 0) + 1`
+      })
+      .where(eq(collections.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async closeCollection(id: string): Promise<Collection> {
+    const [updated] = await db.update(collections)
+      .set({
+        status: "closed",
+        closedAt: new Date()
+      })
+      .where(eq(collections.id, id))
       .returning();
     return updated;
   }

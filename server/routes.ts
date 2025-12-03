@@ -2393,6 +2393,237 @@ Règles de conversation:
   });
 
   // =====================================================
+  // STRIPE CONNECT ROUTES - PHASE 2B.3: Collections (Fundraising)
+  // =====================================================
+
+  // Create a new collection (admin/delegate only)
+  app.post("/api/collections", async (req, res) => {
+    try {
+      const { communityId, userId, title, description, amountCents, allowCustomAmount, targetAmountCents, deadline } = req.body;
+
+      if (!communityId || !userId || !title || !amountCents) {
+        return res.status(400).json({ error: "communityId, userId, title, and amountCents are required" });
+      }
+
+      if (amountCents <= 0) {
+        return res.status(400).json({ error: "amountCents must be greater than 0" });
+      }
+
+      // Get community
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Check community is ready for payments
+      if (!community.stripeConnectAccountId) {
+        return res.status(400).json({ error: "Cette communauté n'a pas encore configuré les paiements en ligne" });
+      }
+
+      if (!community.paymentsEnabled) {
+        return res.status(400).json({ error: "Les paiements en ligne ne sont pas encore activés pour cette communauté" });
+      }
+
+      // Verify user is admin or delegate with canManageCollections permission
+      const membership = await storage.getMembership(userId, communityId);
+      if (!membership) {
+        return res.status(403).json({ error: "Forbidden - No membership found" });
+      }
+
+      const isAdmin = membership.role === "admin";
+      const isDelegateWithPermission = membership.role === "delegate" && membership.canManageCollections === true;
+
+      if (!isAdmin && !isDelegateWithPermission) {
+        return res.status(403).json({ error: "Forbidden - Admin or delegate with canManageCollections permission required" });
+      }
+
+      // Create collection
+      const collection = await storage.createCollection({
+        communityId,
+        title,
+        description: description || null,
+        amountCents,
+        allowCustomAmount: allowCustomAmount ?? false,
+        targetAmountCents: targetAmountCents || null,
+        deadline: deadline ? new Date(deadline) : null,
+        status: "open",
+        currency: community.currency || "EUR",
+      });
+
+      return res.json({
+        collectionId: collection.id,
+      });
+    } catch (error: any) {
+      console.error("Create collection error:", error);
+      return res.status(500).json({ error: error.message || "Failed to create collection" });
+    }
+  });
+
+  // Get open collections for a community (for member app)
+  app.get("/api/collections/:communityId", async (req, res) => {
+    try {
+      const { communityId } = req.params;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      // Get community to verify it exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Get open collections
+      const rawCollections = await storage.getOpenCollections(communityId);
+
+      // Map to response format with percentage calculation
+      const collections = rawCollections.map(c => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        amountCents: c.amountCents,
+        allowCustomAmount: c.allowCustomAmount ?? false,
+        targetAmountCents: c.targetAmountCents,
+        collectedAmountCents: c.collectedAmountCents ?? 0,
+        participantsCount: c.participantsCount ?? 0,
+        percentComplete: c.targetAmountCents && c.targetAmountCents > 0
+          ? Math.round(((c.collectedAmountCents ?? 0) / c.targetAmountCents) * 100)
+          : null,
+        deadline: c.deadline,
+        status: c.status,
+      }));
+
+      return res.json({ collections });
+    } catch (error: any) {
+      console.error("Get collections error:", error);
+      return res.status(500).json({ error: error.message || "Failed to get collections" });
+    }
+  });
+
+  // Create payment session for a collection
+  app.post("/api/payments/create-collection-session", async (req, res) => {
+    try {
+      const { communityId, collectionId, memberId, accountId, amountCents } = req.body;
+
+      if (!communityId || !collectionId) {
+        return res.status(400).json({ error: "communityId and collectionId are required" });
+      }
+
+      // Get community
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Check community is ready for payments
+      if (!community.stripeConnectAccountId) {
+        return res.status(400).json({ error: "Cette communauté n'a pas encore configuré les paiements en ligne" });
+      }
+
+      if (!community.paymentsEnabled) {
+        return res.status(400).json({ error: "Les paiements en ligne ne sont pas encore activés pour cette communauté" });
+      }
+
+      // Get collection
+      const collection = await storage.getCollection(collectionId);
+      if (!collection) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+
+      // Verify collection belongs to this community
+      if (collection.communityId !== communityId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Verify collection is open
+      if (collection.status !== "open") {
+        return res.status(400).json({ error: "Cette collecte n'est plus ouverte" });
+      }
+
+      // Determine amount
+      let paymentAmount: number;
+      if (collection.allowCustomAmount) {
+        if (!amountCents || amountCents <= 0) {
+          return res.status(400).json({ error: "amountCents is required for custom amount collections" });
+        }
+        paymentAmount = amountCents;
+      } else {
+        paymentAmount = collection.amountCents;
+      }
+
+      // Get membership if provided
+      let membershipId: string | null = null;
+      if (memberId) {
+        const membership = await storage.getMembershipById(memberId);
+        if (membership && membership.communityId === communityId) {
+          membershipId = membership.id;
+        }
+      } else if (accountId) {
+        const memberships = await storage.getAccountMemberships(accountId);
+        const membership = memberships.find(m => m.communityId === communityId);
+        if (membership) {
+          membershipId = membership.id;
+        }
+      }
+
+      // Calculate commission: collection.platformFeePercent → community.platformFeePercent → 2%
+      const feePercent = collection.platformFeePercent ?? community.platformFeePercent ?? 2;
+      const applicationFeeAmount = Math.round(paymentAmount * feePercent / 100);
+
+      // Create Stripe Checkout session
+      const { getUncachableStripeClient } = await import("./stripeClient");
+      const stripe = await getUncachableStripeClient();
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: (collection.currency || community.currency || "EUR").toLowerCase(),
+              product_data: {
+                name: collection.title,
+                description: collection.description || undefined,
+              },
+              unit_amount: paymentAmount,
+            },
+            quantity: 1,
+          },
+        ],
+        payment_intent_data: {
+          application_fee_amount: applicationFeeAmount,
+          transfer_data: {
+            destination: community.stripeConnectAccountId,
+          },
+          metadata: {
+            type: "collection",
+            communityId,
+            collectionId,
+            membershipId: membershipId || "",
+          },
+        },
+        metadata: {
+          type: "collection",
+          communityId,
+          collectionId,
+          membershipId: membershipId || "",
+        },
+        success_url: "https://app.koomy.app/payment/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "https://app.koomy.app/payment/cancel",
+      });
+
+      return res.json({
+        sessionId: session.id,
+        sessionUrl: session.url,
+      });
+    } catch (error: any) {
+      console.error("Create collection session error:", error);
+      return res.status(500).json({ error: error.message || "Failed to create collection session" });
+    }
+  });
+
+  // =====================================================
   // STRIPE BILLING ROUTES (Legacy - Prepared for integration)
   // =====================================================
 
