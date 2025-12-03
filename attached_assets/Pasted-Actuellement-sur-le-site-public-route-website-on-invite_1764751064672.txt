@@ -1,0 +1,125 @@
+Actuellement, sur le site public (route /website), on invite les gens à télécharger l’application sur les stores, alors qu’aucune app n’est publiée sur App Store / Google Play pour l’instant.
+
+Je veux adapter tout ça pour un usage PWA / raccourci sur téléphone avec nos apps web existantes.
+
+1️⃣ Supprimer les références aux stores sur le site public
+
+Sur la page publique (/website), localise la section où l’on parle de :
+
+“Télécharger sur l’App Store”
+
+“Disponible sur Google Play”
+
+tout bouton / badge de store mobile.
+
+Supprime ou commente ces éléments (HTML + éventuels liens), de manière propre.
+
+À la place, on va mettre des CTA vers nos apps web + installation sur l’écran d’accueil.
+
+2️⃣ Mettre en avant les 2 apps Koomy (Membres + Pro)
+
+Toujours sur /website, crée dans la section “Télécharger l’application” quelque chose comme :
+
+une carte / bloc pour l’app Membres (app publique) avec :
+
+Titre : Application Koomy – Membres
+
+Texte court : Accédez à votre espace membre en 1 clic depuis votre téléphone.
+
+Bouton principal : Installer l’app membre
+
+Icône : j’uploaderai un fichier iconeapppublic.png à utiliser comme visuel (mobile mock ou vignette).
+
+une carte / bloc pour l’app Pro (gestionnaires de communauté) avec :
+
+Titre : Application Koomy – Pro
+
+Texte : Gérez votre communauté et vos adhésions depuis votre mobile.
+
+Bouton principal : Installer l’app Pro
+
+Icône : j’uploaderai icone-appPro-koomy.png.
+
+Les deux boutons ne doivent plus parler de “store” mais bien de “installer l’app sur votre téléphone”.
+
+3️⃣ Comportement des boutons : installation type PWA (ajout à l’écran d’accueil)
+
+Nous avons déjà :
+
+une app publique accessible via app.koomy.app (route /app),
+
+une app Pro via app-pro.koomy.app (route /app/admin ou similaire).
+
+Je veux que :
+
+le bouton “Installer l’app membre” lance l’installation PWA de l’app /app ;
+
+le bouton “Installer l’app Pro” lance l’installation PWA de l’app Pro.
+
+Merci de :
+
+Vérifier qu’il existe un manifest.json et un service worker pour :
+
+l’app membre (/app)
+
+l’app pro (/app-pro ou /app/admin, selon ta structure)
+
+Mettre à jour les manifest pour utiliser les icônes que je vais uploader :
+
+pour l’app Membre : public/icons/iconeapppublic.png
+
+pour l’app Pro : public/icons/icone-appPro-koomy.png
+avec au moins les tailles 512x512 et 192x192.
+
+Ajouter dans le code front (site public /website) un script qui :
+
+écoute l’événement beforeinstallprompt ;
+
+lorsqu’on clique sur le bouton “Installer l’app membre”, appelle prompt() sur cet event pour l’app membre (et idem pour l’app Pro si tu sépares les deux manifest) ;
+
+si le navigateur ne permet pas l’installation (iOS / Safari, etc.), affiche au moins une petite boîte d’explication (“Pour ajouter Koomy à votre écran d’accueil, utilisez le menu Partager > Ajouter à l’écran d’accueil.”).
+
+L’objectif :
+👉 Quand l’utilisateur clique sur le bouton “Installer…” depuis son mobile, il peut ajouter l’app à son écran d’accueil comme un raccourci PWA, au lieu d’être redirigé vers un store.
+
+4️⃣ Intégration des icônes
+
+Je vais uploader deux images :
+
+iconeapppublic.png → app membres
+
+icone-appPro-koomy.png → app pro
+
+Merci de :
+
+les placer dans un dossier comme public/icons/ ;
+
+les utiliser :
+
+dans les manifest.json respectifs ;
+
+comme visuels sur les cartes de téléchargement sur /website (petites vignettes à côté des boutons).
+
+5️⃣ Ne pas toucher aux autres plateformes
+
+Ne modifie pas pour l’instant :
+
+le backoffice (backoffice.koomy.app)
+
+la plateforme saas owner (lorpesikoomyadmin.koomy.app ou /platform)
+
+On se concentre uniquement sur :
+
+le site public /website
+
+l’app publique /app
+
+l’app Pro /app-pro ou /app/admin.
+
+Merci d’agir comme un dev front + PWA expérimenté :
+
+nettoyer le code des anciens liens stores,
+
+ajouter les nouveaux CTA,
+
+connecter correctement les manifest + service worker + boutons d’installation.
