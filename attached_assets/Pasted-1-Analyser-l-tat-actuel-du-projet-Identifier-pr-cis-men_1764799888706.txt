@@ -1,0 +1,68 @@
+1️⃣ Analyser l’état actuel du projet
+
+Identifier précisément :
+
+le type d’hébergement utilisé sur Replit pour ce Repl (ressources CPU, RAM, limites connues),
+
+la stack serveur (framework Node/Express, serveur HTTP, config actuelle),
+
+la base de données (type, hébergeur, pool de connexions, limites par défaut),
+
+les dépendances critiques (Stripe, envoi d’emails, webhooks).
+
+2️⃣ En déduire une estimation de capacité
+
+Me donner un ordre de grandeur réaliste (même approximatif) de :
+
+nombre de requêtes par seconde que le backend peut encaisser sans ralentissement majeur,
+
+nombre d’utilisateurs simultanés (connectés / actifs) que Koomy peut gérer dans la configuration actuelle,
+
+nombre d’utilisateurs totaux (comptes créés) que l’on peut atteindre sans toucher à l’architecture (juste en se basant sur les limites techniques probables).
+
+Si possible, distinguer :
+
+charge “normale” (un peu de navigation, quelques paiements),
+
+charge “pic” (beaucoup de scans de QR, de paiements ou de lecture/écriture en même temps).
+
+3️⃣ Définir des paliers de croissance
+
+Proposer des paliers de charge du type :
+
+Palier 1 : jusqu’à X utilisateurs actifs / jour → OK sur Replit tel quel.
+
+Palier 2 : entre X et Y utilisateurs actifs / jour → prévoir optimisations légères (caching, pooling DB, etc.).
+
+Palier 3 : au-delà de Y / jour ou Z utilisateurs simultanés → recommander de migrer vers une infra plus robuste (ex. hébergeur dédié, scaling horizontal, etc.).
+
+Préciser à chaque palier :
+
+quels risques apparaissent (timeouts, 500, saturation DB, webhooks en retard, etc.),
+
+quels sont les principaux goulots d’étranglement probables dans ce projet concret (Replit CPU, RAM, base de données, limites de connexions…).
+
+4️⃣ Proposer un plan de monitoring minimal
+
+Me dire comment, dans ce Repl, on pourrait :
+
+logguer proprement les temps de réponse et le taux d’erreur,
+
+suivre le nombre de requêtes par minute / heure,
+
+détecter qu’on approche des limites (signaux d’alerte à surveiller).
+
+5️⃣ Donner un résumé concret pour décision
+
+Terminer par un résumé très concret en français du type :
+
+“Dans l’état actuel, Koomy peut raisonnablement supporter environ … utilisateurs simultanés et … utilisateurs actifs / jour.”
+
+“À partir de tel niveau d’usage, il faudra envisager telle évolution.”
+
+Merci de te baser autant que possible sur :
+
+les limites techniques de Replit pour ce Repl,
+
+le code et la façon dont les routes et la DB sont utilisées dans ce projet,
+et pas seulement des réponses génériques sur Nod
