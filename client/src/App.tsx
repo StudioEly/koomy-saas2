@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import MobileContainer from "@/components/MobileContainer";
 import FaviconManager from "@/components/FaviconManager";
+import ManifestManager from "@/components/ManifestManager";
 
 // Mobile Pages
 import MobileLogin from "@/pages/mobile/Login";
@@ -183,6 +184,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <FaviconManager />
+        <ManifestManager />
         <Toaster />
         <Router />
       </AuthProvider>

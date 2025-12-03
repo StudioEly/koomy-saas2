@@ -41,14 +41,7 @@ export default function PWAInstallCard({ variant }: PWAInstallCardProps) {
       return;
     }
 
-    if (isInstallable) {
-      const result = await promptInstall();
-      if (!result.success && result.reason === 'no_prompt') {
-        window.open(config.url, '_blank');
-      }
-    } else {
-      window.open(config.url, '_blank');
-    }
+    window.location.href = config.url;
   };
 
   if (isInstalled) {
