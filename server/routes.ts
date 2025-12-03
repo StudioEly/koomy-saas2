@@ -13,7 +13,7 @@ import { fromZodError } from "zod-validation-error";
 import OpenAI from "openai";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import bcrypt from "bcryptjs";
-import { sendSystemEmail, EMAIL_TYPES, EMAIL_TYPE_VARIABLES, EMAIL_TYPE_LABELS } from "./services/mailer";
+import { sendSystemEmail, EMAIL_TYPES, EMAIL_TYPE_VARIABLES, EMAIL_TYPE_LABELS, EmailType } from "./services/mailer";
 
 function generateClaimCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -67,6 +67,18 @@ export async function registerRoutes(
       const { passwordHash, ...accountWithoutPassword } = account;
       
       const memberships = await storage.getAccountMemberships(account.id);
+      
+      // Send verification email to new account
+      try {
+        await sendSystemEmail(EMAIL_TYPES.VERIFY_EMAIL, email, {
+          name: firstName || "Membre",
+          codeVerification: "",
+          activateUrl: ""
+        });
+        console.log(`[Email] Verification email sent to account ${email}`);
+      } catch (emailError) {
+        console.error(`[Email] Failed to send verification email to account:`, emailError);
+      }
       
       return res.status(201).json({
         account: accountWithoutPassword,
@@ -326,6 +338,21 @@ export async function registerRoutes(
         status: "active",
         contributionStatus: "up_to_date"
       });
+      
+      // Send welcome email to new admin
+      try {
+        await sendSystemEmail(EMAIL_TYPES.WELCOME_COMMUNITY_ADMIN, email, {
+          name: firstName,
+          communityName: community.name,
+          code: "",
+          loginUrl: process.env.REPLIT_DEV_DOMAIN 
+            ? `https://${process.env.REPLIT_DEV_DOMAIN}/app/admin/login`
+            : "/app/admin/login"
+        });
+        console.log(`[Email] Welcome email sent to ${email}`);
+      } catch (emailError) {
+        console.error(`[Email] Failed to send welcome email:`, emailError);
+      }
       
       return res.status(201).json({
         user: {
@@ -615,6 +642,23 @@ export async function registerRoutes(
         email: validated.email || null,
         phone: validated.phone || null
       });
+      
+      if (validated.email) {
+        const community = await storage.getCommunity(validated.communityId);
+        try {
+          await sendSystemEmail(EMAIL_TYPES.INVITE_MEMBER, validated.email, {
+            name: validated.displayName || "Membre",
+            communityName: community?.name || "Votre communauté",
+            codeMembre: claimCode,
+            activationUrl: process.env.REPLIT_DEV_DOMAIN 
+              ? `https://${process.env.REPLIT_DEV_DOMAIN}/app/claim`
+              : "/app/claim"
+          });
+          console.log(`[Email] invite_member email sent to ${validated.email}`);
+        } catch (emailError) {
+          console.error(`[Email] Failed to send invite_member email:`, emailError);
+        }
+      }
       
       return res.status(201).json(membership);
     } catch (error) {
