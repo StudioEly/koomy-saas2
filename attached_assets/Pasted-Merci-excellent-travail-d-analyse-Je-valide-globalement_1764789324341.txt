@@ -1,0 +1,95 @@
+Merci, excellent travail d’analyse.
+Je valide globalement la proposition de schéma avec quelques précisions importantes ci-dessous.
+
+✔ 1. Champs communities → VALIDÉS
+
+Les champs suivants conviennent parfaitement :
+
+stripeConnectAccountId
+
+paymentsEnabled
+
+platformFeePercent = 2 % par défaut
+
+⚠️ Ajouter aussi un champ dérivé du plan :
+
+maxMembersAllowed  // 50 pour Free, 1000 pour Plus, 5000 pour Pro
+
+
+Ce champ sera rempli automatiquement selon le plan choisi.
+
+✔ 2. Champs userCommunityMemberships → VALIDÉS
+
+Les champs :
+
+membershipPaidAt
+
+membershipValidUntil
+
+membershipAmountPaid
+
+sont suffisants pour tracer l’historique minimum.
+On garde aussi contributionStatus existant.
+
+✔ 3. Table collections → VALIDÉE, avec ajustements
+
+Ajouter ces deux précisions :
+
+1️⃣ amountCents correspond au montant que chaque participant doit payer.
+2️⃣ targetAmountCents est optionnel (objectif global).
+
+Ajouter aussi :
+
+allowCustomAmount boolean default false
+
+
+→ Pour permettre à certaines collectes de laisser l’utilisateur choisir le montant.
+
+Le reste est parfait.
+
+✔ 4. Table transactions → VALIDÉE, avec un ajustement
+
+La structure couvre bien tous les flux (subscription, membership, collection).
+
+Seul ajustement demandé :
+
+Ajouter :
+
+stripeApplicationFeeId text null
+
+
+→ pour stocker l’ID de la commission reversée à Koomy.
+
+Le champ amountToCommunity doit représenter :
+
+amountTotal - amountFeeKoomy - frais Stripe
+
+
+(les frais Stripe pourront être déduits plus tard si nécessaire).
+
+✔ 5. Relations → VALIDÉES
+
+Les relations proposées pour collections et transactions sont bonnes.
+
+❗ 6. Demande additionnelle (important)
+
+Merci d’ajouter dans communities :
+
+subscriptionPlan text default 'free'
+subscriptionPeriod text default null
+subscriptionStatus text default 'none'
+subscriptionCurrentPeriodEnd timestamp null
+
+
+→ cela facilitera la Phase 2 Stripe Billing.
+
+👉 Conclusion
+
+Je valide donc la Phase 1 avec les ajustements ci-dessus.
+Tu peux maintenant :
+
+1️⃣ mettre à jour la proposition de schéma,
+2️⃣ me générer les migrations complètes,
+3️⃣ attendre ma validation avant de les exécuter.
+
+Ensuite seulement, nous passerons à la Phase 2.
