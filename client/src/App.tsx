@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import MobileContainer from "@/components/MobileContainer";
+import FaviconManager from "@/components/FaviconManager";
 
 // Mobile Pages
 import MobileLogin from "@/pages/mobile/Login";
@@ -181,6 +182,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <FaviconManager />
         <Toaster />
         <Router />
       </AuthProvider>
