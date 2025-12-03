@@ -2287,6 +2287,112 @@ Règles de conversation:
   });
 
   // =====================================================
+  // STRIPE CONNECT ROUTES - PHASE 2B.2: Membership Payments
+  // =====================================================
+
+  app.post("/api/payments/create-membership-session", async (req, res) => {
+    try {
+      const { communityId, memberId, accountId } = req.body;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      if (!memberId && !accountId) {
+        return res.status(400).json({ error: "memberId or accountId is required" });
+      }
+
+      // Get community
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Check community is ready for payments
+      if (!community.stripeConnectAccountId) {
+        return res.status(400).json({ error: "Cette communauté n'a pas encore configuré les paiements en ligne" });
+      }
+
+      if (!community.paymentsEnabled) {
+        return res.status(400).json({ error: "Les paiements en ligne ne sont pas encore activés pour cette communauté" });
+      }
+
+      if (!community.membershipFeeAmount || community.membershipFeeAmount <= 0) {
+        return res.status(400).json({ error: "Le montant de la cotisation n'est pas défini pour cette communauté" });
+      }
+
+      // Get membership - either by memberId or by accountId+communityId
+      let membership;
+      if (memberId) {
+        membership = await storage.getMembershipById(memberId);
+      } else if (accountId) {
+        // Get all memberships for this account and find the one for this community
+        const memberships = await storage.getAccountMemberships(accountId);
+        membership = memberships.find(m => m.communityId === communityId);
+      }
+
+      if (!membership) {
+        return res.status(404).json({ error: "Membership not found" });
+      }
+
+      if (membership.communityId !== communityId) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      // Create Stripe Checkout session
+      const { getUncachableStripeClient } = await import("./stripeClient");
+      const stripe = await getUncachableStripeClient();
+
+      const amount = community.membershipFeeAmount;
+      const feePercent = community.platformFeePercent ?? 2;
+      const applicationFeeAmount = Math.round(amount * feePercent / 100);
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: community.currency?.toLowerCase() || "eur",
+              product_data: {
+                name: `Cotisation ${community.name}`,
+              },
+              unit_amount: amount,
+            },
+            quantity: 1,
+          },
+        ],
+        payment_intent_data: {
+          application_fee_amount: applicationFeeAmount,
+          transfer_data: {
+            destination: community.stripeConnectAccountId,
+          },
+          metadata: {
+            type: "membership",
+            communityId,
+            membershipId: membership.id,
+          },
+        },
+        metadata: {
+          type: "membership",
+          communityId,
+          membershipId: membership.id,
+        },
+        success_url: "https://app.koomy.app/payment/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "https://app.koomy.app/payment/cancel",
+      });
+
+      return res.json({
+        sessionId: session.id,
+        sessionUrl: session.url,
+      });
+    } catch (error: any) {
+      console.error("Create membership session error:", error);
+      return res.status(500).json({ error: error.message || "Failed to create membership session" });
+    }
+  });
+
+  // =====================================================
   // STRIPE BILLING ROUTES (Legacy - Prepared for integration)
   // =====================================================
 
