@@ -80,7 +80,7 @@ function formatDateTime(dateString: string | Date): string {
 export default function AdminFinances() {
   const { currentMembership, currentCommunity } = useAuth();
   const queryClient = useQueryClient();
-  const communityId = currentMembership?.communityId;
+  const communityId = currentMembership?.communityId || currentCommunity?.id;
   
   const [showCreateCollection, setShowCreateCollection] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
