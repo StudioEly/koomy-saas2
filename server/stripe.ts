@@ -281,6 +281,18 @@ export async function handleWebhookEvent(
         break;
       }
 
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        await handlePaymentIntentSucceeded(paymentIntent);
+        break;
+      }
+
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        await handleAccountUpdated(account);
+        break;
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -429,5 +441,94 @@ export async function cancelSubscription(communityId: string): Promise<boolean> 
   } catch (error) {
     console.error("Failed to cancel subscription:", error);
     throw error;
+  }
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent): Promise<void> {
+  const metadata = paymentIntent.metadata || {};
+  const type = metadata.type;
+  
+  if (type !== "membership") {
+    console.log(`Payment intent ${paymentIntent.id} is not a membership payment, ignoring`);
+    return;
+  }
+
+  const { communityId, membershipId } = metadata;
+  
+  if (!communityId || !membershipId) {
+    console.error(`Missing communityId or membershipId in payment intent ${paymentIntent.id} metadata`);
+    return;
+  }
+
+  const community = await storage.getCommunity(communityId);
+  if (!community) {
+    console.error(`Community ${communityId} not found for payment intent ${paymentIntent.id}`);
+    return;
+  }
+
+  const membership = await storage.getMembershipById(membershipId);
+  if (!membership) {
+    console.error(`Membership ${membershipId} not found for payment intent ${paymentIntent.id}`);
+    return;
+  }
+
+  const existingTransaction = await storage.getTransactionByPaymentIntentId(paymentIntent.id);
+  if (existingTransaction) {
+    console.log(`Transaction already exists for payment intent ${paymentIntent.id}, skipping`);
+    return;
+  }
+
+  const amountTotal = paymentIntent.amount;
+  const feeKoomy = (paymentIntent as any).application_fee_amount || 0;
+  const amountToCommunity = amountTotal - feeKoomy;
+
+  await storage.insertTransaction({
+    communityId,
+    membershipId,
+    type: "membership",
+    amountTotalCents: amountTotal,
+    amountFeeKoomyCents: feeKoomy,
+    amountToCommunity,
+    currency: paymentIntent.currency?.toUpperCase() || "EUR",
+    stripePaymentIntentId: paymentIntent.id,
+    stripeChargeId: typeof paymentIntent.latest_charge === 'string' ? paymentIntent.latest_charge : null,
+    stripeTransferId: null,
+    stripeApplicationFeeId: null,
+    status: "succeeded",
+    metadata: { communityId, membershipId },
+  });
+
+  const now = new Date();
+  const validUntil = new Date(now);
+  validUntil.setFullYear(validUntil.getFullYear() + 1);
+
+  await storage.updateMembership(membershipId, {
+    membershipPaidAt: now,
+    membershipValidUntil: validUntil,
+    membershipAmountPaid: amountTotal,
+    contributionStatus: "paid",
+  });
+
+  console.log(`Membership payment processed for ${membershipId} in community ${communityId} - amount: ${amountTotal} cents, valid until: ${validUntil.toISOString()}`);
+}
+
+async function handleAccountUpdated(account: Stripe.Account): Promise<void> {
+  const communityId = account.metadata?.communityId;
+  
+  if (!communityId) {
+    console.log(`No communityId in Connect account ${account.id} metadata, ignoring`);
+    return;
+  }
+
+  const chargesEnabled = account.charges_enabled || false;
+  const payoutsEnabled = account.payouts_enabled || false;
+
+  if (chargesEnabled && payoutsEnabled) {
+    await storage.updateCommunity(communityId, {
+      paymentsEnabled: true,
+    });
+    console.log(`Payments enabled for community ${communityId} via Connect account ${account.id}`);
+  } else {
+    console.log(`Connect account ${account.id} not fully verified yet - charges: ${chargesEnabled}, payouts: ${payoutsEnabled}`);
   }
 }
