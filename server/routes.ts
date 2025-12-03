@@ -611,7 +611,8 @@ export async function registerRoutes(
         ...validated,
         claimCode,
         displayName: validated.displayName || null,
-        email: validated.email || null
+        email: validated.email || null,
+        phone: validated.phone || null
       });
       
       return res.status(201).json(membership);

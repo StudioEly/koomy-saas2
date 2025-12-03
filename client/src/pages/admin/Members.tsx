@@ -54,7 +54,7 @@ export default function AdminMembers() {
   });
 
   const createMemberMutation = useMutation({
-    mutationFn: async (data: { displayName: string; communityId: string; section?: string; status?: string }) => {
+    mutationFn: async (data: { displayName: string; communityId: string; email?: string; phone?: string; section?: string; status?: string }) => {
       const res = await fetch("/api/memberships", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,6 +107,8 @@ export default function AdminMembers() {
     createMemberMutation.mutate({
       displayName: newMember.displayName,
       communityId,
+      email: newMember.email || undefined,
+      phone: newMember.phone || undefined,
       section: newMember.section || undefined,
       status: newMember.status
     });

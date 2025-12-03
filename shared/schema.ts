@@ -157,6 +157,7 @@ export const userCommunityMemberships = pgTable("user_community_memberships", {
   claimCode: text("claim_code").unique(), // code to link card to account (e.g., XXXX-XXXX)
   displayName: text("display_name"), // name shown on membership card
   email: text("email"), // email set by admin when creating member
+  phone: text("phone"), // phone number for OTP and SMS notifications
   role: text("role").notNull(), // "member" | "admin" | "delegate"
   adminRole: adminRoleEnum("admin_role"), // if role is "admin"
   status: memberStatusEnum("status").default("active"),

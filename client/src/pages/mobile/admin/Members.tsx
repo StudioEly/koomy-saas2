@@ -114,6 +114,15 @@ export default function MobileAdminMembers({ params }: { params: { communityId: 
               </div>
             )}
 
+            {viewingMember.phone && (
+              <div className="flex items-center gap-3 text-gray-300 mb-3">
+                <Phone size={16} className="text-gray-500" />
+                <a href={`tel:${viewingMember.phone}`} className="text-sm text-purple-400 hover:underline">
+                  {viewingMember.phone}
+                </a>
+              </div>
+            )}
+
             {viewingMember.section && (
               <div className="flex items-center gap-3 text-gray-300 mb-3">
                 <User size={16} className="text-gray-500" />
