@@ -24,6 +24,23 @@ The database schema includes platform-level tables (e.g., `plans`, `accounts`) a
 
 Platform analytics provide insights into community performance, member growth, plan utilization, and geographic distribution. A robust authentication model supports three tiers: mobile app users, web administrators, and platform administrators, with role-based access control. Multi-tenant data isolation is enforced through `communityId` foreign keys and role-based access control. Enums are used extensively for managing various statuses like subscriptions, members, tickets, and payments.
 
+### Economic Model (Phase 1 Complete - Dec 2024)
+
+**Stripe Integration Structure:**
+- **SaaS Subscriptions (Stripe Billing)**: Communities pay Koomy for platform access
+- **Community Payments (Stripe Connect Express)**: Members pay communities for membership fees and fundraising
+
+**Database Schema for Payments:**
+- `communities` table: Added `stripeConnectAccountId`, `paymentsEnabled`, `platformFeePercent` (default 2%), `maxMembersAllowed`
+- `userCommunityMemberships` table: Added `membershipPaidAt`, `membershipValidUntil`, `membershipAmountPaid`
+- `collections` table: Fundraising campaigns with `title`, `amountCents`, `targetAmountCents`, `allowCustomAmount`, `status` (open/closed/canceled)
+- `transactions` table: Unified payment tracking with `type` (subscription/membership/collection), `amountTotalCents`, `amountFeeKoomyCents`, `amountToCommunity`, Stripe IDs
+
+**New Enums:**
+- `collectionStatusEnum`: open, closed, canceled
+- `transactionTypeEnum`: subscription, membership, collection
+- `transactionStatusEnum`: pending, succeeded, failed, refunded
+
 ### Build and Deployment
 
 Development leverages Vite for client and Node.js for server, with hot module replacement and TypeScript watch mode. Production builds minify and bundle client assets and server code using Vite and esbuild, respectively. Environment variables control configuration, and Replit-specific integrations are utilized.
