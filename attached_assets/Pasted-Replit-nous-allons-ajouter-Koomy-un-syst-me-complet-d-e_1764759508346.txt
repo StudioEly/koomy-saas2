@@ -1,0 +1,234 @@
+Replit, nous allons ajouter à Koomy un système complet d’envoi d’emails, entièrement configurable depuis la plateforme SaaS Owner.
+
+Merci de suivre les étapes ci-dessous dans l’ordre, en expliquant à chaque fois ce que tu modifies et pourquoi.
+
+🔷 Tâche 1 — Création du module mailer dans le backend
+
+Dans le backend Node/Express, créer un dossier :
+server/services/mailer/
+
+À l’intérieur, créer les fichiers suivants :
+
+mailer.js → la couche d’intégration (SendGrid, Resend ou autre)
+
+templates.js → charge les templates stockés en base (ou fallback par défaut)
+
+emailTypes.js → liste les types d’emails utilisables dans tout Koomy
+
+renderer.js → remplace les variables dynamiques dans les templates (ex: {{name}}, {{code}})
+
+Préparer mailer.js pour supporter SendGrid par défaut :
+
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+async function sendEmail({ to, subject, html }) {
+  const msg = { to, from: "no-reply@koomy.app", subject, html };
+  await sgMail.send(msg);
+}
+
+module.exports = { sendEmail };
+
+
+Préparer les variables d’environnement nécessaires :
+
+SENDGRID_API_KEY
+
+EMAIL_FROM
+Ajouter les placeholders dans Replit.
+
+🔷 Tâche 2 — Ajouter un système de templates email (gérés depuis SaaS Owner)
+
+Créer une nouvelle table en base de données : EmailTemplates
+
+id
+
+type (ex: "welcome_admin", "invite_member", "reset_password"...)
+
+subject
+
+html
+
+updatedAt
+
+Ajouter une route backend :
+
+GET /api/owner/email-templates → liste des templates
+
+GET /api/owner/email-templates/:type → récupérer un template
+
+PUT /api/owner/email-templates/:type → modifier un template
+
+Ajouter dans emailTypes.js la liste officielle :
+
+welcome_community_admin
+
+invite_delegate
+
+invite_member
+
+reset_password
+
+verify_email
+
+new_event
+
+new_collection
+
+message_to_admin
+
+Dans renderer.js, ajouter une fonction permettant de rendre un template HTML avec des variables dynamiques :
+
+function renderTemplate(html, variables) {
+  return html.replace(/{{(.*?)}}/g, (_, key) => variables[key.trim()] || "");
+}
+module.exports = { renderTemplate };
+
+🔷 Tâche 3 — Connecter les actions du produit aux emails
+
+Dans le backend existant, ajouter l’envoi d’emails aux moments suivants :
+
+Création d’un nouvel admin + communauté
+
+type : welcome_community_admin
+
+variables : name, communityName, code, loginUrl
+
+Ajout d’un délégué
+
+type : invite_delegate
+
+variables : name, adminName, communityName, role, activationUrl
+
+Ajout d’un membre
+
+type : invite_member
+
+variables : name, communityName, codeMembre, activationUrl
+
+Reset password
+
+type : reset_password
+
+variables : name, resetUrl
+
+Vérification email
+
+type : verify_email
+
+variables : name, codeVerification, activateUrl
+
+Nouvel événement créé
+
+type : new_event
+
+variables : title, date, communityName
+
+Nouvelle collecte lancée
+
+type : new_collection
+
+variables : title, amount, deadline, communityName
+
+Message reçu d’un membre
+
+type : message_to_admin
+
+variables : memberName, subject, message
+
+Important :
+Créer une fonction utilitaire globale :
+
+async function sendSystemEmail(type, to, variables) {
+  const template = await getTemplateByType(type);
+  const html = renderTemplate(template.html, variables);
+  const subject = renderTemplate(template.subject, variables);
+  await sendEmail({ to, subject, html });
+}
+
+🔷 Tâche 4 — Interface de gestion dans SaaS Owner
+
+Dans la plateforme Owner, ajouter une section :
+
+➡️ Menu : Paramètres → Templates Email
+
+Créer trois écrans :
+
+4.1 Liste des templates
+
+Afficher :
+
+Nom du template
+
+Type
+
+Dernière mise à jour
+
+Bouton “Modifier”
+
+4.2 Éditeur d’un template
+
+Formulaire :
+
+Champ “Objet”
+
+Champ “Contenu HTML”
+
+Aperçu
+
+Liste des variables dynamiques possibles pour ce type d’email
+
+Bouton : Enregistrer les modifications
+
+4.3 Avertissement
+
+Afficher en haut :
+
+⚠ Les emails modifiés affectent toutes les communautés utilisant Koomy.
+
+🔷 Tâche 5 — Sécurité & validation
+
+Le module email ne doit être accessible que depuis SaaS Owner.
+
+Ajouter une vérification du format email avant envoi.
+
+Empêcher l'injection HTML dangereuse dans les templates.
+
+Logger les envois pour debugging :
+-> table EmailLogs
+
+id
+
+to
+
+type
+
+sentAt
+
+success/failure
+
+errorMessage
+
+🔷 Tâche 6 — Tester le système
+
+Simuler création d’admin → vérifier email reçu.
+
+Simuler ajout d’un membre → vérifier email reçu.
+
+Modifier un template dans SaaS Owner → relancer un email → vérifier que c’est bien la nouvelle version.
+
+Vérifier que les placeholders {{name}}, {{code}}, etc. se remplacent correctement.
+
+🔥 À la fin, confirmer :
+
+Création du module mailer ✔
+
+Ajout des templates en base ✔
+
+Routes API Owner pour gérer les templates ✔
+
+Intégration des emails dans les actions clés du backend ✔
+
+Interface Owner UI (liste + édition) ✔
+
+Logs d’envoi ✔
