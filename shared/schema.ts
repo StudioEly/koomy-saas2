@@ -29,6 +29,15 @@ export const emailTypeEnum = pgEnum("email_type", [
   "message_to_admin"
 ]);
 
+// Collection status enum (fundraising campaigns)
+export const collectionStatusEnum = pgEnum("collection_status", ["open", "closed", "canceled"]);
+
+// Transaction type enum (unified payment tracking)
+export const transactionTypeEnum = pgEnum("transaction_type", ["subscription", "membership", "collection"]);
+
+// Transaction status enum
+export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "succeeded", "failed", "refunded"]);
+
 // Community Types
 export const COMMUNITY_TYPES = [
   { value: "sports_club", label: "Club sportif" },
@@ -143,6 +152,11 @@ export const communities = pgTable("communities", {
   fullAccessExpiresAt: timestamp("full_access_expires_at"), // null = permanent
   fullAccessReason: text("full_access_reason"),
   fullAccessGrantedBy: varchar("full_access_granted_by", { length: 50 }),
+  // Stripe Connect (for community payments)
+  stripeConnectAccountId: text("stripe_connect_account_id"), // Stripe Connect Express account ID
+  paymentsEnabled: boolean("payments_enabled").default(false), // true when Connect verified
+  platformFeePercent: integer("platform_fee_percent").default(2), // Koomy commission % (default 2%)
+  maxMembersAllowed: integer("max_members_allowed"), // derived from plan (50/1000/5000)
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -178,6 +192,10 @@ export const userCommunityMemberships = pgTable("user_community_memberships", {
   contributionStatus: contributionStatusEnum("contribution_status").default("pending"),
   nextDueDate: timestamp("next_due_date"),
   claimedAt: timestamp("claimed_at"), // when the card was linked to an account
+  // Membership payment tracking
+  membershipPaidAt: timestamp("membership_paid_at"), // last payment date
+  membershipValidUntil: timestamp("membership_valid_until"), // membership validity end date
+  membershipAmountPaid: integer("membership_amount_paid"), // last amount paid in cents
   // Delegate permissions (for role = "delegate" or "admin")
   canManageArticles: boolean("can_manage_articles").default(true),
   canManageEvents: boolean("can_manage_events").default(true),
@@ -315,6 +333,46 @@ export const payments = pgTable("payments", {
   completedAt: timestamp("completed_at")
 });
 
+// Collections (Fundraising campaigns)
+export const collections = pgTable("collections", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  targetAmountCents: integer("target_amount_cents"), // optional goal amount
+  amountCents: integer("amount_cents").notNull(), // amount per participant
+  currency: text("currency").default("EUR"),
+  status: collectionStatusEnum("status").default("open"),
+  platformFeePercent: integer("platform_fee_percent"), // override community fee if set
+  allowCustomAmount: boolean("allow_custom_amount").default(false), // let user choose amount
+  deadline: timestamp("deadline"), // optional deadline
+  collectedAmountCents: integer("collected_amount_cents").default(0), // total collected
+  participantsCount: integer("participants_count").default(0), // number of contributors
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  closedAt: timestamp("closed_at")
+});
+
+// Transactions (Unified payment tracking)
+export const transactions = pgTable("transactions", {
+  id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id", { length: 50 }).references(() => communities.id).notNull(),
+  membershipId: varchar("membership_id", { length: 50 }).references(() => userCommunityMemberships.id),
+  collectionId: varchar("collection_id", { length: 50 }).references(() => collections.id),
+  type: transactionTypeEnum("type").notNull(), // subscription | membership | collection
+  amountTotalCents: integer("amount_total_cents").notNull(), // total amount in cents
+  amountFeeKoomyCents: integer("amount_fee_koomy_cents").default(0), // Koomy commission
+  amountToCommunity: integer("amount_to_community").notNull(), // net amount to community
+  currency: text("currency").default("EUR"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeChargeId: text("stripe_charge_id"),
+  stripeTransferId: text("stripe_transfer_id"), // for Connect transfers
+  stripeApplicationFeeId: text("stripe_application_fee_id"), // Koomy fee ID
+  status: transactionStatusEnum("status").default("pending"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at")
+});
+
 // Commercial Contacts (from public website contact form)
 export const commercialContacts = pgTable("commercial_contacts", {
   id: varchar("id", { length: 50 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -362,7 +420,9 @@ export const communitiesRelations = relations(communities, ({ one, many }) => ({
   messages: many(messages),
   fees: many(membershipFees),
   paymentRequests: many(paymentRequests),
-  payments: many(payments)
+  payments: many(payments),
+  collections: many(collections),
+  transactions: many(transactions)
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -371,10 +431,24 @@ export const usersRelations = relations(users, ({ many }) => ({
   messages: many(messages)
 }));
 
-export const userCommunityMembershipsRelations = relations(userCommunityMemberships, ({ one }) => ({
+export const userCommunityMembershipsRelations = relations(userCommunityMemberships, ({ one, many }) => ({
   user: one(users, { fields: [userCommunityMemberships.userId], references: [users.id] }),
   account: one(accounts, { fields: [userCommunityMemberships.accountId], references: [accounts.id] }),
-  community: one(communities, { fields: [userCommunityMemberships.communityId], references: [communities.id] })
+  community: one(communities, { fields: [userCommunityMemberships.communityId], references: [communities.id] }),
+  transactions: many(transactions)
+}));
+
+// Collections relations
+export const collectionsRelations = relations(collections, ({ one, many }) => ({
+  community: one(communities, { fields: [collections.communityId], references: [communities.id] }),
+  transactions: many(transactions)
+}));
+
+// Transactions relations
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  community: one(communities, { fields: [transactions.communityId], references: [communities.id] }),
+  membership: one(userCommunityMemberships, { fields: [transactions.membershipId], references: [userCommunityMemberships.id] }),
+  collection: one(collections, { fields: [transactions.collectionId], references: [collections.id] })
 }));
 
 // Insert/Select Schemas
@@ -393,6 +467,8 @@ export const insertMessageSchema = createInsertSchema(messages).omit({ id: true,
 export const insertMembershipFeeSchema = createInsertSchema(membershipFees).omit({ id: true });
 export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({ id: true, createdAt: true, paidAt: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true, completedAt: true });
+export const insertCollectionSchema = createInsertSchema(collections).omit({ id: true, createdAt: true, closedAt: true, collectedAmountCents: true, participantsCount: true });
+export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true, completedAt: true });
 export const insertCommercialContactSchema = createInsertSchema(commercialContacts).omit({ id: true, createdAt: true, status: true });
 export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({ id: true, updatedAt: true });
 export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({ id: true, sentAt: true });
@@ -413,6 +489,8 @@ export type Message = typeof messages.$inferSelect;
 export type MembershipFee = typeof membershipFees.$inferSelect;
 export type PaymentRequest = typeof paymentRequests.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type Collection = typeof collections.$inferSelect;
+export type Transaction = typeof transactions.$inferSelect;
 export type CommercialContact = typeof commercialContacts.$inferSelect;
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type EmailLog = typeof emailLogs.$inferSelect;
@@ -433,6 +511,8 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type InsertMembershipFee = z.infer<typeof insertMembershipFeeSchema>;
 export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type InsertCollection = z.infer<typeof insertCollectionSchema>;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type InsertCommercialContact = z.infer<typeof insertCommercialContactSchema>;
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
 export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
