@@ -1,0 +1,192 @@
+Replit, je veux améliorer l’application Pro Koomy (l’interface que tu vois sur la capture jointe : écran sombre “Connexion Admin”).
+
+L’objectif :
+
+faire de l’app Pro un vrai centre de gestion mobile (presque tout ce que fait le backoffice web),
+
+permettre de créer un compte admin directement depuis cet écran,
+
+et gérer des délégués avec privilèges partiels (seules les fonctionnalités autorisées apparaissent).
+
+Merci d’agir comme un dev full-stack (front React + backend Node/Express) en respectant le design actuel (fond sombre, logo Koomy bleu, bouton violet).
+
+1️⃣ Modifier l’écran de connexion Pro
+
+Sur l’écran de connexion admin (app Pro) :
+
+Changements d’UI :
+
+Remplacer le label “Email professionnel” par simplement “Email”.
+
+Le placeholder devient email@exemple.com.
+
+Conserver le champ mot de passe et “Mot de passe oublié ?”.
+
+Supprimer le bouton / lien “Accéder à l’espace membre”.
+
+Ajout création de compte :
+
+Ajouter un bouton texte sous le bouton “Se connecter” :
+libellé : “Pas encore administrateur ? Créez votre espace Koomy”.
+
+Ce bouton doit ouvrir un écran d’inscription admin directement dans l’app Pro (pas de redirection vers le site web).
+
+Réutiliser si possible l’API qui sert aujourd’hui à créer une communauté / compte admin (merci de la retrouver dans le backend et de l’appeler depuis ce nouvel écran).
+
+2️⃣ Ajouter les pages principales dans l’app Pro
+
+Créer une navigation principale dans l’app Pro (barre en bas ou menu latéral, à toi de choisir ce qui s’intègre le mieux) avec ces sections :
+
+Accueil (Home Pro)
+
+Résumé : nombre de membres, dernier événement, dernières news, rappel de collectes en cours.
+
+Raccourcis :
+
+“Créer un article”
+
+“Créer un événement”
+
+“Créer une collecte”
+
+“Scanner un QR de présence”
+
+Articles / Actualités
+
+Liste paginée des articles de la communauté.
+
+Bouton “+ Nouvel article”.
+
+Écran de création / édition avec : titre, contenu, image optionnelle, bouton Publier/Brouillon.
+
+Repose-toi sur les API déjà existantes côté backoffice pour news/articles.
+
+Événements
+
+Liste des événements (à venir / passés).
+
+Bouton “+ Nouvel événement”.
+
+Formulaire : titre, description, date/heure, lieu, options (ex : présence obligatoire, générer un QR).
+
+Depuis la fiche événement : bouton “Scanner les présences” qui ouvre le scanner QR déjà existant dans l’app Pro.
+
+Collectes / Paiements
+
+Liste des collectes (libellé, montant, statut).
+
+Bouton “+ Nouvelle collecte”.
+
+Formulaire simplifié : titre, description, montant fixe ou libre, date de fin, éventuellement filtre par section.
+
+Vue détaillée d’une collecte : liste de membres qui ont payé / pas encore payé (en s’appuyant sur les endpoints déjà présents pour paiements).
+
+Messages
+
+Liste des conversations ou messages envoyés par les membres à l’admin.
+
+Lecture d’un message, réponse depuis l’app.
+
+Indicateur de non lus.
+
+Membres
+
+Liste des membres avec recherche.
+
+Fiche membre simplifiée : nom, section, statut (actif / inactif), état de cotisation si disponible.
+
+Action rapide : suspendre / réactiver, voir QR du membre.
+
+Paramètres & Délégués
+
+Accès réservé aux admins avec droits complets (voir partie privilèges ci-dessous).
+
+Gestion des délégués : liste des comptes délégués, bouton “+ Ajouter un délégué”.
+
+3️⃣ Gestion des privilèges des délégués
+
+Objectif : quand un délégué se connecte, il ne voit que les sections/fonctionnalités que l’admin lui a autorisées.
+
+Modèle de privilèges
+
+Côté backend, ajouter (ou utiliser si déjà présent) un modèle de permissions pour les comptes admin/délégués, par exemple :
+
+permissions: {
+  canManageArticles: boolean,
+  canManageEvents: boolean,
+  canManageCollections: boolean,
+  canManageMessages: boolean,
+  canManageMembers: boolean,
+  canScanPresence: boolean
+}
+
+
+Écran de gestion des délégués (dans Paramètres)
+
+Pour chaque délégué :
+
+Afficher son nom + email.
+
+Afficher une liste de toggles (switch) :
+
+Gérer les articles
+
+Gérer les événements
+
+Gérer les collectes
+
+Répondre aux messages
+
+Gérer les membres
+
+Scanner les présences
+
+Lorsqu’on change un toggle, appeler l’API pour mettre à jour les permissions.
+
+Adaptation de l’interface selon les permissions
+
+Côté app Pro :
+
+Au login, récupérer via l’API les permissions de l’utilisateur connecté.
+
+Dans la navigation :
+
+Masquer complètement les onglets / entrées de menu dont les permissions sont false.
+
+Dans les écrans eux-mêmes :
+
+Ajouter une sécurité : si un utilisateur tente d’accéder à une route pour laquelle il n’a pas de droit, afficher un message “Accès non autorisé” et le renvoyer vers l’accueil.
+
+Sécurité backend
+
+Ajouter également des vérifications de permissions côté backend (middleware) sur les routes sensibles (création article, événement, collecte, gestion membres).
+
+4️⃣ Respecter le design existant
+
+Conserver le style visuel actuel de l’app Pro :
+
+fond sombre dégradé bleu > bleu nuit ;
+
+logo Koomy bleu ;
+
+boutons principaux violets ;
+
+cartes arrondies, ombre douce.
+
+Les nouvelles pages (Articles, Événements, Collectes, etc.) doivent utiliser les mêmes composants / styles (boutons, cartes, champs).
+
+5️⃣ Commit
+
+Faire plusieurs commits clairs, par exemple :
+
+feat(pro-app): add signup flow on admin login screen
+
+feat(pro-app): add articles/events/collections/members screens
+
+feat(pro-app): implement delegate permissions system
+
+Merci d’analyser le code existant de l’app Pro, de créer les écrans, routes et appels API en te basant sur les endpoints déjà utilisés par le back-office, et de tester avec :
+
+un compte admin complet,
+
+un compte délégué avec droits partiels.
