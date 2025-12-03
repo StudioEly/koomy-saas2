@@ -128,29 +128,29 @@ export default function MobileCard({ params }: { params: { communityId: string }
             </div>
 
             {/* BACK SIDE */}
-            <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl shadow-2xl overflow-hidden bg-white text-gray-800 p-6 flex flex-col items-center justify-center border border-gray-200">
-               <div className="text-center w-full">
-                 <p className="text-xs text-gray-400 uppercase tracking-widest mb-4">Code de validation</p>
-                 
-                 <div className="bg-white p-2 rounded-xl border-2 border-gray-100 shadow-inner inline-block mb-4" onClick={(e) => {
+            <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl shadow-2xl overflow-hidden bg-white text-gray-800 p-4 flex flex-col items-center justify-between border border-gray-200">
+               <p className="text-[10px] text-gray-400 uppercase tracking-widest pt-1">Code de validation</p>
+               
+               <div className="flex-1 flex flex-col items-center justify-center">
+                 <div className="bg-white p-1.5 rounded-lg border border-gray-100 shadow-inner" onClick={(e) => {
                    e.stopPropagation();
                    setShowQRModal(true);
                  }}>
-                   <QRCode value={activeMembership.memberId || "MEMBER"} size={120} />
+                   <QRCode value={activeMembership.memberId || "MEMBER"} size={100} />
                  </div>
                  
-                 <p className="text-xs text-gray-500 mb-6">Scannez ce code pour valider votre présence aux événements.</p>
-                 
-                 <button 
-                   onClick={(e) => {
-                     e.stopPropagation();
-                     setShowQRModal(true);
-                   }}
-                   className="flex items-center gap-2 mx-auto text-primary font-semibold text-sm hover:underline"
-                 >
-                   <ZoomIn size={16} /> Agrandir le QR Code
-                 </button>
+                 <p className="text-[10px] text-gray-500 mt-2 text-center px-2 leading-tight">Scannez ce code pour valider votre présence</p>
                </div>
+               
+               <button 
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   setShowQRModal(true);
+                 }}
+                 className="flex items-center gap-1.5 text-primary font-semibold text-xs hover:underline pb-1"
+               >
+                 <ZoomIn size={14} /> Agrandir
+               </button>
             </div>
           </motion.div>
         </div>

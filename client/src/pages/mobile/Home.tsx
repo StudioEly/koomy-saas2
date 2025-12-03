@@ -2,11 +2,13 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import MobileLayout from "@/components/layouts/MobileLayout";
-import { Bell, CreditCard, ChevronRight } from "lucide-react";
+import { Bell, CreditCard, ChevronRight, Heart, Target, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
-import type { NewsArticle, Event } from "@shared/schema";
+import type { NewsArticle, Event, Collection } from "@shared/schema";
 
 export default function MobileHome({ params }: { params: { communityId: string } }) {
   const { communityId } = params;
@@ -35,6 +37,25 @@ export default function MobileHome({ params }: { params: { communityId: string }
     queryKey: [`/api/communities/${communityId}/events`],
     enabled: !!communityId
   });
+
+  const { data: collectionsData } = useQuery<{ collections: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    amountCents: number | null;
+    allowCustomAmount: boolean;
+    targetAmountCents: number | null;
+    collectedAmountCents: number;
+    participantsCount: number;
+    percentComplete: number | null;
+    deadline: string | null;
+    status: string;
+  }> }>({
+    queryKey: [`/api/collections/${communityId}`],
+    enabled: !!communityId
+  });
+
+  const activeCollections = collectionsData?.collections || [];
 
   const recentNews = newsList.slice(0, 2);
   const nextEvent = eventsList.find(e => new Date(e.date) >= new Date());
@@ -106,6 +127,69 @@ export default function MobileHome({ params }: { params: { communityId: string }
             </div>
           </div>
         </Link>
+
+        {/* Active Collections Section - Only shown when there are active collections */}
+        {activeCollections.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Heart className="text-rose-500" size={20} />
+              <h2 className="text-lg font-bold text-gray-800">Collectes en cours</h2>
+            </div>
+            
+            <div className="space-y-3">
+              {activeCollections.slice(0, 2).map((collection) => {
+                const progress = collection.targetAmountCents && collection.targetAmountCents > 0
+                  ? Math.min(100, Math.round(((collection.collectedAmountCents || 0) / collection.targetAmountCents) * 100))
+                  : 0;
+                const amountDisplay = collection.amountCents 
+                  ? `${(collection.amountCents / 100).toFixed(0)} €`
+                  : "Montant libre";
+                
+                return (
+                  <Link key={collection.id} href={`/app/${communityId}/payment?type=collection&id=${collection.id}`}>
+                    <Card className="overflow-hidden border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-all bg-gradient-to-r from-rose-50 to-orange-50" data-testid={`card-collection-${collection.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-gray-900 leading-tight">{collection.title}</h3>
+                            {collection.description && (
+                              <p className="text-xs text-gray-500 mt-1 line-clamp-1">{collection.description}</p>
+                            )}
+                          </div>
+                          <Badge className="bg-rose-100 text-rose-700 border-0 ml-2 shrink-0">
+                            {amountDisplay}
+                          </Badge>
+                        </div>
+                        
+                        {collection.targetAmountCents && collection.targetAmountCents > 0 && (
+                          <div className="mt-3">
+                            <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
+                              <span className="flex items-center gap-1">
+                                <Target size={12} />
+                                Objectif: {(collection.targetAmountCents / 100).toFixed(0)} €
+                              </span>
+                              <span className="font-medium text-rose-600">{progress}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2 bg-gray-200" />
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                          <span className="text-xs text-gray-400">
+                            {collection.participantsCount || 0} participant{(collection.participantsCount || 0) > 1 ? 's' : ''}
+                          </span>
+                          <Button size="sm" className="h-7 text-xs bg-rose-500 hover:bg-rose-600">
+                            Participer <ArrowRight size={12} className="ml-1" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* News Section */}
         <div className="mb-4 flex justify-between items-center">

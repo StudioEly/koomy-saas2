@@ -26,6 +26,7 @@ export const emailTypeEnum = pgEnum("email_type", [
   "verify_email",
   "new_event",
   "new_collection",
+  "collection_contribution_thanks",
   "message_to_admin"
 ]);
 

@@ -6,6 +6,7 @@ export const EMAIL_TYPES = {
   VERIFY_EMAIL: "verify_email",
   NEW_EVENT: "new_event",
   NEW_COLLECTION: "new_collection",
+  COLLECTION_CONTRIBUTION_THANKS: "collection_contribution_thanks",
   MESSAGE_TO_ADMIN: "message_to_admin"
 } as const;
 
@@ -19,6 +20,7 @@ export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
   [EMAIL_TYPES.VERIFY_EMAIL]: "Vérification email",
   [EMAIL_TYPES.NEW_EVENT]: "Nouvel événement",
   [EMAIL_TYPES.NEW_COLLECTION]: "Nouvelle collecte",
+  [EMAIL_TYPES.COLLECTION_CONTRIBUTION_THANKS]: "Remerciement contribution",
   [EMAIL_TYPES.MESSAGE_TO_ADMIN]: "Message à l'administrateur"
 };
 
@@ -30,5 +32,6 @@ export const EMAIL_TYPE_VARIABLES: Record<EmailType, string[]> = {
   [EMAIL_TYPES.VERIFY_EMAIL]: ["name", "codeVerification", "activateUrl"],
   [EMAIL_TYPES.NEW_EVENT]: ["title", "date", "communityName"],
   [EMAIL_TYPES.NEW_COLLECTION]: ["title", "amount", "deadline", "communityName"],
+  [EMAIL_TYPES.COLLECTION_CONTRIBUTION_THANKS]: ["name", "communityName", "collectionTitle", "amount"],
   [EMAIL_TYPES.MESSAGE_TO_ADMIN]: ["memberName", "subject", "message"]
 };
