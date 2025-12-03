@@ -2252,6 +2252,41 @@ Règles de conversation:
   });
 
   // =====================================================
+  // STRIPE CONNECT ROUTES - PHASE 2B.1: Community Payments
+  // =====================================================
+
+  app.post("/api/payments/connect-community", async (req, res) => {
+    try {
+      const { communityId, userId } = req.body;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Verify user is admin of this community
+      const membership = await storage.getMembership(userId, communityId);
+      if (!membership || membership.role !== "admin") {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+
+      const { setupConnectForCommunity } = await import("./stripeConnect");
+      const result = await setupConnectForCommunity(communityId);
+
+      return res.json({
+        onboardingUrl: result.onboardingUrl,
+        accountId: result.accountId,
+      });
+    } catch (error: any) {
+      console.error("Connect community error:", error);
+      return res.status(500).json({ error: error.message || "Failed to setup Connect" });
+    }
+  });
+
+  // =====================================================
   // STRIPE BILLING ROUTES (Legacy - Prepared for integration)
   // =====================================================
 
