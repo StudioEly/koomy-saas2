@@ -1,0 +1,280 @@
+Parfait, ça avance super bien 🔥
+Là oui, on le fait passer en Phase 2B.2 – Paiement des cotisations, mais comme d’hab : cadrage béton.
+Tu peux lui répondre exactement ça :
+
+✅ Oui, on passe à la PHASE 2B.2 – Paiement des cotisations (membership)
+On se concentre uniquement sur la cotisation d’adhésion à une communauté (pas encore les collectes).
+
+🎯 Objectif de la Phase 2B.2
+Permettre à un membre de payer sa cotisation à une communauté via Stripe Checkout, en :
+
+
+débitant le membre via Stripe,
+
+
+reversant l’argent au compte Connect de la communauté,
+
+
+appliquant la commission Koomy = 2% (ou platformFeePercent),
+
+
+mettant à jour :
+
+
+userCommunityMemberships (paid, dates),
+
+
+transactions (trace complète du paiement).
+
+
+
+
+
+1️⃣ Route API – Paiement de cotisation
+Créer la route :
+POST /api/payments/create-membership-session
+
+Entrée attendue
+interface CreateMembershipSessionRequest {
+  communityId: string;
+  memberId: string; // ou dérivé de l'utilisateur courant
+}
+
+
+🔒 La route doit utiliser la logique d’authentification existante pour s’assurer que :
+
+
+le membre est bien connecté,
+
+
+il appartient à cette communauté.
+
+
+
+Sortie
+interface CreateMembershipSessionResponse {
+  sessionId: string;
+  sessionUrl: string;
+}
+
+
+2️⃣ Conditions avant de créer la session Stripe
+Avant de créer la session Checkout :
+
+
+Récupérer la communauté (communityId) :
+
+
+stripeConnectAccountId doit être défini
+
+
+paymentsEnabled doit être true
+
+
+membership_amount_cents (ou membershipAmountCents) doit être > 0
+
+
+membership_currency = "EUR"
+
+
+
+
+Récupérer l’entrée userCommunityMemberships pour ce memberId + communityId.
+
+
+Si l’une des conditions n’est pas remplie → retourner une erreur claire (400).
+
+
+
+3️⃣ Création de la session Stripe
+Utiliser Stripe Checkout en mode payment, pas subscription.
+Commission Koomy
+const amount = community.membershipAmountCents; // ex: 8000
+const feePercent = community.platformFeePercent ?? 2;
+const applicationFeeAmount = Math.round(amount * feePercent / 100);
+
+Appel Stripe
+const stripe = await getStripeClient();
+
+const session = await stripe.checkout.sessions.create({
+  mode: "payment",
+  payment_method_types: ["card"],
+  line_items: [
+    {
+      price_data: {
+        currency: "eur",
+        product_data: {
+          name: `Cotisation ${community.name}`,
+        },
+        unit_amount: amount,
+      },
+      quantity: 1,
+    },
+  ],
+  payment_intent_data: {
+    application_fee_amount: applicationFeeAmount,
+    transfer_data: {
+      destination: community.stripeConnectAccountId,
+    },
+    metadata: {
+      type: "membership",
+      communityId,
+      memberId,
+    },
+  },
+  metadata: {
+    type: "membership",
+    communityId,
+    memberId,
+  },
+  success_url: "https://app.koomy.app/payment/success?session_id={CHECKOUT_SESSION_ID}",
+  cancel_url: "https://app.koomy.app/payment/cancel",
+});
+
+
+❗ Important :
+
+
+Toujours utiliser https://app.koomy.app/... pour les URLs, jamais l’URL Replit.
+
+
+type: "membership" doit être présent dans metadata (session + payment_intent).
+
+
+
+Réponse :
+res.json({
+  sessionId: session.id,
+  sessionUrl: session.url,
+});
+
+
+4️⃣ Webhooks – Mise à jour DB après paiement
+Dans server/webhookHandlers.ts, compléter la logique Stripe pour :
+Événement clé
+
+
+payment_intent.succeeded
+
+
+Quand tu reçois cet événement :
+
+
+Récupérer paymentIntent.metadata :
+
+
+type
+
+
+communityId
+
+
+memberId
+
+
+
+
+Si type !== "membership" → ignorer (ce sera utilisé plus tard pour collection).
+
+
+Récupérer la communauté et le membership.
+
+
+Calculer les montants :
+
+
+const amountTotal = paymentIntent.amount; // en cents
+const feeKoomy = paymentIntent.application_fee_amount || 0;
+const amountToCommunity = amountTotal - feeKoomy; // (on ignore pour l'instant les frais Stripe)
+
+
+
+Créer une entrée dans transactions :
+
+
+await storage.insertTransaction({
+  communityId,
+  membershipId: membership.id,
+  type: "membership",
+  amountTotalCents: amountTotal,
+  amountFeeKoomyCents: feeKoomy,
+  amountToCommunity: amountToCommunity,
+  currency: paymentIntent.currency?.toUpperCase() || "EUR",
+  stripePaymentIntentId: paymentIntent.id,
+  stripeChargeId: paymentIntent.latest_charge as string | null,
+  stripeTransferId: /* si dispo via events, sinon null */,
+  stripeApplicationFeeId: /* si dispo via events, sinon null */,
+  status: "succeeded",
+  metadata: {
+    memberId,
+    communityId,
+  },
+});
+
+
+
+Mettre à jour userCommunityMemberships :
+
+
+
+
+membershipPaidAt = now
+
+
+membershipValidUntil = now + 1 an (ceci est important : on part sur une cotisation annuelle pour le MVP)
+
+
+membershipAmountPaid = amountTotal
+
+
+
+5️⃣ Variables & contraintes
+
+
+La commission Koomy par défaut = 2% via community.platformFeePercent.
+
+
+La cotisation est annuelle pour cette V1 (pas besoin de gérer mensuel maintenant).
+
+
+L’implémentation doit utiliser les types et tables ajoutés en Phase 1 (transactions, membershipPaidAt, etc.).
+
+
+Ne pas encore toucher à collections dans cette phase.
+
+
+
+6️⃣ Ce que j’attends de toi pour cette phase
+
+
+Le code de la route :
+
+
+signature,
+
+
+validations d’entrée,
+
+
+appel Stripe,
+
+
+gestion erreurs.
+
+
+
+
+Les ajouts dans le webhook handler :
+
+
+gestion du payment_intent.succeeded pour type = "membership".
+
+
+
+
+La mise à jour de userCommunityMemberships + transactions.
+
+
+Ensuite, on testera le flux, puis on enchaînera sur 2B.3 (collectes).
+
+Tu peux commencer la Phase 2B.2 sur cette base, et me faire un récapitulatif comme pour les phases précédentes une fois terminé.
