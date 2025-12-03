@@ -1,0 +1,156 @@
+Parfait, là on a un vrai moteur d’abonnement Koomy en place 🎉
+
+On fait deux choses maintenant :
+
+Configurer Stripe pour que ça marche en vrai (en mode test)
+
+Lancer proprement la Phase 2B (Stripe Connect + cotisations + collectes)
+
+1️⃣ Ce que toi tu dois faire maintenant dans Stripe
+a) Récupérer les 4 Price IDs et les mettre dans Replit
+
+Dans ton Dashboard Stripe :
+
+Va dans Produits.
+
+Clique sur :
+
+Produit Communauté Plus → onglet “Prix” → tu vois les 2 prix (9,90 et 99).
+
+Produit Communauté Pro → pareil (29,90 et 290).
+
+Pour chaque prix, tu cliques → tu copies l’ID du prix (ça ressemble à price_1QfXYZabc...).
+
+Puis dans Replit, dans les variables d’environnement du projet Koomy, mets :
+
+STRIPE_PRICE_PLUS_MONTHLY=price_xxx   # 9,90 €
+STRIPE_PRICE_PLUS_YEARLY=price_xxx    # 99 €
+STRIPE_PRICE_PRO_MONTHLY=price_xxx    # 29,90 €
+STRIPE_PRICE_PRO_YEARLY=price_xxx     # 290 €
+
+
+Enregistre.
+
+b) Configurer le webhook Stripe
+
+Dans Stripe → Développeurs → Webhooks.
+
+Ajoute un endpoint webhook qui pointe vers l’URL que Replit t’a donnée pour /api/payments/stripe/webhook
+(Replit a sûrement affiché l’URL dans server/stripe.ts ou les logs, sinon tu lui demanderas).
+
+Dans Stripe, choisis les événements :
+
+checkout.session.completed
+
+customer.subscription.created
+
+customer.subscription.updated
+
+customer.subscription.deleted
+
+invoice.payment_failed
+
+Stripe va te donner un Webhook Signing Secret du type :
+
+whsec_XXXXXXXX
+
+Mets-le dans Replit comme variable d’environnement :
+
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxx
+
+c) (Optionnel mais recommandé) Faire un test simple
+
+Tu peux déjà tester vite fait la route :
+
+Appel POST /api/payments/create-koomy-subscription-session avec un communityId de test, billingPlan: "plus", billingPeriod: "monthly".
+
+Si tout est OK → Stripe te renvoie sessionUrl.
+
+Tu l’ouvres dans ton navigateur → tu devrais voir la page checkout Stripe en mode test.
+
+Si tu ne veux pas t’embêter avec Postman, tu peux aussi dire à Replit plus tard de créer un petit bouton dans le SaaS Owner, mais ce n’est pas bloquant tout de suite.
+
+2️⃣ Lancer la Phase 2B (Stripe Connect + cotisations + collectes)
+
+Là on va lui donner un cadrage aussi propre que pour la 2A, pour éviter qu’il fasse tout en vrac.
+
+Tu peux lui répondre exactement ceci 👇
+
+✉️ Message à envoyer à Replit pour démarrer la PHASE 2B
+
+OK, on peut passer à la Phase 2B – Stripe Connect + cotisations + collectes, mais comme pour la Phase 2A, je veux que ce soit découpé en sous-phases.
+
+🟦 Phase 2B.1 — Stripe Connect Express (activation paiements communauté)
+
+Objectif : permettre à une communauté d’activer les paiements en ligne via Stripe Connect Express.
+
+Merci de :
+
+Créer server/stripeConnect.ts avec :
+
+une fonction pour créer un compte Connect Express pour une communauté (stripeConnectAccountId)
+
+une fonction pour générer un onboarding link (accountLink) avec :
+
+refresh_url = https://backoffice.koomy.app/payments/connect/refresh
+
+return_url = https://backoffice.koomy.app/payments/connect/success
+
+Ajouter une route API :
+
+POST /api/payments/connect-community
+
+
+Entrée :
+
+{ "communityId": "xxx" }
+
+
+Comportement :
+
+vérifier que l’utilisateur est admin de cette communauté (logique déjà existante côté auth/roles),
+
+créer un compte Express si aucun stripeConnectAccountId n’est encore stocké,
+
+créer un accountLink d’onboarding,
+
+retourner { onboardingUrl } au frontend.
+
+Mettre à jour communities :
+
+stocker stripeConnectAccountId,
+
+prévoir la mise à jour de paymentsEnabled quand le compte est vraiment actif (via webhook dans une sous-phase suivante).
+
+👉 Dans cette sous-phase 2B.1, on ne s’occupe que de la création du compte Connect + onboarding link.
+Pas encore des cotisations, ni des collectes, ni des transactions.
+
+Merci de :
+
+me montrer la signature de la route,
+
+le code principal de stripeConnect.ts,
+
+et les updates sur storage avant d’implémenter la suite.
+
+🟩 Phase 2B.2 — Paiement cotisation (membership)
+
+À faire après validation de 2B.1 :
+
+Route POST /api/payments/create-membership-session
+
+Utilisation de application_fee_amount + transfer_data.destination
+
+Mise à jour des tables userCommunityMemberships + transactions à partir des webhooks.
+
+On en reparlera en détail après validation de 2B.1.
+
+🟧 Phase 2B.3 — Collectes (collections)
+
+À faire après 2B.2 :
+
+Routes POST /api/collections + POST /api/payments/create-collection-session
+
+Utilisation de la table collections et de transactions.
+
+Tu peux donc commencer par la Phase 2B.1 comme décrit ci-dessus, et me présenter le plan/implémentation avant de passer à la suite.
