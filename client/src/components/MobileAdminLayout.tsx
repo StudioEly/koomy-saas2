@@ -34,7 +34,7 @@ export default function MobileAdminLayout({
     { icon: Home, label: "Accueil", path: `/app/${communityId}/admin` },
     { icon: Newspaper, label: "Articles", path: `/app/${communityId}/admin/articles`, permission: "canManageArticles" },
     { icon: Calendar, label: "Événements", path: `/app/${communityId}/admin/events`, permission: "canManageEvents" },
-    { icon: Wallet, label: "Collectes", path: `/app/${communityId}/admin/collections`, permission: "canManageCollections" },
+    { icon: Wallet, label: "Finances", path: `/app/${communityId}/admin/finances`, permission: "canManageCollections" },
     { icon: MessageSquare, label: "Messages", path: `/app/${communityId}/admin/messages`, permission: "canManageMessages" },
     { icon: Users, label: "Membres", path: `/app/${communityId}/admin/members`, permission: "canManageMembers" },
     { icon: Settings, label: "Paramètres", path: `/app/${communityId}/admin/settings` }

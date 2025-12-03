@@ -2718,6 +2718,178 @@ Règles de conversation:
     }
   });
 
+  // Get all collections for a community (for admin)
+  app.get("/api/communities/:communityId/collections/all", async (req, res) => {
+    try {
+      const { communityId } = req.params;
+      const userId = req.query.userId as string;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      // Get community to verify it exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Verify user is admin or delegate with canManageCollections permission
+      if (userId) {
+        const membership = await storage.getMembership(userId, communityId);
+        if (!membership) {
+          return res.status(403).json({ error: "Forbidden - No membership found" });
+        }
+
+        const isAdmin = membership.role === "admin";
+        const isDelegateWithPermission = membership.role === "delegate" && membership.canManageCollections === true;
+
+        if (!isAdmin && !isDelegateWithPermission) {
+          return res.status(403).json({ error: "Forbidden - Admin or delegate with canManageCollections permission required" });
+        }
+      }
+
+      // Get ALL collections (not just open ones)
+      const rawCollections = await storage.getCommunityCollections(communityId);
+
+      // Map to response format with percentage calculation
+      const collections = rawCollections.map(c => ({
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        amountCents: c.amountCents,
+        allowCustomAmount: c.allowCustomAmount ?? false,
+        targetAmountCents: c.targetAmountCents,
+        collectedAmountCents: c.collectedAmountCents ?? 0,
+        participantsCount: c.participantsCount ?? 0,
+        percentComplete: c.targetAmountCents && c.targetAmountCents > 0
+          ? Math.round(((c.collectedAmountCents ?? 0) / c.targetAmountCents) * 100)
+          : null,
+        deadline: c.deadline,
+        status: c.status,
+        createdAt: c.createdAt,
+        closedAt: c.closedAt,
+      }));
+
+      return res.json({ collections });
+    } catch (error: any) {
+      console.error("Get all collections error:", error);
+      return res.status(500).json({ error: error.message || "Failed to get collections" });
+    }
+  });
+
+  // Close a collection (admin only)
+  app.post("/api/collections/:id/close", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { userId } = req.body;
+
+      if (!id) {
+        return res.status(400).json({ error: "Collection ID is required" });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "userId is required" });
+      }
+
+      // Get collection
+      const collection = await storage.getCollection(id);
+      if (!collection) {
+        return res.status(404).json({ error: "Collection not found" });
+      }
+
+      // Already closed?
+      if (collection.status !== "open") {
+        return res.status(400).json({ error: "Cette collecte est déjà fermée" });
+      }
+
+      // Verify user is admin or delegate with canManageCollections permission
+      const membership = await storage.getMembership(userId, collection.communityId);
+      if (!membership) {
+        return res.status(403).json({ error: "Forbidden - No membership found" });
+      }
+
+      const isAdmin = membership.role === "admin";
+      const isDelegateWithPermission = membership.role === "delegate" && membership.canManageCollections === true;
+
+      if (!isAdmin && !isDelegateWithPermission) {
+        return res.status(403).json({ error: "Forbidden - Admin or delegate with canManageCollections permission required" });
+      }
+
+      // Close the collection
+      const closedCollection = await storage.closeCollection(id);
+
+      return res.json({
+        success: true,
+        collection: {
+          id: closedCollection.id,
+          title: closedCollection.title,
+          status: closedCollection.status,
+          collectedAmountCents: closedCollection.collectedAmountCents ?? 0,
+          participantsCount: closedCollection.participantsCount ?? 0,
+          closedAt: closedCollection.closedAt,
+        }
+      });
+    } catch (error: any) {
+      console.error("Close collection error:", error);
+      return res.status(500).json({ error: error.message || "Failed to close collection" });
+    }
+  });
+
+  // Get transactions for a community (admin only)
+  app.get("/api/communities/:communityId/transactions", async (req, res) => {
+    try {
+      const { communityId } = req.params;
+      const userId = req.query.userId as string;
+
+      if (!communityId) {
+        return res.status(400).json({ error: "communityId is required" });
+      }
+
+      // Get community to verify it exists
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Verify user is admin (transactions contain sensitive financial data)
+      if (userId) {
+        const membership = await storage.getMembership(userId, communityId);
+        if (!membership) {
+          return res.status(403).json({ error: "Forbidden - No membership found" });
+        }
+
+        const isAdmin = membership.role === "admin";
+        if (!isAdmin) {
+          return res.status(403).json({ error: "Forbidden - Admin role required" });
+        }
+      }
+
+      // Get all transactions for the community
+      const rawTransactions = await storage.getCommunityTransactions(communityId);
+
+      // Map to response format
+      const transactions = rawTransactions.map(t => ({
+        id: t.id,
+        type: t.type,
+        status: t.status,
+        amountTotalCents: t.amountTotalCents,
+        amountFeeKoomyCents: t.amountFeeKoomyCents,
+        amountToCommunity: t.amountToCommunity,
+        currency: t.currency,
+        membershipId: t.membershipId,
+        collectionId: t.collectionId,
+        stripePaymentIntentId: t.stripePaymentIntentId,
+        createdAt: t.createdAt,
+      }));
+
+      return res.json({ transactions });
+    } catch (error: any) {
+      console.error("Get transactions error:", error);
+      return res.status(500).json({ error: error.message || "Failed to get transactions" });
+    }
+  });
+
   app.post("/api/webhooks/stripe", async (req, res) => {
     try {
       const { handleWebhookEvent, isStripeConfigured } = await import("./stripe");

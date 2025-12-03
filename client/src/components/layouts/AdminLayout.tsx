@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { icon: Users, label: "Adhérents", path: "/admin/members" },
     { icon: MapPin, label: "Sections", path: "/admin/sections" },
     { icon: Shield, label: "Administrateurs", path: "/admin/admins" },
-    { icon: CreditCard, label: "Paiements", path: "/admin/payments" },
+    { icon: CreditCard, label: "Finances & Collectes", path: "/admin/finances" },
     { icon: Newspaper, label: "Actualités", path: "/admin/news" },
     { icon: Calendar, label: "Événements", path: "/admin/events" },
     { icon: MessageSquare, label: "Messagerie", path: "/admin/messages" },

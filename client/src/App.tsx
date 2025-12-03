@@ -35,6 +35,7 @@ import MobileAdminEvents from "@/pages/mobile/admin/Events";
 import MobileAdminCollections from "@/pages/mobile/admin/Collections";
 import MobileAdminMembers from "@/pages/mobile/admin/Members";
 import MobileAdminSettings from "@/pages/mobile/admin/Settings";
+import MobileAdminFinances from "@/pages/mobile/admin/Finances";
 import MobileSupport from "@/pages/mobile/Support";
 
 // Wrapper for mobile pages to force mobile layout
@@ -63,6 +64,7 @@ import AdminSupport from "@/pages/admin/Support";
 import AdminPayments from "@/pages/admin/Payments";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminBilling from "@/pages/admin/Billing";
+import AdminFinances from "@/pages/admin/Finances";
 
 // Platform Pages
 import PlatformLogin from "@/pages/platform/Login";
@@ -162,6 +164,7 @@ function Router() {
       <Route path="/app/:communityId/admin/events" component={withMobileContainer(MobileAdminEvents)} />
       <Route path="/app/:communityId/admin/collections" component={withMobileContainer(MobileAdminCollections)} />
       <Route path="/app/:communityId/admin/members" component={withMobileContainer(MobileAdminMembers)} />
+      <Route path="/app/:communityId/admin/finances" component={withMobileContainer(MobileAdminFinances)} />
       <Route path="/app/:communityId/admin/settings" component={withMobileContainer(MobileAdminSettings)} />
 
       {/* Admin Routes (Web) */}
@@ -180,6 +183,7 @@ function Router() {
       <Route path="/admin/support" component={AdminSupport} />
       <Route path="/admin/payments" component={AdminPayments} />
       <Route path="/admin/billing" component={AdminBilling} />
+      <Route path="/admin/finances" component={AdminFinances} />
       <Route path="/admin/settings" component={AdminSettings} />
 
       {/* Platform Super Admin */}
