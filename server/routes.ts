@@ -6,13 +6,14 @@ import {
   insertNewsSchema, insertEventSchema, insertTicketSchema, insertMessageSchema,
   insertMembershipFeeSchema, insertPaymentRequestSchema, insertPaymentSchema,
   insertAccountSchema, insertCommercialContactSchema, insertSectionSchema,
-  insertFaqSchema
+  insertFaqSchema, insertEmailTemplateSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import OpenAI from "openai";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import bcrypt from "bcryptjs";
+import { sendSystemEmail, EMAIL_TYPES, EMAIL_TYPE_VARIABLES, EMAIL_TYPE_LABELS } from "./services/mailer";
 
 function generateClaimCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -2063,6 +2064,93 @@ Règles de conversation:
     } catch (error) {
       console.error("Get contacts error:", error);
       return res.status(500).json({ error: "Failed to get contacts" });
+    }
+  });
+
+  // =====================================================
+  // EMAIL TEMPLATES MANAGEMENT (Platform Owner/SaaS Admin)
+  // =====================================================
+  
+  app.get("/api/owner/email-templates", async (req, res) => {
+    try {
+      const templates = await storage.getAllEmailTemplates();
+      const templatesWithMeta = templates.map(template => ({
+        ...template,
+        label: EMAIL_TYPE_LABELS[template.type as keyof typeof EMAIL_TYPE_LABELS] || template.type,
+        variables: EMAIL_TYPE_VARIABLES[template.type as keyof typeof EMAIL_TYPE_VARIABLES] || []
+      }));
+      return res.json(templatesWithMeta);
+    } catch (error) {
+      console.error("Get email templates error:", error);
+      return res.status(500).json({ error: "Failed to get email templates" });
+    }
+  });
+  
+  app.get("/api/owner/email-templates/:type", async (req, res) => {
+    try {
+      const template = await storage.getEmailTemplateByType(req.params.type);
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      return res.json({
+        ...template,
+        label: EMAIL_TYPE_LABELS[template.type as keyof typeof EMAIL_TYPE_LABELS] || template.type,
+        variables: EMAIL_TYPE_VARIABLES[template.type as keyof typeof EMAIL_TYPE_VARIABLES] || []
+      });
+    } catch (error) {
+      console.error("Get email template error:", error);
+      return res.status(500).json({ error: "Failed to get email template" });
+    }
+  });
+  
+  app.put("/api/owner/email-templates/:type", async (req, res) => {
+    try {
+      const { subject, html } = req.body;
+      
+      if (!subject || !html) {
+        return res.status(400).json({ error: "Subject and HTML content are required" });
+      }
+      
+      const template = await storage.updateEmailTemplate(req.params.type, { subject, html });
+      if (!template) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      
+      return res.json({
+        ...template,
+        label: EMAIL_TYPE_LABELS[template.type as keyof typeof EMAIL_TYPE_LABELS] || template.type,
+        variables: EMAIL_TYPE_VARIABLES[template.type as keyof typeof EMAIL_TYPE_VARIABLES] || []
+      });
+    } catch (error) {
+      console.error("Update email template error:", error);
+      return res.status(500).json({ error: "Failed to update email template" });
+    }
+  });
+  
+  app.get("/api/owner/email-logs", async (req, res) => {
+    try {
+      const { limit = "50", offset = "0" } = req.query;
+      const logs = await storage.getEmailLogs(parseInt(limit as string), parseInt(offset as string));
+      return res.json(logs);
+    } catch (error) {
+      console.error("Get email logs error:", error);
+      return res.status(500).json({ error: "Failed to get email logs" });
+    }
+  });
+  
+  app.post("/api/owner/email-templates/test", async (req, res) => {
+    try {
+      const { type, email, variables } = req.body;
+      
+      if (!type || !email) {
+        return res.status(400).json({ error: "Type and email are required" });
+      }
+      
+      await sendSystemEmail(type, email, variables || {});
+      return res.json({ success: true, message: `Test email sent to ${email}` });
+    } catch (error) {
+      console.error("Test email error:", error);
+      return res.status(500).json({ error: "Failed to send test email" });
     }
   });
 

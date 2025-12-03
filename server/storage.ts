@@ -1,6 +1,6 @@
 import { 
   users, communities, plans, userCommunityMemberships, sections, newsArticles, events, supportTickets, ticketResponses, faqs, messages,
-  membershipFees, paymentRequests, payments, accounts, commercialContacts, PLAN_CODES,
+  membershipFees, paymentRequests, payments, accounts, commercialContacts, emailTemplates, emailLogs, PLAN_CODES,
   type User, type InsertUser, type Community, type InsertCommunity, type Plan, type InsertPlan,
   type UserCommunityMembership, type InsertMembership, type Section, type InsertSection,
   type NewsArticle, type InsertNews, type Event, type InsertEvent,
@@ -10,6 +10,7 @@ import {
   type Payment, type InsertPayment,
   type Account, type InsertAccount,
   type CommercialContact, type InsertCommercialContact,
+  type EmailTemplate, type InsertEmailTemplate, type EmailLog, type InsertEmailLog,
   type PlanCode
 } from "@shared/schema";
 import { db } from "./db";
@@ -138,6 +139,15 @@ export interface IStorage {
   assignTicket(ticketId: string, assignedTo: string): Promise<SupportTicket>;
   getTicketWithDetails(ticketId: string): Promise<(SupportTicket & { responses: TicketResponse[]; user: User | null; community: Community | null; assignedUser: User | null }) | undefined>;
   getAllTicketsWithDetails(): Promise<(SupportTicket & { userName: string; communityName: string; assignedUserName: string | null; responseCount: number })[]>;
+  
+  // Email Templates
+  getAllEmailTemplates(): Promise<EmailTemplate[]>;
+  getEmailTemplateByType(type: string): Promise<EmailTemplate | undefined>;
+  updateEmailTemplate(type: string, updates: { subject: string; html: string }): Promise<EmailTemplate | undefined>;
+  
+  // Email Logs
+  getEmailLogs(limit: number, offset: number): Promise<EmailLog[]>;
+  createEmailLog(log: InsertEmailLog): Promise<EmailLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1403,6 +1413,37 @@ export class DatabaseStorage implements IStorage {
       ...p,
       communityName: communityMap.get(p.communityId) || 'Communauté inconnue'
     }));
+  }
+  
+  // Email Templates
+  async getAllEmailTemplates(): Promise<EmailTemplate[]> {
+    return await db.select().from(emailTemplates).orderBy(asc(emailTemplates.type));
+  }
+  
+  async getEmailTemplateByType(type: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.type, type as any));
+    return template || undefined;
+  }
+  
+  async updateEmailTemplate(type: string, updates: { subject: string; html: string }): Promise<EmailTemplate | undefined> {
+    const [template] = await db.update(emailTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(emailTemplates.type, type as any))
+      .returning();
+    return template || undefined;
+  }
+  
+  // Email Logs
+  async getEmailLogs(limitNum: number = 50, offset: number = 0): Promise<EmailLog[]> {
+    return await db.select().from(emailLogs)
+      .orderBy(desc(emailLogs.sentAt))
+      .limit(limitNum)
+      .offset(offset);
+  }
+  
+  async createEmailLog(log: InsertEmailLog): Promise<EmailLog> {
+    const [emailLog] = await db.insert(emailLogs).values(log).returning();
+    return emailLog;
   }
 }
 
