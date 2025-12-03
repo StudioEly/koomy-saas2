@@ -1,0 +1,425 @@
+odèle économique complet + intégration technique Koomy
+
+⚠️ IMPORTANT : Lis entièrement ce prompt, propose d’abord un plan d’actions (architecture + fichiers à modifier), puis implémente progressivement les changements (backend + frontend + base de données).
+
+1. Contexte produit : qu’est-ce que Koomy ?
+
+Koomy est une plateforme SaaS de gestion de communautés (clubs de sport, associations, syndicats, cercles, etc.).
+
+Nous avons plusieurs frontends déjà en place :
+
+Site public : /website – marketing + présentation + tarifs
+
+App membre (user app) : pour les adhérents de communautés
+
+App Pro : application mobile pour les admins / gestionnaires
+
+Backoffice admin communauté : gestion avancée depuis un navigateur
+
+SaaS Owner Platform : interface Koomy pour administrer la plateforme elle-même (plans, facturation, templates d’emails, etc.)
+
+Les comptes utilisateurs et les communautés existent déjà (voir la doc technique Koomy).
+Nous voulons maintenant solidifier et unifier tout le modèle économique, et brancher Stripe proprement.
+
+2. Modèle économique de Koomy (vue d’ensemble)
+
+Il y a 3 niveaux de flux d’argent :
+
+Abonnement à Koomy (SaaS)
+
+Payé par : le ou les administrateurs d’une communauté
+
+Géré via : Stripe Billing (plans Koomy)
+
+Cotisation d’adhésion à une communauté (membership)
+
+Payé par : les membres
+
+Reçu par : la communauté / le club
+
+Géré via : Stripe Connect Express
+
+Koomy prend une commission de 2 % sur chaque paiement (en plus des frais Stripe).
+
+Collectes ponctuelles / appels à contribution (fundraising)
+
+Payé par : les membres
+
+Reçu par : la communauté
+
+Géré via : Stripe Connect Express
+
+Commission Koomy = 2 % par défaut, configurable par communauté ou par collecte si besoin plus tard.
+
+3. Plans Koomy (déjà créés dans Stripe)
+3.1. Offres (fonctionnelles & marketing)
+
+Free Starter
+
+0 €/mois (gratuit à vie)
+
+Jusqu’à 50 membres
+
+Fonctionnalités de base (cartes de membres digitales, QR de présence, events simples, support e-mail).
+
+Communauté Plus
+
+Jusqu’à 1 000 membres
+
+Prix :
+
+9,90 €/mois
+
+99 €/an
+
+Communauté Pro
+
+Jusqu’à 5 000 membres
+
+Prix :
+
+29,90 €/mois
+
+290 €/an
+
+Grand Compte
+
+Membres illimités
+
+Prix : sur devis, géré manuellement (pas besoin d’intégration complète pour l’instant).
+
+3.2. Côté Stripe
+
+Les 4 prix suivants existent déjà dans Stripe (leurs IDs exacts seront fournis dans les variables d’environnement) :
+
+STRIPE_PRICE_PLUS_MONTHLY = Communauté Plus 9,90 €/mois
+
+STRIPE_PRICE_PLUS_YEARLY = Communauté Plus 99 €/an
+
+STRIPE_PRICE_PRO_MONTHLY = Communauté Pro 29,90 €/mois
+
+STRIPE_PRICE_PRO_YEARLY = Communauté Pro 290 €/an
+
+Nous appliquons 14 jours d’essai (trial) pour les abonnements payants (Plus et Pro).
+Le plan Free Starter n’utilise pas Stripe.
+
+4. Acteurs & rôles
+
+SaaS Owner (Koomy) : gère la plateforme, les plans, la facturation globale, les templates d’e-mails, la commission, etc.
+
+Administrateur de communauté :
+
+Crée une communauté
+
+Choisit un plan Koomy (Free, Plus, Pro)
+
+Active les paiements pour sa communauté (Stripe Connect Express)
+
+Configure la cotisation annuelle / mensuelle
+
+Crée des collectes ponctuelles
+
+Délégués / co-admins :
+
+Ont des permissions limitées (par exemple gérer les events, les collectes, les présences),
+
+Les fonctionnalités visibles doivent dépendre de leurs rôles / privilèges.
+
+Membre :
+
+Rejoint une communauté (via invitation ou code)
+
+Paie éventuellement une cotisation
+
+Participe à des collectes ponctuelles
+
+Utilise l’app membre (ex : carte digitale, QR de présence, fil d’actu).
+
+5. Impacts fonctionnels (où la logique économique intervient)
+
+5.1. Site public /website
+
+Section Tarifs : doit refléter les plans Free / Plus / Pro avec les bons prix et limites de membres.
+
+Call-to-action “Créer ma communauté” → lance un onboarding qui :
+
+Crée un compte utilisateur
+
+Crée une première communauté
+
+Demande le type de plan (Free, Plus, Pro)
+
+Si plan payant → redirection vers Stripe Checkout abonnement.
+
+5.2. SaaS Owner Platform
+
+Page de gestion des plans : visualiser les abonnements actifs, le plan choisi pour chaque communauté.
+
+Page “Facturation Koomy” par communauté :
+
+plan actuel (Free / Plus / Pro)
+
+cycle (mensuel / annuel)
+
+statut (trialing / active / past_due / canceled)
+
+bouton “Mettre à jour mon abonnement” → renvoie vers Stripe Checkout (upgrade/downgrade).
+
+5.3. Backoffice communauté / App Pro
+
+Création de la communauté : doit enregistrer le plan choisi.
+
+Onglet “Paiements” :
+
+Activer les paiements en ligne (Stripe Connect Express)
+
+Définir le montant de cotisation (annualisation pour MVP)
+
+Définir la commission Koomy (2 % par défaut, mais stockée comme platform_fee_percent pour évolutions futures)
+
+Liste des collectes + création d’une nouvelle collecte.
+
+Gestion des rôles & privilèges :
+
+certains rôles peuvent créer une collecte, d’autres non.
+
+la visibilité des sections “Paiements / Cotisation / Collectes” dépend du rôle.
+
+5.4. App membre
+
+Afficher “Payer ma cotisation” si :
+
+la communauté a activé les paiements,
+
+a défini une cotisation.
+
+Afficher les collectes en cours avec bouton paiement Stripe.
+
+Après paiement :
+
+marquer le membre comme “à jour de cotisation”,
+
+afficher une confirmation (avec infos de base sur le montant, date, etc.).
+
+6. Modèle de données à enrichir
+
+Merci d’identifier les modèles existants (User, Community, Membership, etc.) et de les enrichir / créer les tables nécessaires.
+
+6.1. Community
+
+Ajouter au minimum :
+
+stripe_customer_id: string | null             // pour l'abonnement Koomy
+stripe_subscription_id: string | null
+subscription_plan: "free" | "plus" | "pro"
+subscription_period: "monthly" | "yearly" | null
+subscription_status: "none" | "trialing" | "active" | "past_due" | "canceled"
+subscription_current_period_end: Date | null
+
+stripe_connect_account_id: string | null      // pour recevoir l'argent des membres
+payments_enabled: boolean                     // true si Connect OK et validé
+membership_amount_cents: number | null        // cotisation annuelle en centimes
+membership_currency: "eur"
+platform_fee_percent: number                  // par défaut 2
+max_members_allowed: number                   // 50 / 1000 / 5000, dérivé du plan
+
+
+6.2. Membership / relation User–Community
+
+champs pour suivre la cotisation :
+
+membership_status: "none" | "pending" | "paid"
+
+membership_paid_at
+
+membership_valid_until
+
+6.3. Collection (collectes ponctuelles)
+
+id
+communityId
+title
+description
+amount_cents
+currency
+status                // open | closed
+platform_fee_percent  // par défaut: prendre valeur de la communauté
+createdAt
+
+
+6.4. Transaction
+
+id
+type                  // "subscription" | "membership" | "collection"
+communityId
+userId                // ou memberId
+collectionId          // nullable
+amount_total_cents
+amount_fee_koomy_cents
+amount_to_community_cents
+currency
+stripe_payment_intent_id
+stripe_charge_id
+details_json          // raw metadata si besoin
+status                // succeeded | refunded | failed
+createdAt
+
+7. Intégration Stripe – attendu techniquement
+
+Tu as déjà les infos Stripe suivantes (à utiliser via variables d’environnement) :
+
+Clé secrète
+
+Clé publique
+
+ID des prix d’abonnement (4 plans)
+
+Webhook secret
+
+Connect activé (Express, onboarding & dashboard hébergés par Stripe)
+
+7.1. Abonnement Koomy (Billing)
+
+Route POST /api/payments/create-koomy-subscription-session
+
+Entrée : communityId, billingPlan (plus/pro), billingPeriod (monthly/yearly)
+
+Crée / récupère un customer Stripe
+
+Choisit le bon price_id suivant le plan
+
+Crée une session Checkout (mode: "subscription", trial_period_days: 14)
+
+Retourne session.url.
+
+Webhook /api/payments/stripe/webhook :
+
+Gérer :
+
+checkout.session.completed
+
+customer.subscription.created
+
+customer.subscription.updated
+
+invoice.payment_failed
+
+customer.subscription.deleted
+
+Mettre à jour les champs subscription_* sur la communauté.
+
+Logique d’accès :
+
+si subscription_plan = "free" → limité à 50 membres, pas de surcharge.
+
+si subscription_status n’est pas "active" ni "trialing" → restreindre l’accès admin et app pro (afficher un écran dédié).
+
+7.2. Stripe Connect Express (paiements clubs)
+
+Route POST /api/payments/connect-community :
+
+Vérifie que l’utilisateur est admin
+
+Crée un compte Express si besoin
+
+Crée un accountLink d’onboarding
+
+Retourne l’URL pour redirection.
+
+Une fois le compte Connect activé, payments_enabled doit être mis à true (présent dans les webhooks Stripe Connect, ex : account.updated).
+
+7.3. Paiement cotisation (membership)
+
+Route POST /api/payments/create-membership-session
+
+Utilise application_fee_amount et transfer_data.destination pour appliquer les 2% de commission Koomy :
+
+fee = round(amount * (platform_fee_percent || 2) / 100)
+
+Dans le webhook payment_intent.succeeded :
+
+Créer une Transaction
+
+Mettre à jour Membership → paid, valid_until = now + 1 year.
+
+7.4. Collectes
+
+Route POST /api/collections pour créer la collecte
+
+Route POST /api/payments/create-collection-session pour payer
+
+Même logique que membership, mais metadata.type = "collection".
+
+8. E-mails & notifications (SendGrid / autre)
+
+Nous utilisons (ou allons utiliser) SendGrid pour les e-mails transactionnels :
+
+E-mail à l’admin quand :
+
+la communauté est créée
+
+un abonnement Koomy est actif / trial commence
+
+paiement échoué / carte expirée
+
+E-mail au membre quand :
+
+cotisation payée → reçu + confirmation
+
+participation à une collecte → merci + résumé
+
+Merci d’intégrer des hooks clairs (fonctions ou services) appelés au moment opportun, même avec une implémentation minimaliste pour l’instant (ex : emailService.send(...)).
+
+9. Sécurité & règles
+
+Aucune URL Replit / Vercel brute ne doit apparaître dans l’UI.
+Toujours utiliser :
+
+https://koomy.app (site public)
+
+https://app.koomy.app (app membre)
+
+https://backoffice.koomy.app (admin communauté)
+
+https://admin.koomy.app ou similaire (SaaS Owner)
+
+Gestion fine des rôles :
+
+App Pro et Backoffice ne doivent afficher que les fonctionnalités autorisées pour le rôle de l’utilisateur.
+
+En particulier : gestion des paiements uniquement pour les admins / rôles adéquats.
+
+10. Ce que j’attends de toi (Replit)
+
+Analyser le code existant (backend + front) et la doc technique Koomy.
+
+Proposer un plan détaillé avant de modifier le code :
+
+quelles tables / modèles à créer ou enrichir,
+
+quelles routes API à ajouter/modifier,
+
+quels fichiers front à adapter (SaaS Owner, Backoffice, App Pro, App Membre, site public).
+
+Implémenter :
+
+les modèles / migrations,
+
+l’intégration Stripe Billing (abonnements Koomy),
+
+l’intégration Stripe Connect (paiements communautés),
+
+la table transactions,
+
+les écrans nécessaires (au moins en version fonctionnelle / MVP+).
+
+Documenter brièvement :
+
+les variables d’environnement à remplir,
+
+les endpoints principaux,
+
+le flux de paiement (abonnement + cotisation + collecte).
+
+Fin du prompt.
+Merci de t’appuyer sur ce modèle économique global pour optimiser toute la logique existante et éviter les incohérences entre les différentes parties de Koomy.
