@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Smartphone, LayoutDashboard, Shield, QrCode, ArrowRight, BarChart, Globe } from "lucide-react";
+import { Smartphone, LayoutDashboard, Shield, QrCode, ArrowRight, BarChart, Globe, Crown, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import koomyLogo from "@assets/Koomy-communitieslogo_1764495780161.png";
@@ -16,7 +16,7 @@ export default function Landing() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 pt-8">
           {/* Commercial Website */}
           <Card className="hover:shadow-xl transition-all duration-300 border-slate-200 group relative overflow-hidden col-span-1 md:col-span-1 bg-slate-900 text-white border-0">
             <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-10">NEW</div>
@@ -141,6 +141,32 @@ export default function Landing() {
                   </Button>
                 </span>
               </Link>
+            </CardContent>
+          </Card>
+
+          {/* White Label App - UNSA Lidl */}
+          <Card className="hover:shadow-xl transition-all duration-300 border-slate-200 group relative overflow-hidden bg-gradient-to-br from-[#009de1] to-[#0077b3] text-white border-0">
+            <div className="absolute top-0 right-0 bg-purple-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg z-10 flex items-center gap-1">
+              <Crown size={10} /> WHITE LABEL
+            </div>
+            <CardHeader>
+              <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-white/30 transition-colors">
+                <Crown className="text-white" size={24} />
+              </div>
+              <CardTitle className="text-white">UNSA Lidl France</CardTitle>
+              <CardDescription className="text-white/80">App membre en marque blanche</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-2 text-sm text-white/90 mb-6">
+                <li className="flex items-center gap-2">• Branding personnalisé</li>
+                <li className="flex items-center gap-2">• Domaine dédié</li>
+                <li className="flex items-center gap-2">• Communauté verrouillée</li>
+              </ul>
+              <a href="https://unsalidlfrance.koomy.app" target="_blank" rel="noopener noreferrer" className="block">
+                <Button variant="secondary" className="w-full bg-white text-[#009de1] hover:bg-white/90">
+                  Ouvrir l'app <ExternalLink size={16} className="ml-2" />
+                </Button>
+              </a>
             </CardContent>
           </Card>
         </div>
