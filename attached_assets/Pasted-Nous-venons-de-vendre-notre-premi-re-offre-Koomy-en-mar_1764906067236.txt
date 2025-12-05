@@ -1,0 +1,265 @@
+Nous venons de vendre notre première offre Koomy en marque blanche (white-label) pour 5 000 €, avec ensuite une maintenance annuelle.
+Nous devons maintenant adapter la plateforme SaaS Owner (interface /platform) pour gérer proprement ce type de client, sans casser l’existant.
+
+🎯 Objectif de cette phase (WL1)
+Mettre en place tout ce qu’il faut, côté SaaS Owner + base de données, pour :
+
+Identifier les communautés en white label
+
+Gérer leur mode de facturation (contrat manuel vs abonnement Stripe standard)
+
+Sauvegarder des infos de contrat (setup fee, maintenance annuelle, etc.)
+
+Préparer un espace pour la config de branding (qui sera utilisée plus tard pour l’app white-label + emails)
+
+Ajouter les sections correspondantes dans l’interface /platform (SaaS Owner)
+
+⚠️ Important :
+Pour cette phase WL1, ne pas modifier :
+
+l’app membre (/app)
+
+l’app pro (/app/admin)
+
+le backoffice communauté (/admin)
+
+On se concentre uniquement sur :
+
+le schéma de données
+
+les modèles TypeScript
+
+et surtout l’interface SaaS Owner /platform (côté “super admin Koomy”).
+
+1️⃣ Modèle économique à intégrer
+
+Il existe maintenant deux types de communautés :
+
+Communautés standard (self-service)
+
+créées depuis le site public Koomy
+
+abonnement réglé via Stripe (plans Plus / Pro, etc.)
+
+déjà géré par l’intégration Stripe existante
+
+Communautés White Label (contrat manuel)
+
+créées manuellement depuis le SaaS Owner, par nous
+
+facturation one-shot (ex : 5 000 €) + maintenance annuelle (ex : 1 000 €/an)
+
+la partie facturation est gérée en dehors de Stripe pour l’instant (factures manuelles)
+
+nous avons besoin d’un endroit pour enregistrer ces infos contractuelles dans la base et les visualiser dans /platform.
+
+2️⃣ Évolutions de schéma souhaitées (communities + contrat + branding)
+
+Merci d’analyser shared/schema.ts et de me proposer une évolution compatible avec l’existant.
+Voici ce que je veux au niveau concept (à adapter techniquement à ce qui existe déjà) :
+
+A. Champs à ajouter dans communities (ou table équivalente)
+
+Flags White Label & mode de facturation
+
+whiteLabel: boolean
+
+default : false
+
+vrai = communauté gérée en marque blanche (app dédiée, branding client)
+
+whiteLabelTier: "basic" | "standard" | "premium" | null
+
+pour différencier plus tard plusieurs offres white-label
+
+facultatif dans un premier temps (peut rester null)
+
+billingMode: "self_service" | "manual_contract"
+
+self_service = communauté standard (abonnement Stripe classique)
+
+manual_contract = communauté White Label (contrat manuel, facturation externe à Stripe)
+
+Infos contrat / facturation (pour suivi interne)
+
+setupFeeAmountCents: integer | null
+
+montant du setup one-shot (ex : 5000 € → 500000 cents)
+
+setupFeeCurrency: text | default "EUR"
+
+setupFeeInvoiceRef: text | null
+
+référence de facture ou commentaire (ex : “FACT-2025-001”)
+
+maintenanceAmountYearCents: integer | null
+
+montant annuel de maintenance (ex : 1000 € → 100000 cents)
+
+maintenanceCurrency: text | default "EUR"
+
+maintenanceNextBillingDate: timestamp | null
+
+prochaine date prévue pour facturation/renouvellement maintenance
+
+maintenanceStatus: "active" | "pending" | "late" | "stopped"
+
+état actuel du contrat de maintenance
+
+Préparation du branding White Label
+
+Pour le branding, je souhaite une structure flexible (JSON) stockée au niveau de la communauté, par exemple :
+
+brandConfig: jsonb | null
+
+
+Avec une forme prévue type :
+
+{
+  "appName": "Nom de l'app client",
+  "brandColor": "#0055AA",
+  "logoUrl": "https://...",
+  "appIconUrl": "https://...",
+  "emailFromName": "Union XYZ",
+  "emailFromAddress": "no-reply@unionxyz.fr",
+  "replyTo": "contact@unionxyz.fr",
+  "showPoweredBy": true
+}
+
+
+⚠️ Pour cette phase WL1 :
+
+Il suffit d’ajouter le champ brandConfig (jsonb) côté DB + types TS.
+
+Nous n’avons pas encore besoin de valider tous les sous-champs, ni de l’utiliser côté emails / front.
+
+L’objectif est juste de pouvoir le remplir depuis le SaaS Owner dans un deuxième temps.
+
+Merci de :
+
+garder la rétro-compatibilité
+
+mettre des valeurs par défaut intelligentes
+
+ne rien casser sur les communautés déjà en base.
+
+3️⃣ Évolutions SaaS Owner – UI /platform
+
+Maintenant, côté UI SaaS Owner, je veux que pour chaque communauté, le “super admin Koomy” ait une fiche beaucoup plus riche.
+
+Merci d’identifier les fichiers UI du SaaS Owner (/platform), puis :
+
+A. Ajouter dans la fiche communauté (vue détaillée) :
+
+Un bloc visible par exemple dans un onglet dédié ou sections :
+
+Section “Mode de facturation”
+
+Afficher / éditer :
+
+billingMode (self_service vs manual_contract)
+
+Flag whiteLabel (Oui/Non)
+
+whiteLabelTier (select : Basic / Standard / Premium / Aucun)
+
+Pour les communautés billingMode = self_service :
+
+afficher les infos Stripe existantes (plan, statut abonnement) comme aujourd’hui
+
+Pour les communautés billingMode = manual_contract :
+
+masquer les actions liées à la souscription Stripe
+
+afficher la notion “Contrat manuel / White Label” clairement
+
+Section “Contrat & facturation” (pour manual_contract)
+
+Permettre d’afficher/éditer :
+
+Setup fee :
+
+Montant (en €)
+
+Devise
+
+Référence facture
+
+Maintenance :
+
+Montant annuel (en €)
+
+Devise
+
+Prochaine date de facturation / renouvellement
+
+Statut maintenance (active / pending / late / stopped)
+
+Zone de notes internes (texte libre) – soit un champ dans communities, soit dans une table séparée si nécessaire (à toi de voir).
+
+Un affichage en simple formulaire (input / select) suffit pour commencer.
+
+Section “Branding White Label” (si whiteLabel = true)
+
+Créer un bloc simple qui permet de saisir les éléments principaux de brandConfig :
+
+Nom de l’app telle que vue par les membres (appName)
+
+Couleur principale (brandColor – avec un input texte, voire color picker si simple)
+
+Logo (URL ou upload si déjà géré ailleurs)
+
+Email From Name / From Address / Reply-To
+
+Checkbox showPoweredBy (powered by Koomy.app)
+
+Pour cette phase, le but est purement :
+
+saisir / stocker ces infos dans brandConfig
+
+les restituer dans l’UI
+(on n’a pas encore besoin de câbler ce branding dans les apps membres / emails)
+
+4️⃣ Contraintes & priorités
+
+Ne rien casser sur les communautés existantes.
+
+Ne pas modifier pour l’instant :
+
+les flows Stripe Billing existants (self_service)
+
+les apps membres/pro/backoffice
+
+les emails transactionnels
+
+Tout ce que tu ajoutes doit être :
+
+bien typé côté TS
+
+intégré aux types existants (Community, etc.)
+
+accessible uniquement depuis le SaaS Owner /platform (rôle super-admin)
+
+5️⃣ Plan attendu
+
+Avant d’implémenter directement, merci de :
+
+Analyser le schéma et l’existant autour de communities et du SaaS Owner.
+
+Me proposer :
+
+la liste précise des champs que tu comptes ajouter dans communities
+
+où tu stockes brandConfig
+
+les composants/pages à modifier côté /platform
+
+Puis, après validation dans ta réponse, implémenter :
+
+la migration schéma / Drizzle
+
+les types / insert/update schema
+
+l’affichage/édition dans la fiche communauté SaaS Owner.
+
+Fin du prompt.
