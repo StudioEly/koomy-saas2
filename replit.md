@@ -41,6 +41,47 @@ Platform analytics provide insights into community performance, member growth, p
 - `transactionTypeEnum`: subscription, membership, collection
 - `transactionStatusEnum`: pending, succeeded, failed, refunded
 
+### White Label Feature (Phase WL1 - Dec 2024)
+
+**Purpose:** Support custom branding and manual contract billing for enterprise communities.
+
+**New Database Schema:**
+- `whiteLabelTierEnum`: basic, standard, premium
+- `billingModeEnum`: self_service, manual_contract
+- `maintenanceStatusEnum`: active, pending, late, stopped
+
+**Communities Table Extensions:**
+- `whiteLabel` (boolean): Whether white-label is enabled
+- `whiteLabelTier`: Tier level (basic/standard/premium)
+- `billingMode`: Self-service (Stripe) or manual contract
+- `setupFeeAmountCents`, `setupFeeCurrency`, `setupFeeInvoiceRef`: One-time setup fee tracking
+- `maintenanceAmountYearCents`, `maintenanceCurrency`, `maintenanceNextBillingDate`, `maintenanceStatus`: Annual maintenance tracking
+- `internalNotes`: Platform admin notes (not visible to community)
+- `brandConfig` (JSONB): Custom branding configuration
+
+**BrandConfig Structure:**
+```json
+{
+  "appName": "Custom App Name",
+  "brandColor": "#6366f1",
+  "logoUrl": "https://...",
+  "appIconUrl": "https://...",
+  "emailFromName": "Custom Name",
+  "emailFromAddress": "noreply@custom.com",
+  "replyTo": "support@custom.com",
+  "showPoweredBy": true
+}
+```
+
+**API Endpoints:**
+- `PATCH /api/platform/communities/:id/white-label`: Update white-label settings
+- `GET /api/platform/communities/:id/details`: Get community with plan info
+
+**SuperDashboard UI:**
+- White Label configuration modal with 3 tabs: Mode Facturation, Contrat & Tarifs, Branding
+- Visual indicators for white-label communities (WL badge, purple theme)
+- Manual contract indicator in community list
+
 ### Build and Deployment
 
 Development leverages Vite for client and Node.js for server, with hot module replacement and TypeScript watch mode. Production builds minify and bundle client assets and server code using Vite and esbuild, respectively. Environment variables control configuration, and Replit-specific integrations are utilized.
