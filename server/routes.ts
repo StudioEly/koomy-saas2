@@ -41,6 +41,60 @@ export async function registerRoutes(
 ): Promise<Server> {
   
   // =====================================================
+  // WHITE LABEL CONFIGURATION (Public)
+  // =====================================================
+  
+  app.get("/api/white-label/config", async (req, res) => {
+    try {
+      const hostname = req.hostname || req.headers.host?.split(':')[0] || '';
+      
+      // Known Koomy domains - not white-label
+      const koomyDomains = [
+        'koomy.app',
+        'app.koomy.app',
+        'app-pro.koomy.app',
+        'backoffice.koomy.app',
+        'lorpesikoomyadmin.koomy.app',
+        'localhost'
+      ];
+      
+      // Check if this is a white-label subdomain (*.koomy.app excluding known domains)
+      const isWhiteLabelSubdomain = hostname.endsWith('.koomy.app') && 
+        !koomyDomains.includes(hostname);
+      
+      if (!isWhiteLabelSubdomain) {
+        return res.json({ whiteLabel: false, hostname });
+      }
+      
+      // Extract the subdomain (e.g., "unsalidlfrance" from "unsalidlfrance.koomy.app")
+      const subdomain = hostname.replace('.koomy.app', '');
+      
+      // Look up community by custom domain
+      const community = await storage.getCommunityByCustomDomain(subdomain);
+      
+      if (!community || !community.whiteLabel) {
+        return res.json({ whiteLabel: false, hostname });
+      }
+      
+      // Return white-label config
+      return res.json({
+        whiteLabel: true,
+        communityId: community.id,
+        communityName: community.name,
+        communityLogo: community.logo,
+        brandConfig: community.brandConfig,
+        whiteLabelTier: community.whiteLabelTier,
+        whiteLabelIncludedMembers: community.whiteLabelIncludedMembers,
+        whiteLabelMaxMembersSoftLimit: community.whiteLabelMaxMembersSoftLimit,
+        hostname
+      });
+    } catch (error) {
+      console.error("[WhiteLabel] Config lookup error:", error);
+      return res.json({ whiteLabel: false });
+    }
+  });
+  
+  // =====================================================
   // PUBLIC APP AUTHENTICATION (Koomy Accounts)
   // =====================================================
   
@@ -376,6 +430,44 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Admin registration error:", error);
       return res.status(500).json({ error: "Échec de l'inscription" });
+    }
+  });
+
+  // =====================================================
+  // WHITE LABEL CONFIG (PUBLIC - No auth required)
+  // =====================================================
+
+  // Get white label config based on hostname
+  app.get("/api/white-label/config", async (req, res) => {
+    try {
+      const hostname = req.hostname;
+      console.log("White Label config request for hostname:", hostname);
+      
+      // Check if this hostname corresponds to a white-label community
+      const community = await storage.getCommunityByCustomDomain(hostname);
+      
+      if (!community || !community.whiteLabel) {
+        return res.json({ 
+          whiteLabel: false,
+          hostname 
+        });
+      }
+      
+      // Return white-label config
+      return res.json({
+        whiteLabel: true,
+        communityId: community.id,
+        communityName: community.name,
+        communityLogo: community.logo,
+        brandConfig: community.brandConfig || {},
+        whiteLabelTier: community.whiteLabelTier,
+        whiteLabelIncludedMembers: community.whiteLabelIncludedMembers,
+        whiteLabelMaxMembersSoftLimit: community.whiteLabelMaxMembersSoftLimit,
+        hostname
+      });
+    } catch (error: any) {
+      console.error("White label config error:", error);
+      return res.status(500).json({ error: error.message || "Failed to get white label config" });
     }
   });
 

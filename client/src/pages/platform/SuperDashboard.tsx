@@ -18,7 +18,7 @@ import {
   TrendingUp, TrendingDown, Shield, CreditCard, BarChart3, LogOut, Gift, X, Sparkles,
   DollarSign, PiggyBank, Activity, Wallet, ArrowUpRight, ArrowDownRight,
   Building2, Calendar, Euro, Banknote, ChartPie, Target, AlertTriangle, MapPin,
-  UserPlus, Crown, Headphones, Briefcase, UserCog, Mail, FileText, Send, Eye, RefreshCw
+  UserPlus, Crown, Headphones, Briefcase, UserCog, Mail, FileText, Send, Eye, RefreshCw, Globe
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,6 +62,7 @@ type Community = {
   maintenanceStatus?: "active" | "pending" | "late" | "stopped" | null;
   internalNotes?: string | null;
   brandConfig?: BrandConfig | null;
+  customDomain?: string | null;
   // White Label contract member quotas
   whiteLabelIncludedMembers?: number | null;
   whiteLabelMaxMembersSoftLimit?: number | null;
@@ -277,6 +278,7 @@ export default function SuperAdminDashboard() {
   const [wlEmailFromAddress, setWlEmailFromAddress] = useState("");
   const [wlReplyTo, setWlReplyTo] = useState("");
   const [wlShowPoweredBy, setWlShowPoweredBy] = useState(true);
+  const [wlCustomDomain, setWlCustomDomain] = useState("");
   // White Label contract member quotas
   const [wlIncludedMembers, setWlIncludedMembers] = useState("");
   const [wlSoftLimit, setWlSoftLimit] = useState("");
@@ -514,6 +516,7 @@ export default function SuperAdminDashboard() {
       maintenanceStatus: "active" | "pending" | "late" | "stopped" | null;
       internalNotes: string | null;
       brandConfig: BrandConfig | null;
+      customDomain: string | null;
       whiteLabelIncludedMembers: number | null;
       whiteLabelMaxMembersSoftLimit: number | null;
       whiteLabelAdditionalFeePerMemberCents: number | null;
@@ -765,6 +768,7 @@ export default function SuperAdminDashboard() {
     setWlEmailFromAddress("");
     setWlReplyTo("");
     setWlShowPoweredBy(true);
+    setWlCustomDomain("");
   };
 
   const openWhiteLabelModal = (community: Community) => {
@@ -788,6 +792,7 @@ export default function SuperAdminDashboard() {
     setWlEmailFromAddress(community.brandConfig?.emailFromAddress || "");
     setWlReplyTo(community.brandConfig?.replyTo || "");
     setWlShowPoweredBy(community.brandConfig?.showPoweredBy ?? true);
+    setWlCustomDomain(community.customDomain || "");
     // Member quotas
     setWlIncludedMembers(community.whiteLabelIncludedMembers ? String(community.whiteLabelIncludedMembers) : "");
     setWlSoftLimit(community.whiteLabelMaxMembersSoftLimit ? String(community.whiteLabelMaxMembersSoftLimit) : "");
@@ -827,6 +832,7 @@ export default function SuperAdminDashboard() {
         replyTo: wlReplyTo || undefined,
         showPoweredBy: wlShowPoweredBy
       } : null,
+      customDomain: wlWhiteLabel && wlTier === "premium" && wlCustomDomain ? wlCustomDomain : null,
       whiteLabelIncludedMembers,
       whiteLabelMaxMembersSoftLimit,
       whiteLabelAdditionalFeePerMemberCents
@@ -2772,6 +2778,31 @@ export default function SuperAdminDashboard() {
                       />
                     </div>
                   </div>
+
+                  {wlTier === "premium" && (
+                    <div className="border-t pt-4 mt-4">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        Domaine personnalisé
+                      </h4>
+                      <div className="space-y-2">
+                        <Label>Sous-domaine Koomy</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            placeholder="monorganisation"
+                            value={wlCustomDomain}
+                            onChange={(e) => setWlCustomDomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                            className="flex-1"
+                            data-testid="input-custom-domain"
+                          />
+                          <span className="text-gray-500 font-medium">.koomy.app</span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          L'app sera accessible via: <span className="font-mono">{wlCustomDomain || "monorganisation"}.koomy.app</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="border-t pt-4 mt-4">
                     <h4 className="font-medium mb-3">Personnalisation emails</h4>

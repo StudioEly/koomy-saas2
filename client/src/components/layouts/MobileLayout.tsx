@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Home, CreditCard, Mail, Newspaper, User, ArrowLeft, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import koomyLogo from "@assets/Koomy-communitieslogo_1764495780161.png";
 
 export default function MobileLayout({ 
@@ -13,6 +14,7 @@ export default function MobileLayout({
 }) {
   const [location] = useLocation();
   const { currentCommunity, currentMembership } = useAuth();
+  const { isWhiteLabel, appName, logoUrl, brandColor, showPoweredBy } = useWhiteLabel();
   
   const isAdmin = currentMembership?.role === "admin" || currentMembership?.adminRole !== null;
 
@@ -24,32 +26,45 @@ export default function MobileLayout({
     { icon: User, label: "Compte", path: `/app/${communityId}/profile` },
   ];
 
+  const displayLogo = isWhiteLabel && logoUrl ? logoUrl : (currentCommunity?.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${currentCommunity?.name}`);
+  const displayName = isWhiteLabel ? appName : currentCommunity?.name;
+  const displaySubtitle = isWhiteLabel ? null : "Koomy App";
+
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center">
       <div className="w-full max-w-md bg-background min-h-screen shadow-2xl relative flex flex-col">
         
         {/* Dynamic Header for Community App */}
         {currentCommunity && (
-          <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+          <header 
+            className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm"
+            style={isWhiteLabel ? { borderBottomColor: brandColor + '20' } : undefined}
+          >
             <div className="flex items-center gap-3">
-              <Link href="/app/hub" className="p-2 -ml-2 text-gray-400 hover:text-gray-600">
-                  <ArrowLeft size={20} />
-              </Link>
+              {!isWhiteLabel && (
+                <Link href="/app/hub" className="p-2 -ml-2 text-gray-400 hover:text-gray-600">
+                    <ArrowLeft size={20} />
+                </Link>
+              )}
               <div className="flex items-center gap-2">
                 <img 
-                  src={currentCommunity.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${currentCommunity.name}`} 
-                  alt={currentCommunity.name} 
+                  src={displayLogo} 
+                  alt={displayName || "App"} 
                   className="h-8 w-8 object-contain rounded" 
                 />
                 <div>
-                   <h1 className="font-bold text-sm leading-none text-gray-900">{currentCommunity.name}</h1>
-                   <span className="text-[10px] text-gray-500 font-medium">Koomy App</span>
+                   <h1 className="font-bold text-sm leading-none text-gray-900">{displayName}</h1>
+                   {displaySubtitle && <span className="text-[10px] text-gray-500 font-medium">{displaySubtitle}</span>}
                 </div>
               </div>
             </div>
             
             {isAdmin && (
-              <Link href={`/app/${communityId}/admin`} className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 hover:bg-purple-100 transition-colors">
+              <Link 
+                href={`/app/${communityId}/admin`} 
+                className="px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 transition-colors"
+                style={isWhiteLabel ? { backgroundColor: brandColor + '15', color: brandColor } : undefined}
+              >
                   <Shield size={12} fill="currentColor" /> Admin
               </Link>
             )}
@@ -57,9 +72,24 @@ export default function MobileLayout({
         )}
 
         {/* Content Area - Scrollable */}
-        <main className="flex-1 overflow-y-auto pb-24 scrollbar-hide">
+        <main className={cn("flex-1 overflow-y-auto scrollbar-hide", isWhiteLabel && showPoweredBy ? "pb-32" : "pb-24")}>
           {children}
         </main>
+
+        {/* Powered by Koomy footer - White Label only */}
+        {isWhiteLabel && showPoweredBy && (
+          <div className="fixed bottom-20 w-full max-w-md z-40 flex justify-center">
+            <a 
+              href="https://koomy.app" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+              data-testid="powered-by-koomy"
+            >
+              Propulsé par Koomy.app
+            </a>
+          </div>
+        )}
 
         {/* Bottom Navigation */}
         {communityId && (
@@ -68,10 +98,15 @@ export default function MobileLayout({
               {navItems.map((item) => {
                 const isActive = location === item.path;
                 return (
-                  <Link key={item.path} href={item.path} className={cn(
+                  <Link 
+                    key={item.path} 
+                    href={item.path} 
+                    className={cn(
                       "flex flex-col items-center justify-center w-16 h-full transition-all duration-200",
-                      isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"
-                    )}>
+                      !isWhiteLabel && (isActive ? "text-primary" : "text-gray-400 hover:text-gray-600")
+                    )}
+                    style={isWhiteLabel ? { color: isActive ? brandColor : '#9ca3af' } : undefined}
+                  >
                       <item.icon 
                         className={cn(
                           "h-6 w-6 mb-1 transition-transform duration-200",

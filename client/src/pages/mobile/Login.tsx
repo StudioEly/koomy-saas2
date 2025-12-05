@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { toast } from "sonner";
 import { API_BASE_URL as API_URL } from "@/api/config";
 import koomyLogo from "@assets/ChatGPT Image 30 nov. 2025, 05_54_45_1764590118748.png";
@@ -24,6 +25,7 @@ export default function MobileLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { setAccount } = useAuth();
+  const { isWhiteLabel, communityId: wlCommunityId, appName, logoUrl, brandColor } = useWhiteLabel();
   
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -58,7 +60,9 @@ export default function MobileLogin() {
       
       toast.success("Connexion réussie!");
       
-      if (data.memberships.length === 0) {
+      if (isWhiteLabel && wlCommunityId) {
+        setLocation(`/app/${wlCommunityId}/home`);
+      } else if (data.memberships.length === 0) {
         setLocation("/app/add-card");
       } else if (data.memberships.length === 1) {
         setLocation(`/app/${data.memberships[0].communityId}/home`);
@@ -111,7 +115,12 @@ export default function MobileLogin() {
       });
       
       toast.success("Compte créé avec succès!");
-      setLocation("/app/add-card");
+      
+      if (isWhiteLabel && wlCommunityId) {
+        setLocation(`/app/${wlCommunityId}/home`);
+      } else {
+        setLocation("/app/add-card");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur d'inscription");
     } finally {
@@ -119,19 +128,26 @@ export default function MobileLogin() {
     }
   };
 
+  const accentColor = isWhiteLabel && brandColor ? brandColor : "#44A8FF";
+  const accentColorRgb = isWhiteLabel && brandColor 
+    ? `${parseInt(brandColor.slice(1, 3), 16)}, ${parseInt(brandColor.slice(3, 5), 16)}, ${parseInt(brandColor.slice(5, 7), 16)}`
+    : "68, 168, 255";
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" data-testid="mobile-login-page" style={{
-      background: "linear-gradient(180deg, #E8F4FF 0%, #F5FAFF 40%, #FFFFFF 100%)"
+      background: isWhiteLabel 
+        ? `linear-gradient(180deg, ${accentColor}15 0%, ${accentColor}08 40%, #FFFFFF 100%)`
+        : "linear-gradient(180deg, #E8F4FF 0%, #F5FAFF 40%, #FFFFFF 100%)"
     }}>
       <div className="absolute top-0 left-0 w-full h-80 overflow-hidden">
         <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full opacity-30" style={{
-          background: "radial-gradient(circle, rgba(68, 168, 255, 0.3) 0%, transparent 70%)"
+          background: `radial-gradient(circle, rgba(${accentColorRgb}, 0.3) 0%, transparent 70%)`
         }} />
         <div className="absolute -top-10 right-0 w-60 h-60 rounded-full opacity-20" style={{
-          background: "radial-gradient(circle, rgba(68, 168, 255, 0.4) 0%, transparent 70%)"
+          background: `radial-gradient(circle, rgba(${accentColorRgb}, 0.4) 0%, transparent 70%)`
         }} />
         <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-10" style={{
-          background: "radial-gradient(circle, rgba(68, 168, 255, 0.5) 0%, transparent 60%)"
+          background: `radial-gradient(circle, rgba(${accentColorRgb}, 0.5) 0%, transparent 60%)`
         }} />
       </div>
 
@@ -139,21 +155,33 @@ export default function MobileLogin() {
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-4">
             <div className="absolute inset-0 blur-xl opacity-40" style={{
-              background: "radial-gradient(circle, rgba(68, 168, 255, 0.6) 0%, transparent 70%)"
+              background: `radial-gradient(circle, rgba(${accentColorRgb}, 0.6) 0%, transparent 70%)`
             }} />
-            <img 
-              src={koomyLogo} 
-              alt="Koomy" 
-              className="relative w-48 h-auto drop-shadow-sm"
-            />
+            {isWhiteLabel && logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt={appName || "App"} 
+                className="relative w-24 h-24 object-contain drop-shadow-sm"
+              />
+            ) : (
+              <img 
+                src={koomyLogo} 
+                alt="Koomy" 
+                className="relative w-48 h-auto drop-shadow-sm"
+              />
+            )}
           </div>
           
-          <div className="flex items-center gap-2 mt-1">
-            <KoomyIcon />
-            <p className="text-gray-500 text-sm font-medium tracking-wide">
-              Vos communautés, une app.
-            </p>
-          </div>
+          {isWhiteLabel ? (
+            <h1 className="text-xl font-bold text-gray-800">{appName || "Bienvenue"}</h1>
+          ) : (
+            <div className="flex items-center gap-2 mt-1">
+              <KoomyIcon />
+              <p className="text-gray-500 text-sm font-medium tracking-wide">
+                Vos communautés, une app.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="koomy-card p-6 flex-1 flex flex-col max-h-[calc(100vh-220px)] overflow-hidden">
@@ -161,14 +189,16 @@ export default function MobileLogin() {
             <TabsList className="grid w-full grid-cols-2 mb-5 p-1 bg-gray-100/80 rounded-xl">
               <TabsTrigger 
                 value="login" 
-                className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#44A8FF] font-semibold transition-all"
+                className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold transition-all"
+                style={{ color: 'inherit' }}
                 data-testid="tab-login"
               >
                 <LogIn size={16} /> Connexion
               </TabsTrigger>
               <TabsTrigger 
                 value="register" 
-                className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-[#44A8FF] font-semibold transition-all"
+                className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm font-semibold transition-all"
+                style={{ color: 'inherit' }}
                 data-testid="tab-register"
               >
                 <UserPlus size={16} /> Inscription
@@ -184,7 +214,11 @@ export default function MobileLogin() {
                     placeholder="votre.email@exemple.com" 
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="h-12 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 text-gray-700 placeholder:text-gray-400"
+                    className="h-12 rounded-xl text-gray-700 placeholder:text-gray-400"
+                    style={{ 
+                      backgroundColor: `${accentColor}08`, 
+                      borderColor: `${accentColor}30`
+                    }}
                     required
                     data-testid="input-login-email"
                   />
@@ -197,14 +231,19 @@ export default function MobileLogin() {
                       type={showPassword ? "text" : "password"} 
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="h-12 rounded-xl bg-[#F5F9FF] border-[#E0EDFF] focus:border-[#44A8FF] focus:ring-[#44A8FF]/20 pr-11 text-gray-700"
+                      className="h-12 rounded-xl pr-11 text-gray-700"
+                      style={{ 
+                        backgroundColor: `${accentColor}08`, 
+                        borderColor: `${accentColor}30`
+                      }}
                       required
                       data-testid="input-login-password"
                     />
                     <button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#44A8FF] transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors"
+                      style={{ '--hover-color': accentColor } as React.CSSProperties}
                       data-testid="button-toggle-password"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -216,8 +255,10 @@ export default function MobileLogin() {
                   type="submit" 
                   className="w-full h-12 rounded-xl text-base font-bold mt-3 group transition-all"
                   style={{
-                    background: "linear-gradient(135deg, #5AB8FF 0%, #44A8FF 100%)",
-                    boxShadow: "0 4px 14px -2px rgba(68, 168, 255, 0.4)"
+                    background: isWhiteLabel 
+                      ? accentColor 
+                      : "linear-gradient(135deg, #5AB8FF 0%, #44A8FF 100%)",
+                    boxShadow: `0 4px 14px -2px rgba(${accentColorRgb}, 0.4)`
                   }}
                   disabled={isLoading}
                   data-testid="button-login"
@@ -230,7 +271,11 @@ export default function MobileLogin() {
                 </Button>
 
                 <div className="text-center pt-2">
-                  <a href="#" className="text-sm font-medium text-[#44A8FF] hover:text-[#2B9AFF] transition-colors">
+                  <a 
+                    href="#" 
+                    className="text-sm font-medium transition-colors"
+                    style={{ color: accentColor }}
+                  >
                     Mot de passe oublié ?
                   </a>
                 </div>

@@ -35,6 +35,8 @@ export interface WhiteLabelUpdate {
   whiteLabelIncludedMembers?: number | null;
   whiteLabelMaxMembersSoftLimit?: number | null;
   whiteLabelAdditionalFeePerMemberCents?: number | null;
+  // White Label custom domain
+  customDomain?: string | null;
 }
 import { db } from "./db";
 import { eq, and, desc, isNull, asc, sql } from "drizzle-orm";
@@ -70,6 +72,7 @@ export interface IStorage {
   
   // Communities
   getCommunity(id: string): Promise<Community | undefined>;
+  getCommunityByCustomDomain(domain: string): Promise<Community | undefined>;
   getAllCommunities(): Promise<Community[]>;
   createCommunity(community: InsertCommunity): Promise<Community>;
   updateCommunity(id: string, updates: Partial<InsertCommunity>): Promise<Community>;
@@ -243,6 +246,15 @@ export class DatabaseStorage implements IStorage {
     return community || undefined;
   }
 
+  async getCommunityByCustomDomain(domain: string): Promise<Community | undefined> {
+    const [community] = await db.select().from(communities)
+      .where(and(
+        eq(communities.customDomain, domain),
+        eq(communities.whiteLabel, true)
+      ));
+    return community || undefined;
+  }
+
   async getAllCommunities(): Promise<Community[]> {
     return await db.select().from(communities);
   }
@@ -280,6 +292,7 @@ export class DatabaseStorage implements IStorage {
     if (updates.whiteLabelIncludedMembers !== undefined) updateData.whiteLabelIncludedMembers = updates.whiteLabelIncludedMembers;
     if (updates.whiteLabelMaxMembersSoftLimit !== undefined) updateData.whiteLabelMaxMembersSoftLimit = updates.whiteLabelMaxMembersSoftLimit;
     if (updates.whiteLabelAdditionalFeePerMemberCents !== undefined) updateData.whiteLabelAdditionalFeePerMemberCents = updates.whiteLabelAdditionalFeePerMemberCents;
+    if (updates.customDomain !== undefined) updateData.customDomain = updates.customDomain;
     
     const [community] = await db.update(communities)
       .set(updateData)

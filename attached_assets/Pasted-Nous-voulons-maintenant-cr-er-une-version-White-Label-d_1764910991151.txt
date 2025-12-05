@@ -1,0 +1,208 @@
+Nous voulons maintenant créer une version White Label de l’app membre pour un client :
+
+UNSA Lidl France
+
+Objectif :
+Quand on accède à unsalidlfrance.koomy.app, l’utilisateur arrive sur l’app membre, mais :
+
+il est verrouillé sur une seule communauté (UNSA Lidl France)
+
+il voit le branding de cette communauté (logo, couleurs…)
+
+il ne voit jamais la logique multi-communauté standard
+
+en bas de l’UI, on affiche “Propulsé par Koomy.app” de façon discrète.
+
+⚠️ Très important :
+
+Pas de duplication du backend ni de logique métier.
+
+On réutilise l’app /app existante avec un mode White Label activé par le domaine.
+
+1️⃣ Hypothèses sur la communauté cible
+
+Nous avons déjà dans communities une communauté pour ce client, par ex. :
+
+id = <à remplir> (tu peux me dire où le récupérer dans la DB ou dans le code)
+
+whiteLabel = true
+
+brandConfig rempli avec :
+
+appName
+
+brandColor
+
+logoUrl
+
+etc.
+
+Nous allons y associer le sous-domaine :
+
+unsalidlfrance.koomy.app
+
+Merci de prévoir un champ pour ça si besoin :
+
+soit communities.customDomain
+
+soit communities.memberAppSubdomain
+à ta convenance, tant que c’est cohérent et bien typé.
+
+2️⃣ Résolution de la communauté depuis le domaine
+
+Je veux que, côté backend, on puisse faire :
+
+À partir du hostname (req.hostname), retrouver la communauté White Label correspondante.
+
+Merci de :
+
+Ajouter dans communities un champ du type :
+
+customDomain: text | null
+
+
+Exemple de valeur : "unsalidlfrance.koomy.app"
+
+Ajouter une méthode dans storage :
+
+getCommunityByCustomDomain(domain: string): Promise<Community | null>
+
+
+Créer une route API simple :
+
+GET /api/white-label/config
+
+
+Comportement :
+
+Lit req.hostname
+
+Si hostname correspond à une communauté avec whiteLabel = true et customDomain = ce host :
+
+Retourne :
+
+{
+  "communityId": "...",
+  "whiteLabel": true,
+  "brandConfig": {...},
+  "whiteLabelTier": "...",
+  "whiteLabelIncludedMembers": ...,
+  "whiteLabelMaxMembersSoftLimit": ...
+}
+
+
+Sinon :
+
+Retourne { "whiteLabel": false } (ou 404, à toi de voir ce qui s’intègre le mieux avec l’existant).
+
+3️⃣ Comportement côté app membre (/app) pour un domaine WL
+
+Dans le frontend de l’app membre (/app), je veux :
+
+Au chargement initial (layout global / root de l’app membre) :
+
+Appeler /api/white-label/config
+
+Si whiteLabel = true :
+
+Activer un mode White Label sur le front :
+
+stocker communityId résolu
+
+stocker brandConfig pour le visuel
+
+En mode White Label :
+
+L’écran de login utilise uniquement ce communityId :
+
+pas de sélection de communauté
+
+pas de bouton pour “ajouter un autre club” ou rejoindre d’autres communautés
+
+Tous les appels qui nécessitent un communityId utilisent celui du WL.
+
+Si whiteLabel = false :
+
+Comportement normal de l’app /app (multi-communauté).
+
+4️⃣ Branding visuel dans l’app membre WL
+
+Toujours en mode White Label (ex : unsalidlfrance.koomy.app), je veux :
+
+Remplacer le logo standard Koomy par brandConfig.logoUrl (si présent)
+
+Remplacer le nom de l’app dans l’en-tête par brandConfig.appName (sinon fallback “Koomy”)
+
+Appliquer brandConfig.brandColor comme couleur principale :
+
+boutons principaux
+
+header / éléments clés
+(garder un fallback si la couleur n’est pas définie)
+
+Ajouter dans le footer ou en bas d’écran une mention discrète :
+
+“Propulsé par Koomy.app”
+
+avec un lien vers https://koomy.app.
+
+⚠️ Important :
+Cette mention “Propulsé par Koomy.app” doit être affichée uniquement pour les communautés White Label, pas pour les communautés standard.
+
+5️⃣ Masquer la logique multi-communauté en WL
+
+En mode White Label :
+
+Masquer tout ce qui permettrait à un utilisateur :
+
+d’ajouter une autre communauté
+
+de voir des cartes d’autres communautés
+
+de se déconnecter de la communauté pour en choisir une autre
+
+Si certains écrans actuels proposent ce comportement, merci de :
+
+soit les masquer conditionnellement (si whiteLabel = true)
+
+soit les simplifier pour ne manipuler que la communauté WL.
+
+6️⃣ Sous-domaine UNSA Lidl France
+
+Nous allons configurer un sous-domaine DNS :
+
+unsalidlfrance.koomy.app
+
+qui pointera vers le même Replit que les autres apps.
+
+Merci de me dire :
+
+où configurer customDomain = "unsalidlfrance.koomy.app" pour la communauté WL dans les données (SaaS Owner, DB ou config)
+
+comment tester localement ou sur l’URL Replit en simulant ce hostname (si possible).
+
+Pour l’instant, la priorité est :
+
+résolution du communityId via le hostname
+
+activation du mode White Label dans l’app membre
+
+branding + powered by dans l’UI
+
+Nous verrons dans un second temps les apps pour les stores (PWA / container).
+
+7️⃣ Contraintes
+
+Ne rien casser pour l’app membre standard (/app sur app.koomy.app).
+
+Ne pas modifier les flux d’auth existants, juste injecter automatiquement le communityId WL.
+
+Respecter les règles de sécurité déjà en place (un membre WL doit appartenir à cette communauté pour se connecter).
+
+Merci de :
+
+Me faire un plan d’implémentation détaillé (fichiers à modifier / créer).
+
+Puis implémenter cette Phase WL-MEMBER-1.
+
+M’indiquer comment tester ensuite unsalidlfrance.koomy.app ou un host simulé.
