@@ -1545,7 +1545,8 @@ export async function registerRoutes(
         brandConfig,
         whiteLabelIncludedMembers,
         whiteLabelMaxMembersSoftLimit,
-        whiteLabelAdditionalFeePerMemberCents
+        whiteLabelAdditionalFeePerMemberCents,
+        customDomain
       } = req.body;
 
       // Debug log
@@ -1573,7 +1574,8 @@ export async function registerRoutes(
         brandConfig,
         whiteLabelIncludedMembers,
         whiteLabelMaxMembersSoftLimit,
-        whiteLabelAdditionalFeePerMemberCents
+        whiteLabelAdditionalFeePerMemberCents,
+        customDomain
       });
 
       return res.json({ 
