@@ -1453,6 +1453,9 @@ export async function registerRoutes(
         brandConfig
       } = req.body;
 
+      // Debug log
+      console.log("White Label Update Request:", { communityId, whiteLabel, whiteLabelTier, billingMode, req_body: req.body });
+
       // Verify community exists
       const existingCommunity = await storage.getCommunity(communityId);
       if (!existingCommunity) {
