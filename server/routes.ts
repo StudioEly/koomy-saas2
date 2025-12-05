@@ -1426,6 +1426,95 @@ export async function registerRoutes(
     }
   });
 
+  // Update white label settings for a community (platform super admin only)
+  app.patch("/api/platform/communities/:id/white-label", async (req, res) => {
+    try {
+      const userId = req.query.userId as string || req.body?.userId;
+      
+      // Verify platform super admin authorization (only super admins can modify WL settings)
+      const authResult = await verifyPlatformAdmin(userId, true);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const communityId = req.params.id;
+      const {
+        whiteLabel,
+        whiteLabelTier,
+        billingMode,
+        setupFeeAmountCents,
+        setupFeeCurrency,
+        setupFeeInvoiceRef,
+        maintenanceAmountYearCents,
+        maintenanceCurrency,
+        maintenanceNextBillingDate,
+        maintenanceStatus,
+        internalNotes,
+        brandConfig
+      } = req.body;
+
+      // Verify community exists
+      const existingCommunity = await storage.getCommunity(communityId);
+      if (!existingCommunity) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Update white label settings
+      const community = await storage.updateCommunityWhiteLabel(communityId, {
+        whiteLabel,
+        whiteLabelTier,
+        billingMode,
+        setupFeeAmountCents,
+        setupFeeCurrency,
+        setupFeeInvoiceRef,
+        maintenanceAmountYearCents,
+        maintenanceCurrency,
+        maintenanceNextBillingDate: maintenanceNextBillingDate ? new Date(maintenanceNextBillingDate) : null,
+        maintenanceStatus,
+        internalNotes,
+        brandConfig
+      });
+
+      return res.json({ 
+        success: true, 
+        community,
+        message: "Paramètres White Label mis à jour"
+      });
+    } catch (error: any) {
+      console.error("Update white label settings error:", error);
+      return res.status(500).json({ error: error.message || "Failed to update white label settings" });
+    }
+  });
+
+  // Get community details with white label info (platform super admin only)
+  app.get("/api/platform/communities/:id/details", async (req, res) => {
+    try {
+      const userId = req.query.userId as string;
+      
+      // Verify platform admin authorization
+      const authResult = await verifyPlatformAdmin(userId);
+      if (!authResult.valid) {
+        return res.status(403).json({ error: authResult.error });
+      }
+
+      const community = await storage.getCommunity(req.params.id);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // Get plan info
+      const plan = await storage.getPlan(community.planId);
+
+      return res.json({ 
+        community,
+        plan
+      });
+    } catch (error: any) {
+      console.error("Get community details error:", error);
+      return res.status(500).json({ error: error.message || "Failed to get community details" });
+    }
+  });
+
   // Get all communities with full access (platform super admin only)
   app.get("/api/platform/full-access-communities", async (req, res) => {
     try {

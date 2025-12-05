@@ -13,8 +13,25 @@ import {
   type EmailTemplate, type InsertEmailTemplate, type EmailLog, type InsertEmailLog,
   type Transaction, type InsertTransaction,
   type Collection, type InsertCollection,
-  type PlanCode
+  type PlanCode,
+  type BrandConfig
 } from "@shared/schema";
+
+// White Label update interface
+export interface WhiteLabelUpdate {
+  whiteLabel?: boolean;
+  whiteLabelTier?: "basic" | "standard" | "premium" | null;
+  billingMode?: "self_service" | "manual_contract";
+  setupFeeAmountCents?: number | null;
+  setupFeeCurrency?: string;
+  setupFeeInvoiceRef?: string | null;
+  maintenanceAmountYearCents?: number | null;
+  maintenanceCurrency?: string;
+  maintenanceNextBillingDate?: Date | null;
+  maintenanceStatus?: "active" | "pending" | "late" | "stopped" | null;
+  internalNotes?: string | null;
+  brandConfig?: BrandConfig | null;
+}
 import { db } from "./db";
 import { eq, and, desc, isNull, asc, sql } from "drizzle-orm";
 
@@ -53,6 +70,7 @@ export interface IStorage {
   createCommunity(community: InsertCommunity): Promise<Community>;
   updateCommunity(id: string, updates: Partial<InsertCommunity>): Promise<Community>;
   updateCommunityMemberCount(id: string, count: number): Promise<void>;
+  updateCommunityWhiteLabel(id: string, updates: WhiteLabelUpdate): Promise<Community>;
   
   // Plans
   getAllPlans(): Promise<Plan[]>;
@@ -237,6 +255,27 @@ export class DatabaseStorage implements IStorage {
 
   async updateCommunityMemberCount(id: string, count: number): Promise<void> {
     await db.update(communities).set({ memberCount: count }).where(eq(communities.id, id));
+  }
+
+  async updateCommunityWhiteLabel(id: string, updates: WhiteLabelUpdate): Promise<Community> {
+    const [community] = await db.update(communities)
+      .set({
+        whiteLabel: updates.whiteLabel,
+        whiteLabelTier: updates.whiteLabelTier,
+        billingMode: updates.billingMode,
+        setupFeeAmountCents: updates.setupFeeAmountCents,
+        setupFeeCurrency: updates.setupFeeCurrency,
+        setupFeeInvoiceRef: updates.setupFeeInvoiceRef,
+        maintenanceAmountYearCents: updates.maintenanceAmountYearCents,
+        maintenanceCurrency: updates.maintenanceCurrency,
+        maintenanceNextBillingDate: updates.maintenanceNextBillingDate,
+        maintenanceStatus: updates.maintenanceStatus,
+        internalNotes: updates.internalNotes,
+        brandConfig: updates.brandConfig,
+      })
+      .where(eq(communities.id, id))
+      .returning();
+    return community;
   }
 
   // Plans

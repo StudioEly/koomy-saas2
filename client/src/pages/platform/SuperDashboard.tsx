@@ -28,6 +28,17 @@ import {
   PieChart, Pie, Cell, Legend, BarChart, Bar, LineChart, Line
 } from "recharts";
 
+type BrandConfig = {
+  appName?: string;
+  brandColor?: string;
+  logoUrl?: string;
+  appIconUrl?: string;
+  emailFromName?: string;
+  emailFromAddress?: string;
+  replyTo?: string;
+  showPoweredBy?: boolean;
+};
+
 type Community = {
   id: string;
   name: string;
@@ -38,6 +49,19 @@ type Community = {
   fullAccessExpiresAt: string | null;
   fullAccessReason: string | null;
   fullAccessGrantedBy: string | null;
+  // White Label fields
+  whiteLabel?: boolean;
+  whiteLabelTier?: "basic" | "standard" | "premium" | null;
+  billingMode?: "self_service" | "manual_contract";
+  setupFeeAmountCents?: number | null;
+  setupFeeCurrency?: string;
+  setupFeeInvoiceRef?: string | null;
+  maintenanceAmountYearCents?: number | null;
+  maintenanceCurrency?: string;
+  maintenanceNextBillingDate?: string | null;
+  maintenanceStatus?: "active" | "pending" | "late" | "stopped" | null;
+  internalNotes?: string | null;
+  brandConfig?: BrandConfig | null;
 };
 
 type PlatformMetrics = {
@@ -226,6 +250,29 @@ export default function SuperAdminDashboard() {
   const [fullAccessReason, setFullAccessReason] = useState("");
   const [fullAccessDuration, setFullAccessDuration] = useState<string>("permanent");
   const [customDays, setCustomDays] = useState("30");
+  
+  // White Label modal state
+  const [isWhiteLabelOpen, setIsWhiteLabelOpen] = useState(false);
+  const [wlCommunity, setWlCommunity] = useState<Community | null>(null);
+  const [wlWhiteLabel, setWlWhiteLabel] = useState(false);
+  const [wlTier, setWlTier] = useState<"basic" | "standard" | "premium">("basic");
+  const [wlBillingMode, setWlBillingMode] = useState<"self_service" | "manual_contract">("self_service");
+  const [wlSetupFee, setWlSetupFee] = useState("");
+  const [wlSetupFeeCurrency, setWlSetupFeeCurrency] = useState("EUR");
+  const [wlSetupFeeInvoiceRef, setWlSetupFeeInvoiceRef] = useState("");
+  const [wlMaintenanceFee, setWlMaintenanceFee] = useState("");
+  const [wlMaintenanceCurrency, setWlMaintenanceCurrency] = useState("EUR");
+  const [wlMaintenanceNextDate, setWlMaintenanceNextDate] = useState("");
+  const [wlMaintenanceStatus, setWlMaintenanceStatus] = useState<"active" | "pending" | "late" | "stopped">("active");
+  const [wlInternalNotes, setWlInternalNotes] = useState("");
+  const [wlAppName, setWlAppName] = useState("");
+  const [wlBrandColor, setWlBrandColor] = useState("");
+  const [wlLogoUrl, setWlLogoUrl] = useState("");
+  const [wlAppIconUrl, setWlAppIconUrl] = useState("");
+  const [wlEmailFromName, setWlEmailFromName] = useState("");
+  const [wlEmailFromAddress, setWlEmailFromAddress] = useState("");
+  const [wlReplyTo, setWlReplyTo] = useState("");
+  const [wlShowPoweredBy, setWlShowPoweredBy] = useState(true);
   
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -443,6 +490,45 @@ export default function SuperAdminDashboard() {
     }
   });
 
+  // White Label mutation
+  const updateWhiteLabelMutation = useMutation({
+    mutationFn: async (data: {
+      communityId: string;
+      whiteLabel: boolean;
+      whiteLabelTier: "basic" | "standard" | "premium" | null;
+      billingMode: "self_service" | "manual_contract";
+      setupFeeAmountCents: number | null;
+      setupFeeCurrency: string;
+      setupFeeInvoiceRef: string | null;
+      maintenanceAmountYearCents: number | null;
+      maintenanceCurrency: string;
+      maintenanceNextBillingDate: string | null;
+      maintenanceStatus: "active" | "pending" | "late" | "stopped" | null;
+      internalNotes: string | null;
+      brandConfig: BrandConfig | null;
+    }) => {
+      const response = await fetch(`/api/platform/communities/${data.communityId}/white-label?userId=${user?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update white label settings");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["communities"] });
+      toast({ title: "Paramètres White Label", description: data.message });
+      setIsWhiteLabelOpen(false);
+      resetWhiteLabelForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    }
+  });
+
   // Create platform user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: { email: string; password: string; firstName: string; lastName: string; globalRole: string }) => {
@@ -645,6 +731,85 @@ export default function SuperAdminDashboard() {
     setFullAccessReason("");
     setFullAccessDuration("permanent");
     setCustomDays("30");
+  };
+
+  const resetWhiteLabelForm = () => {
+    setWlCommunity(null);
+    setWlWhiteLabel(false);
+    setWlTier("basic");
+    setWlBillingMode("self_service");
+    setWlSetupFee("");
+    setWlSetupFeeCurrency("EUR");
+    setWlSetupFeeInvoiceRef("");
+    setWlMaintenanceFee("");
+    setWlMaintenanceCurrency("EUR");
+    setWlMaintenanceNextDate("");
+    setWlMaintenanceStatus("active");
+    setWlInternalNotes("");
+    setWlAppName("");
+    setWlBrandColor("");
+    setWlLogoUrl("");
+    setWlAppIconUrl("");
+    setWlEmailFromName("");
+    setWlEmailFromAddress("");
+    setWlReplyTo("");
+    setWlShowPoweredBy(true);
+  };
+
+  const openWhiteLabelModal = (community: Community) => {
+    setWlCommunity(community);
+    setWlWhiteLabel(community.whiteLabel || false);
+    setWlTier(community.whiteLabelTier || "basic");
+    setWlBillingMode(community.billingMode || "self_service");
+    setWlSetupFee(community.setupFeeAmountCents ? String(community.setupFeeAmountCents / 100) : "");
+    setWlSetupFeeCurrency(community.setupFeeCurrency || "EUR");
+    setWlSetupFeeInvoiceRef(community.setupFeeInvoiceRef || "");
+    setWlMaintenanceFee(community.maintenanceAmountYearCents ? String(community.maintenanceAmountYearCents / 100) : "");
+    setWlMaintenanceCurrency(community.maintenanceCurrency || "EUR");
+    setWlMaintenanceNextDate(community.maintenanceNextBillingDate ? community.maintenanceNextBillingDate.split("T")[0] : "");
+    setWlMaintenanceStatus(community.maintenanceStatus || "active");
+    setWlInternalNotes(community.internalNotes || "");
+    setWlAppName(community.brandConfig?.appName || "");
+    setWlBrandColor(community.brandConfig?.brandColor || "");
+    setWlLogoUrl(community.brandConfig?.logoUrl || "");
+    setWlAppIconUrl(community.brandConfig?.appIconUrl || "");
+    setWlEmailFromName(community.brandConfig?.emailFromName || "");
+    setWlEmailFromAddress(community.brandConfig?.emailFromAddress || "");
+    setWlReplyTo(community.brandConfig?.replyTo || "");
+    setWlShowPoweredBy(community.brandConfig?.showPoweredBy ?? true);
+    setIsWhiteLabelOpen(true);
+  };
+
+  const handleSaveWhiteLabel = () => {
+    if (!wlCommunity) return;
+    
+    const setupFeeAmountCents = wlSetupFee ? Math.round(parseFloat(wlSetupFee) * 100) : null;
+    const maintenanceAmountYearCents = wlMaintenanceFee ? Math.round(parseFloat(wlMaintenanceFee) * 100) : null;
+    
+    updateWhiteLabelMutation.mutate({
+      communityId: wlCommunity.id,
+      whiteLabel: wlWhiteLabel,
+      whiteLabelTier: wlWhiteLabel ? wlTier : null,
+      billingMode: wlBillingMode,
+      setupFeeAmountCents,
+      setupFeeCurrency: wlSetupFeeCurrency,
+      setupFeeInvoiceRef: wlSetupFeeInvoiceRef || null,
+      maintenanceAmountYearCents,
+      maintenanceCurrency: wlMaintenanceCurrency,
+      maintenanceNextBillingDate: wlMaintenanceNextDate || null,
+      maintenanceStatus: wlBillingMode === "manual_contract" ? wlMaintenanceStatus : null,
+      internalNotes: wlInternalNotes || null,
+      brandConfig: wlWhiteLabel ? {
+        appName: wlAppName || undefined,
+        brandColor: wlBrandColor || undefined,
+        logoUrl: wlLogoUrl || undefined,
+        appIconUrl: wlAppIconUrl || undefined,
+        emailFromName: wlEmailFromName || undefined,
+        emailFromAddress: wlEmailFromAddress || undefined,
+        replyTo: wlReplyTo || undefined,
+        showPoweredBy: wlShowPoweredBy
+      } : null
+    });
   };
 
   const resetUserForm = () => {
@@ -1447,8 +1612,12 @@ export default function SuperAdminDashboard() {
                               <div className="font-bold flex items-center gap-2">
                                 {comm.name}
                                 {hasActiveFullAccess(comm) && (<Badge className="bg-gradient-to-r from-amber-400 to-amber-500 text-white text-[9px] px-1.5 py-0 gap-0.5 border-0"><Sparkles size={10} /> VIP</Badge>)}
+                                {comm.whiteLabel && (<Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[9px] px-1.5 py-0 gap-0.5 border-0"><Crown size={10} /> WL</Badge>)}
                               </div>
-                              <div className="text-xs text-gray-500">{comm.id.slice(0, 8)}...</div>
+                              <div className="text-xs text-gray-500 flex items-center gap-2">
+                                {comm.id.slice(0, 8)}...
+                                {comm.billingMode === "manual_contract" && <span className="text-purple-600 font-medium">Contrat</span>}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
@@ -1458,7 +1627,7 @@ export default function SuperAdminDashboard() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant={hasActiveFullAccess(comm) ? "default" : "outline"} size="sm" className={`h-8 text-xs ${hasActiveFullAccess(comm) ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white border-0' : ''}`} onClick={() => openFullAccessModal(comm)} data-testid={`button-full-access-${comm.id}`}><Gift className="mr-1 h-3 w-3" />{hasActiveFullAccess(comm) ? 'VIP' : 'Offrir'}</Button>
-                            <Button variant="ghost" size="sm"><Settings size={16} /></Button>
+                            <Button variant={comm.whiteLabel ? "default" : "ghost"} size="sm" className={comm.whiteLabel ? "h-8 text-xs bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-0" : ""} onClick={() => openWhiteLabelModal(comm)} data-testid={`button-white-label-${comm.id}`}><Settings size={16} /></Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -2284,6 +2453,332 @@ export default function SuperAdminDashboard() {
                 <Button className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white" onClick={handleGrantFullAccess} disabled={!fullAccessReason.trim() || grantFullAccessMutation.isPending} data-testid="button-grant-full-access"><Gift className="mr-2 h-4 w-4" />{grantFullAccessMutation.isPending ? "En cours..." : "Accorder l'accès"}</Button>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* White Label Settings Modal */}
+      <Dialog open={isWhiteLabelOpen} onOpenChange={(open) => { setIsWhiteLabelOpen(open); if (!open) resetWhiteLabelForm(); }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-purple-500" />
+              Configuration White Label
+            </DialogTitle>
+            <DialogDescription>
+              {wlCommunity?.name} - Configurez les paramètres de marque blanche et facturation
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="billing" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="billing" data-testid="tab-billing">Mode Facturation</TabsTrigger>
+              <TabsTrigger value="contract" data-testid="tab-contract">Contrat & Tarifs</TabsTrigger>
+              <TabsTrigger value="branding" data-testid="tab-branding">Branding</TabsTrigger>
+            </TabsList>
+
+            {/* Billing Mode Tab */}
+            <TabsContent value="billing" className="space-y-4 pt-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">White Label activé</p>
+                  <p className="text-sm text-gray-500">Activer les fonctionnalités de marque blanche pour cette communauté</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={wlWhiteLabel ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setWlWhiteLabel(!wlWhiteLabel)}
+                    className={wlWhiteLabel ? "bg-purple-600 hover:bg-purple-700" : ""}
+                    data-testid="toggle-white-label"
+                  >
+                    {wlWhiteLabel ? "Activé" : "Désactivé"}
+                  </Button>
+                </div>
+              </div>
+
+              {wlWhiteLabel && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Tier White Label</Label>
+                    <Select value={wlTier} onValueChange={(v) => setWlTier(v as "basic" | "standard" | "premium")}>
+                      <SelectTrigger data-testid="select-wl-tier"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basic">Basic - Personnalisation logos et couleurs</SelectItem>
+                        <SelectItem value="standard">Standard - Emails personnalisés inclus</SelectItem>
+                        <SelectItem value="premium">Premium - Domaine personnalisé + support dédié</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Mode de facturation</Label>
+                    <Select value={wlBillingMode} onValueChange={(v) => setWlBillingMode(v as "self_service" | "manual_contract")}>
+                      <SelectTrigger data-testid="select-billing-mode"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="self_service">Self-service (Stripe automatique)</SelectItem>
+                        <SelectItem value="manual_contract">Contrat manuel (facturation hors Stripe)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">
+                      {wlBillingMode === "manual_contract" 
+                        ? "La facturation est gérée manuellement par l'équipe Koomy" 
+                        : "Le client gère son abonnement via Stripe"}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <div className="space-y-2">
+                <Label>Notes internes (non visibles par le client)</Label>
+                <Textarea
+                  placeholder="Notes pour l'équipe interne..."
+                  value={wlInternalNotes}
+                  onChange={(e) => setWlInternalNotes(e.target.value)}
+                  className="min-h-[100px]"
+                  data-testid="input-internal-notes"
+                />
+              </div>
+            </TabsContent>
+
+            {/* Contract Tab */}
+            <TabsContent value="contract" className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Frais de setup</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={wlSetupFee}
+                      onChange={(e) => setWlSetupFee(e.target.value)}
+                      className="flex-1"
+                      data-testid="input-setup-fee"
+                    />
+                    <Select value={wlSetupFeeCurrency} onValueChange={setWlSetupFeeCurrency}>
+                      <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Réf. facture setup</Label>
+                  <Input
+                    placeholder="INV-2024-001"
+                    value={wlSetupFeeInvoiceRef}
+                    onChange={(e) => setWlSetupFeeInvoiceRef(e.target.value)}
+                    data-testid="input-setup-invoice-ref"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Maintenance annuelle</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={wlMaintenanceFee}
+                      onChange={(e) => setWlMaintenanceFee(e.target.value)}
+                      className="flex-1"
+                      data-testid="input-maintenance-fee"
+                    />
+                    <Select value={wlMaintenanceCurrency} onValueChange={setWlMaintenanceCurrency}>
+                      <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="CHF">CHF</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Prochaine échéance</Label>
+                  <Input
+                    type="date"
+                    value={wlMaintenanceNextDate}
+                    onChange={(e) => setWlMaintenanceNextDate(e.target.value)}
+                    data-testid="input-maintenance-next-date"
+                  />
+                </div>
+              </div>
+
+              {wlBillingMode === "manual_contract" && (
+                <div className="space-y-2">
+                  <Label>Statut maintenance</Label>
+                  <Select value={wlMaintenanceStatus} onValueChange={(v) => setWlMaintenanceStatus(v as "active" | "pending" | "late" | "stopped")}>
+                    <SelectTrigger data-testid="select-maintenance-status"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Actif - Paiement à jour</SelectItem>
+                      <SelectItem value="pending">En attente - Facture émise</SelectItem>
+                      <SelectItem value="late">En retard - Paiement attendu</SelectItem>
+                      <SelectItem value="stopped">Arrêté - Contrat suspendu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="bg-gray-50 rounded-lg p-4 mt-4">
+                <h4 className="font-medium mb-2">Résumé contrat</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-gray-500">Setup:</span>
+                  <span className="font-medium">{wlSetupFee ? `${wlSetupFee} ${wlSetupFeeCurrency}` : "-"}</span>
+                  <span className="text-gray-500">Maintenance/an:</span>
+                  <span className="font-medium">{wlMaintenanceFee ? `${wlMaintenanceFee} ${wlMaintenanceCurrency}` : "-"}</span>
+                  <span className="text-gray-500">Mode:</span>
+                  <span className="font-medium">{wlBillingMode === "manual_contract" ? "Contrat manuel" : "Self-service"}</span>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Branding Tab */}
+            <TabsContent value="branding" className="space-y-4 pt-4">
+              {!wlWhiteLabel ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Crown className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>Activez le mode White Label pour configurer le branding</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Nom de l'application</Label>
+                      <Input
+                        placeholder="MonApp"
+                        value={wlAppName}
+                        onChange={(e) => setWlAppName(e.target.value)}
+                        data-testid="input-app-name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Couleur principale</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={wlBrandColor || "#6366f1"}
+                          onChange={(e) => setWlBrandColor(e.target.value)}
+                          className="w-16 h-10 p-1"
+                        />
+                        <Input
+                          placeholder="#6366f1"
+                          value={wlBrandColor}
+                          onChange={(e) => setWlBrandColor(e.target.value)}
+                          className="flex-1"
+                          data-testid="input-brand-color"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>URL du logo</Label>
+                      <Input
+                        placeholder="https://..."
+                        value={wlLogoUrl}
+                        onChange={(e) => setWlLogoUrl(e.target.value)}
+                        data-testid="input-logo-url"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>URL de l'icône app</Label>
+                      <Input
+                        placeholder="https://..."
+                        value={wlAppIconUrl}
+                        onChange={(e) => setWlAppIconUrl(e.target.value)}
+                        data-testid="input-app-icon-url"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4 mt-4">
+                    <h4 className="font-medium mb-3">Personnalisation emails</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Nom expéditeur</Label>
+                        <Input
+                          placeholder="MonApp"
+                          value={wlEmailFromName}
+                          onChange={(e) => setWlEmailFromName(e.target.value)}
+                          data-testid="input-email-from-name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email expéditeur</Label>
+                        <Input
+                          type="email"
+                          placeholder="noreply@monapp.com"
+                          value={wlEmailFromAddress}
+                          onChange={(e) => setWlEmailFromAddress(e.target.value)}
+                          data-testid="input-email-from-address"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2 mt-4">
+                      <Label>Reply-to</Label>
+                      <Input
+                        type="email"
+                        placeholder="support@monapp.com"
+                        value={wlReplyTo}
+                        onChange={(e) => setWlReplyTo(e.target.value)}
+                        data-testid="input-reply-to"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg border mt-4">
+                    <div>
+                      <p className="font-medium">Afficher "Powered by Koomy"</p>
+                      <p className="text-sm text-gray-500">Ajoute une mention discrète dans les emails et l'app</p>
+                    </div>
+                    <Button
+                      variant={wlShowPoweredBy ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => setWlShowPoweredBy(!wlShowPoweredBy)}
+                      className={!wlShowPoweredBy ? "bg-purple-600 hover:bg-purple-700" : ""}
+                      data-testid="toggle-powered-by"
+                    >
+                      {wlShowPoweredBy ? "Visible" : "Masqué"}
+                    </Button>
+                  </div>
+
+                  {wlAppName && (
+                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 mt-4">
+                      <h4 className="font-medium mb-2">Aperçu</h4>
+                      <div className="flex items-center gap-3">
+                        {wlLogoUrl ? (
+                          <img src={wlLogoUrl} alt="Logo" className="h-10 w-10 rounded-lg object-contain border" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-bold" style={{ backgroundColor: wlBrandColor || '#6366f1' }}>
+                            {wlAppName.charAt(0)}
+                          </div>
+                        )}
+                        <span className="font-bold text-lg" style={{ color: wlBrandColor || '#6366f1' }}>{wlAppName}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsWhiteLabelOpen(false)}>Annuler</Button>
+            <Button
+              className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white"
+              onClick={handleSaveWhiteLabel}
+              disabled={updateWhiteLabelMutation.isPending}
+              data-testid="button-save-white-label"
+            >
+              <Crown className="mr-2 h-4 w-4" />
+              {updateWhiteLabelMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

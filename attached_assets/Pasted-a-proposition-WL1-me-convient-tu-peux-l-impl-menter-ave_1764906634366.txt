@@ -1,0 +1,88 @@
+a proposition WL1 me convient, tu peux l’implémenter avec ces quelques précisions :
+
+Enums & champs communities
+
+OK pour :
+
+whiteLabelTierEnum: ["basic", "standard", "premium"]
+
+billingModeEnum: ["self_service", "manual_contract"]
+
+maintenanceStatusEnum: ["active", "pending", "late", "stopped"]
+
+OK pour tous les champs ajoutés dans communities, avec :
+
+billingMode par défaut = "self_service"
+
+whiteLabel par défaut = false
+
+setupFeeCurrency et maintenanceCurrency par défaut = "EUR"
+
+maintenanceStatus peut rester null tant qu’aucun contrat de maintenance n’est saisi.
+
+brandConfig
+
+OK pour brandConfig en jsonb avec le type TypeScript suivant :
+
+interface BrandConfig {
+  appName?: string;
+  brandColor?: string;
+  logoUrl?: string;
+  appIconUrl?: string;
+  emailFromName?: string;
+  emailFromAddress?: string;
+  replyTo?: string;
+  showPoweredBy?: boolean;
+}
+
+
+Objectif pour cette phase WL1 :
+👉 pouvoir créer / modifier / afficher ce brandConfig depuis le SaaS Owner, sans encore l’utiliser ailleurs (app membre, emails, etc.).
+
+API & storage
+
+OK pour :
+
+la nouvelle méthode dans server/storage.ts (mise à jour des champs White Label + contrat + brandConfig)
+
+l’endpoint PATCH /api/platform/communities/:id/white-label pour mettre à jour ces infos depuis /platform.
+
+UI SaaS Owner – SuperDashboard
+
+OK pour enrichir la fiche communauté dans client/src/pages/platform/SuperDashboard.tsx avec les 3 sections :
+
+“Mode de facturation”
+
+billingMode (self_service vs manual_contract)
+
+whiteLabel (Oui/Non)
+
+whiteLabelTier (Basic / Standard / Premium / Aucun)
+
+“Contrat & facturation” (visible si billingMode = "manual_contract")
+
+Setup fee : montant, devise, réf. facture
+
+Maintenance : montant annuel, devise, prochaine date, statut
+
+Notes internes (textarea)
+
+“Branding White Label” (visible si whiteLabel = true)
+
+appName, brandColor, logoUrl, appIconUrl
+
+emailFromName, emailFromAddress, replyTo
+
+showPoweredBy (checkbox)
+
+Contraintes
+
+Ne rien casser sur :
+
+les communautés existantes
+
+les flux Stripe Billing existants (abonnements self-service)
+
+Limiter ces nouvelles fonctionnalités d’édition au rôle super admin du SaaS Owner.
+
+Tu peux donc implémenter le plan WL1 tel que décrit, avec ces précisions.

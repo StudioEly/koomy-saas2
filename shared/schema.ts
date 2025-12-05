@@ -39,6 +39,27 @@ export const transactionTypeEnum = pgEnum("transaction_type", ["subscription", "
 // Transaction status enum
 export const transactionStatusEnum = pgEnum("transaction_status", ["pending", "succeeded", "failed", "refunded"]);
 
+// White Label tier enum
+export const whiteLabelTierEnum = pgEnum("white_label_tier", ["basic", "standard", "premium"]);
+
+// Billing mode enum (self-service Stripe vs manual contract)
+export const billingModeEnum = pgEnum("billing_mode", ["self_service", "manual_contract"]);
+
+// Maintenance status enum (for white-label contracts)
+export const maintenanceStatusEnum = pgEnum("maintenance_status", ["active", "pending", "late", "stopped"]);
+
+// Brand Config Type for White Label communities
+export interface BrandConfig {
+  appName?: string;
+  brandColor?: string;
+  logoUrl?: string;
+  appIconUrl?: string;
+  emailFromName?: string;
+  emailFromAddress?: string;
+  replyTo?: string;
+  showPoweredBy?: boolean;
+}
+
 // Community Types
 export const COMMUNITY_TYPES = [
   { value: "sports_club", label: "Club sportif" },
@@ -158,6 +179,21 @@ export const communities = pgTable("communities", {
   paymentsEnabled: boolean("payments_enabled").default(false), // true when Connect verified
   platformFeePercent: integer("platform_fee_percent").default(2), // Koomy commission % (default 2%)
   maxMembersAllowed: integer("max_members_allowed"), // derived from plan (50/1000/5000)
+  // White Label flags
+  whiteLabel: boolean("white_label").default(false), // true = white-label community
+  whiteLabelTier: whiteLabelTierEnum("white_label_tier"), // basic | standard | premium
+  billingMode: billingModeEnum("billing_mode").default("self_service"), // self_service | manual_contract
+  // Contract/billing info (for manual_contract mode)
+  setupFeeAmountCents: integer("setup_fee_amount_cents"), // one-time setup fee in cents
+  setupFeeCurrency: text("setup_fee_currency").default("EUR"),
+  setupFeeInvoiceRef: text("setup_fee_invoice_ref"), // invoice reference
+  maintenanceAmountYearCents: integer("maintenance_amount_year_cents"), // annual maintenance in cents
+  maintenanceCurrency: text("maintenance_currency").default("EUR"),
+  maintenanceNextBillingDate: timestamp("maintenance_next_billing_date"), // next renewal date
+  maintenanceStatus: maintenanceStatusEnum("maintenance_status"), // active | pending | late | stopped
+  internalNotes: text("internal_notes"), // internal notes for SaaS Owner
+  // White Label branding config
+  brandConfig: jsonb("brand_config").$type<BrandConfig>(), // custom branding for white-label
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
