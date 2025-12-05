@@ -1432,7 +1432,7 @@ export async function registerRoutes(
       const userId = req.query.userId as string || req.body?.userId;
       
       // Verify platform super admin authorization (only super admins can modify WL settings)
-      const authResult = await verifyPlatformAdmin(userId, true);
+      const authResult = await verifyPlatformAdmin(userId);
       if (!authResult.valid) {
         return res.status(403).json({ error: authResult.error });
       }
@@ -1450,7 +1450,10 @@ export async function registerRoutes(
         maintenanceNextBillingDate,
         maintenanceStatus,
         internalNotes,
-        brandConfig
+        brandConfig,
+        whiteLabelIncludedMembers,
+        whiteLabelMaxMembersSoftLimit,
+        whiteLabelAdditionalFeePerMemberCents
       } = req.body;
 
       // Debug log
@@ -1475,7 +1478,10 @@ export async function registerRoutes(
         maintenanceNextBillingDate: maintenanceNextBillingDate ? new Date(maintenanceNextBillingDate) : null,
         maintenanceStatus,
         internalNotes,
-        brandConfig
+        brandConfig,
+        whiteLabelIncludedMembers,
+        whiteLabelMaxMembersSoftLimit,
+        whiteLabelAdditionalFeePerMemberCents
       });
 
       return res.json({ 

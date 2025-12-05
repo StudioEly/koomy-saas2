@@ -194,6 +194,10 @@ export const communities = pgTable("communities", {
   internalNotes: text("internal_notes"), // internal notes for SaaS Owner
   // White Label branding config
   brandConfig: jsonb("brand_config").$type<BrandConfig>(), // custom branding for white-label
+  // White Label contract member quotas (independent from technical plan limits)
+  whiteLabelIncludedMembers: integer("white_label_included_members"), // members included in WL contract
+  whiteLabelMaxMembersSoftLimit: integer("white_label_max_members_soft_limit"), // soft limit for internal alerts (e.g., 120% of WL quota)
+  whiteLabelAdditionalFeePerMemberCents: integer("white_label_additional_fee_per_member_cents"), // additional fee per member beyond threshold
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 

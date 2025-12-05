@@ -31,6 +31,10 @@ export interface WhiteLabelUpdate {
   maintenanceStatus?: "active" | "pending" | "late" | "stopped" | null;
   internalNotes?: string | null;
   brandConfig?: BrandConfig | null;
+  // White Label contract member quotas
+  whiteLabelIncludedMembers?: number | null;
+  whiteLabelMaxMembersSoftLimit?: number | null;
+  whiteLabelAdditionalFeePerMemberCents?: number | null;
 }
 import { db } from "./db";
 import { eq, and, desc, isNull, asc, sql } from "drizzle-orm";
@@ -258,21 +262,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCommunityWhiteLabel(id: string, updates: WhiteLabelUpdate): Promise<Community> {
+    // Build dynamic update object to only include fields that are explicitly provided
+    const updateData: Record<string, any> = {};
+    
+    if (updates.whiteLabel !== undefined) updateData.whiteLabel = updates.whiteLabel;
+    if (updates.whiteLabelTier !== undefined) updateData.whiteLabelTier = updates.whiteLabelTier;
+    if (updates.billingMode !== undefined) updateData.billingMode = updates.billingMode;
+    if (updates.setupFeeAmountCents !== undefined) updateData.setupFeeAmountCents = updates.setupFeeAmountCents;
+    if (updates.setupFeeCurrency !== undefined) updateData.setupFeeCurrency = updates.setupFeeCurrency;
+    if (updates.setupFeeInvoiceRef !== undefined) updateData.setupFeeInvoiceRef = updates.setupFeeInvoiceRef;
+    if (updates.maintenanceAmountYearCents !== undefined) updateData.maintenanceAmountYearCents = updates.maintenanceAmountYearCents;
+    if (updates.maintenanceCurrency !== undefined) updateData.maintenanceCurrency = updates.maintenanceCurrency;
+    if (updates.maintenanceNextBillingDate !== undefined) updateData.maintenanceNextBillingDate = updates.maintenanceNextBillingDate;
+    if (updates.maintenanceStatus !== undefined) updateData.maintenanceStatus = updates.maintenanceStatus;
+    if (updates.internalNotes !== undefined) updateData.internalNotes = updates.internalNotes;
+    if (updates.brandConfig !== undefined) updateData.brandConfig = updates.brandConfig;
+    if (updates.whiteLabelIncludedMembers !== undefined) updateData.whiteLabelIncludedMembers = updates.whiteLabelIncludedMembers;
+    if (updates.whiteLabelMaxMembersSoftLimit !== undefined) updateData.whiteLabelMaxMembersSoftLimit = updates.whiteLabelMaxMembersSoftLimit;
+    if (updates.whiteLabelAdditionalFeePerMemberCents !== undefined) updateData.whiteLabelAdditionalFeePerMemberCents = updates.whiteLabelAdditionalFeePerMemberCents;
+    
     const [community] = await db.update(communities)
-      .set({
-        whiteLabel: updates.whiteLabel,
-        whiteLabelTier: updates.whiteLabelTier,
-        billingMode: updates.billingMode,
-        setupFeeAmountCents: updates.setupFeeAmountCents,
-        setupFeeCurrency: updates.setupFeeCurrency,
-        setupFeeInvoiceRef: updates.setupFeeInvoiceRef,
-        maintenanceAmountYearCents: updates.maintenanceAmountYearCents,
-        maintenanceCurrency: updates.maintenanceCurrency,
-        maintenanceNextBillingDate: updates.maintenanceNextBillingDate,
-        maintenanceStatus: updates.maintenanceStatus,
-        internalNotes: updates.internalNotes,
-        brandConfig: updates.brandConfig,
-      })
+      .set(updateData)
       .where(eq(communities.id, id))
       .returning();
     return community;

@@ -62,6 +62,10 @@ type Community = {
   maintenanceStatus?: "active" | "pending" | "late" | "stopped" | null;
   internalNotes?: string | null;
   brandConfig?: BrandConfig | null;
+  // White Label contract member quotas
+  whiteLabelIncludedMembers?: number | null;
+  whiteLabelMaxMembersSoftLimit?: number | null;
+  whiteLabelAdditionalFeePerMemberCents?: number | null;
 };
 
 type PlatformMetrics = {
@@ -273,6 +277,10 @@ export default function SuperAdminDashboard() {
   const [wlEmailFromAddress, setWlEmailFromAddress] = useState("");
   const [wlReplyTo, setWlReplyTo] = useState("");
   const [wlShowPoweredBy, setWlShowPoweredBy] = useState(true);
+  // White Label contract member quotas
+  const [wlIncludedMembers, setWlIncludedMembers] = useState("");
+  const [wlSoftLimit, setWlSoftLimit] = useState("");
+  const [wlAdditionalFeePerMember, setWlAdditionalFeePerMember] = useState("");
   
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
@@ -506,6 +514,9 @@ export default function SuperAdminDashboard() {
       maintenanceStatus: "active" | "pending" | "late" | "stopped" | null;
       internalNotes: string | null;
       brandConfig: BrandConfig | null;
+      whiteLabelIncludedMembers: number | null;
+      whiteLabelMaxMembersSoftLimit: number | null;
+      whiteLabelAdditionalFeePerMemberCents: number | null;
     }) => {
       const response = await fetch(`/api/platform/communities/${data.communityId}/white-label?userId=${user?.id}`, {
         method: "PATCH",
@@ -777,6 +788,10 @@ export default function SuperAdminDashboard() {
     setWlEmailFromAddress(community.brandConfig?.emailFromAddress || "");
     setWlReplyTo(community.brandConfig?.replyTo || "");
     setWlShowPoweredBy(community.brandConfig?.showPoweredBy ?? true);
+    // Member quotas
+    setWlIncludedMembers(community.whiteLabelIncludedMembers ? String(community.whiteLabelIncludedMembers) : "");
+    setWlSoftLimit(community.whiteLabelMaxMembersSoftLimit ? String(community.whiteLabelMaxMembersSoftLimit) : "");
+    setWlAdditionalFeePerMember(community.whiteLabelAdditionalFeePerMemberCents ? String(community.whiteLabelAdditionalFeePerMemberCents / 100) : "");
     setIsWhiteLabelOpen(true);
   };
 
@@ -785,6 +800,9 @@ export default function SuperAdminDashboard() {
     
     const setupFeeAmountCents = wlSetupFee ? Math.round(parseFloat(wlSetupFee) * 100) : null;
     const maintenanceAmountYearCents = wlMaintenanceFee ? Math.round(parseFloat(wlMaintenanceFee) * 100) : null;
+    const whiteLabelIncludedMembers = wlIncludedMembers ? parseInt(wlIncludedMembers) : null;
+    const whiteLabelMaxMembersSoftLimit = wlSoftLimit ? parseInt(wlSoftLimit) : null;
+    const whiteLabelAdditionalFeePerMemberCents = wlAdditionalFeePerMember ? Math.round(parseFloat(wlAdditionalFeePerMember) * 100) : null;
     
     updateWhiteLabelMutation.mutate({
       communityId: wlCommunity.id,
@@ -808,7 +826,10 @@ export default function SuperAdminDashboard() {
         emailFromAddress: wlEmailFromAddress || undefined,
         replyTo: wlReplyTo || undefined,
         showPoweredBy: wlShowPoweredBy
-      } : null
+      } : null,
+      whiteLabelIncludedMembers,
+      whiteLabelMaxMembersSoftLimit,
+      whiteLabelAdditionalFeePerMemberCents
     });
   };
 
@@ -2624,6 +2645,53 @@ export default function SuperAdminDashboard() {
                 </div>
               )}
 
+              {/* Member Quota Section - White Label Contract */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Quota membres (contrat WL)
+                </h4>
+                <p className="text-sm text-gray-500 mb-3">
+                  Ces quotas sont indépendants du plan technique. Ils définissent les termes commerciaux du contrat White Label.
+                </p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Membres inclus</Label>
+                    <Input
+                      type="number"
+                      placeholder="500"
+                      value={wlIncludedMembers}
+                      onChange={(e) => setWlIncludedMembers(e.target.value)}
+                      data-testid="input-wl-included-members"
+                    />
+                    <p className="text-xs text-gray-400">Quota contractuel</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Seuil d'alerte</Label>
+                    <Input
+                      type="number"
+                      placeholder="600"
+                      value={wlSoftLimit}
+                      onChange={(e) => setWlSoftLimit(e.target.value)}
+                      data-testid="input-wl-soft-limit"
+                    />
+                    <p className="text-xs text-gray-400">Alerte interne (ex: 120%)</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Supplément/membre (€)</Label>
+                    <Input
+                      type="number"
+                      placeholder="0.50"
+                      step="0.01"
+                      value={wlAdditionalFeePerMember}
+                      onChange={(e) => setWlAdditionalFeePerMember(e.target.value)}
+                      data-testid="input-wl-additional-fee"
+                    />
+                    <p className="text-xs text-gray-400">Au-delà du quota</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-gray-50 rounded-lg p-4 mt-4">
                 <h4 className="font-medium mb-2">Résumé contrat</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -2633,6 +2701,14 @@ export default function SuperAdminDashboard() {
                   <span className="font-medium">{wlMaintenanceFee ? `${wlMaintenanceFee} ${wlMaintenanceCurrency}` : "-"}</span>
                   <span className="text-gray-500">Mode:</span>
                   <span className="font-medium">{wlBillingMode === "manual_contract" ? "Contrat manuel" : "Self-service"}</span>
+                  <span className="text-gray-500">Quota membres WL:</span>
+                  <span className="font-medium">{wlIncludedMembers ? `${wlIncludedMembers} membres` : "-"}</span>
+                  {wlAdditionalFeePerMember && (
+                    <>
+                      <span className="text-gray-500">Supplément/membre:</span>
+                      <span className="font-medium">{wlAdditionalFeePerMember} €</span>
+                    </>
+                  )}
                 </div>
               </div>
             </TabsContent>
